@@ -1,32 +1,16 @@
 ##''
-import core as core_module
 import importlib as imp
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# apv modules:
+from apv.general_tools import files_interface as fi
 ##''
 '''
 the "ads" data is satelite based and from https://ads.atmosphere.copernicus.eu/cdsapp#!/dataset/cams-solar-radiation-timeseries?tab=form
 the "ws" data is from a ground station in Widderstall and from Barts file
 '''
-# api request for ads
-import cdsapi
-c = cdsapi.Client()
-c.retrieve(
-    'cams-solar-radiation-timeseries',
-    {
-        'sky_type': 'observed_cloud',
-        'location': {
-            'latitude': 48.533,
-            'longitude': 9.717,
-        },
-        'altitude': '750',
-        'date': '2015-01-01/2016-01-01',
-        'time_step': '1minute',
-        'time_reference': 'universal_time',
-        'format': 'csv',
-    },
-    'download.csv')
+
 
 
 ##''

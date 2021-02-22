@@ -1,25 +1,31 @@
-##''
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Jan  5 13:21:24 2021
-
-@author: neelpatel
-"""
-
 import pandas as pd
 
+########## ADS #################
+import cdsapi
+c = cdsapi.Client()
+c.retrieve(
+    'cams-solar-radiation-timeseries',
+    {
+        'sky_type': 'observed_cloud',
+        'location': {
+            'latitude': 48.533,
+            'longitude': 9.717,
+        },
+        'altitude': '750',
+        'date': '2015-01-01/2016-01-01',
+        'time_step': '1minute',
+        'time_reference': 'universal_time',
+        'format': 'csv',
+    },
+    'download.csv')
 
-#%%
-
-nsrdb_api = '2yxdBVKdOXpp7q7VYLB0XRMdqlhxtCHxlqqd0wnI'
 
 
-#%%
+############ NSRDB ################
 
-def retrieve_nsrdb_data(lat, lon, year=2019, interval=15, attributes = 
-                        'ghi,dhi,dni,wind_speed,air_temperature,\
-surface_albedo')->pd.DataFrame:
+def retrieve_nsrdb_data(
+    lat, lon, year=2019, interval=15, 
+    attributes = 'ghi,dhi,dni,wind_speed,air_temperature,surface_albedo') -> pd.DataFrame:
     """
     Parameters
     ----------
@@ -36,7 +42,7 @@ surface_albedo')->pd.DataFrame:
     data : df containing requested weather attributes with UTC timestamps.
 
     """
-    api_key = nsrdb_api
+    api_key = '2yxdBVKdOXpp7q7VYLB0XRMdqlhxtCHxlqqd0wnI'
     
     # true will return leap day data if present, false will not
     leap_year = 'true'
@@ -56,14 +62,14 @@ surface_albedo')->pd.DataFrame:
     
     # url to get nsrdb data for europe
     url_europe = 'https://developer.nrel.gov/api/nsrdb/v2/solar/msg-iodc-\
-download.csv?wkt=POINT({lon}%20{lat})&names={year}&leap_day={leap}&\
-interval={interval}&utc={utc}&full_name={name}&email={email}&affiliation=\
-{affiliation}&mailing_list={mailing_list}&reason={reason}&api_key={api}&\
-attributes={attr}'.format(year=year, lat=lat, lon=lon, leap=leap_year, 
-                          interval=interval, utc=utc, name=your_name, 
-                          email=your_email, mailing_list=mailing_list, 
-                          affiliation=your_affiliation, api=api_key,
-                          reason=reason_for_use, attr=attributes)
+    download.csv?wkt=POINT({lon}%20{lat})&names={year}&leap_day={leap}&\
+    interval={interval}&utc={utc}&full_name={name}&email={email}&affiliation=\
+    {affiliation}&mailing_list={mailing_list}&reason={reason}&api_key={api}&\
+    attributes={attr}'.format(year=year, lat=lat, lon=lon, leap=leap_year, 
+                            interval=interval, utc=utc, name=your_name, 
+                            email=your_email, mailing_list=mailing_list, 
+                            affiliation=your_affiliation, api=api_key,
+                            reason=reason_for_use, attr=attributes)
 
     data = pd.read_csv(url_europe, skiprows=2)
     
@@ -74,36 +80,6 @@ attributes={attr}'.format(year=year, lat=lat, lon=lon, leap=leap_year,
     
     return data
 
-
-#%%
 df = retrieve_nsrdb_data(50.941, 6.367, year=2021, interval=15, attributes = 
                         'ghi,dhi,dni,wind_speed,air_temperature,surface_albedo')
-df
-
-##''
-import cdsapi
- 
-c = cdsapi.Client()
- 
-c.retrieve(
-    'reanalysis-uerra-europe-soil-levels',
-    {
-        'format': 'netcdf',
-        'origin': 'uerra_harmonie',
-        'variable': 'soil_temperature',
-        'soil_level': '2',
-        'year': '1968',
-        'month': '08',
-        'day': '02',
-        'time': '06:00',
-    },
-    'download.nc')
-
-##''
-
-import xarray as xr
-
-ds = xr.open_dataset('download.nc')
-df = ds.to_dataframe()
-
 df
