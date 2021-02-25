@@ -50,7 +50,7 @@ for k in [1, 1.5, 2, 2.5, 3, 4, 5, 7, 10]:
     gcr = 1/k
     # gcr = ground covering ratio (unitless)
     psi = shading.masking_angle_passias(surface_tilt, gcr)
-    # psi is the angle between a line parralel to the horizont 
+    # psi is the angle between a line parralel to the horizont
     # and a line from a point on the shadowed module
     # to the upper edge of the shadowing module
     # psi is averaged along the shadowed module resulting in an error < 1 %

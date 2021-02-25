@@ -6,15 +6,14 @@ import stat
 with open('README.md', 'r') as f:
     long_description = f.read()
 
-
 setuptools.setup(
-    name='open-elevation',
+    name='agri-pv',
     version='0.1',
-    author='Evgenii Sovetkin',
-    author_email='e.sovetkin@gmail.com',
-    description='Extended open-elevation server',
+    author='Leonard Raumann',
+    author_email='leo.raumann@gmail.com',
+    description='agri pv',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url='git@github.com:esovetkin/open-elevation',
-    packages=setuptools.find_packages()
+    url='git@jugit.fz-juelich.de:pearl-project/agri-pv.git',    
+    packages=setuptools.find_packages()    
 )
