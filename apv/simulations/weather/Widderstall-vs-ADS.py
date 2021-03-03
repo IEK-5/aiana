@@ -82,8 +82,10 @@ def verify_synchronity(
         y1: pd.Series, y2: pd.Series,
         i_start=0, i_end=1200):
 
-    y1[i_start:i_end].plot()
-    y2[i_start:i_end].plot()
+    y1[i_start:i_end].plot(label=y1.name + ' ads')
+    y2[i_start:i_end].plot(label=y2.name + ' ws')
+
+    plt.legend()
 
 verify_synchronity(df_ads2['GHI']*60, df_ws['GHI'])
 

@@ -8,7 +8,6 @@ from pvlib import irradiance
 
 import holoviews as hv
 from holoviews import opts
-from holoviews.streams import RangeXY
 from bokeh.models import HoverTool
 from bokeh.plotting import show
 
@@ -24,55 +23,56 @@ imp.reload(apv.resources.locations)
 imp.reload(apv.tools.plots)
 imp.reload(fi)
 
-module_ws = fi.df_from_file(
-    'raw-data/Sanyo240_moduleSpecs_guestimate.txt', delimiter='\t').T
-
 df_ws = fi.df_from_file(
     'raw-data/sanyo', skiprows=9, append_all_in_folder=True, delimiter='\t')
 
-""" df_ws = apv.tools.time.column_to_utc_index(
-    df_ws, timestamp_column_header='Datum', timezone='Etc/GMT-1')
-df_ws """
-
 # #
+
+def sim_poa(df, timezone):
+    df = apv.tools.time.column_to_utc_index(
+        df, 'Datum', timezone)
+
+    # POA sim
+    site = apv.resources.locations.Widderstall
+
+    # Get solar azimuth and zenith to pass to the transposition function
+    solar_position = site.get_solarposition(times=df.index)
+
+    DNI = (df['GHI'] - df['DHI']) / np.cos(
+        solar_position['apparent_zenith']*np.pi/180)
+
+    df_POA_irradiance = irradiance.get_total_irradiance(
+            surface_tilt=40,    # from widderstall description file
+            surface_azimuth=180,  # "
+            dni=DNI,
+            ghi=df['GHI'],
+            dhi=df['DHI'],
+            solar_zenith=solar_position['apparent_zenith'],
+            solar_azimuth=solar_position['azimuth'],
+            #model='klucher'
+            )
+
+    df['POA_sim'] = df_POA_irradiance['poa_global']
+
+    return df
 
 
 def sim_and_plot_poa_for_different_tz(df_ws, timezones: list, xy_max=1200):
+
     apv.tools.plots.plotStyle(
         fig_width_in_mm=220, width_to_height_ratio=1, marker_size_in_pt=1)
 
     f, axs = plt.subplots(2, 2, sharex=True, sharey=True)
 
     for timezone, ax in zip(timezones, axs.ravel()):
-        df_ws = apv.tools.time.column_to_utc_index(
-            df_ws, 'Datum', timezone)
+        df_ws = sim_poa(df_ws, timezone)
 
-        # POA sim
-        site = apv.resources.locations.Widderstall
-
-        # Get solar azimuth and zenith to pass to the transposition function
-        solar_position = site.get_solarposition(times=df_ws.index)
-
-        DNI = (df_ws['GHI'] - df_ws['DHI']) / np.cos(
-            solar_position['apparent_zenith']*np.pi/180)
-
-        POA_irradiance = irradiance.get_total_irradiance(
-                surface_tilt=40,  # from widderstall description file
-                surface_azimuth=0,
-                dni=DNI,
-                ghi=df_ws['GHI'],
-                dhi=df_ws['DHI'],
-                solar_zenith=solar_position['apparent_zenith'],
-                solar_azimuth=solar_position['azimuth'])
-
-        df_ws['poa_sim'] = POA_irradiance['poa_global']
-
-        ax.plot(df_ws['POA'], df_ws['poa_sim'], '+', alpha=0.2)
+        ax.plot(df_ws['POA'], df_ws['POA_sim'], '+', alpha=0.02)
 
         #######
         # RMSE and MBE
         df_meta = apv.tools.evaluation.calc_RMSE_MBE(
-            df_ws['POA'], df_ws['poa_sim'])
+            df_ws['POA'], df_ws['POA_sim'])
 
         mbe = df_meta.loc['MBE'][0]
         rmse = df_meta.loc['RMSE'][0]
@@ -90,9 +90,15 @@ def sim_and_plot_poa_for_different_tz(df_ws, timezones: list, xy_max=1200):
 
         ax.plot((0, xy_max), (0, xy_max), color='r', linewidth=0.3)
 
-        ax.set_xlabel('exp')
-        ax.set_ylabel('sim')
-        ax.set_title(timezone + ', RMSE: ' + '{:.2f}'.format(rmse))
+        if len(timezones) > 1:
+            title = timezone + ', '
+        else:
+            title = ""
+        title = title+'RMSE: '+'{:.2f}'.format(rmse)+', MBE: '+'{:.2f}'.format(mbe)
+        ax.set_title(title)
+
+        ax.set_xlabel('experiment')
+        ax.set_ylabel('simulation')
         ax.set_xlim(0, xy_max)
         ax.set_ylim(0, xy_max)
         ax.grid()
@@ -102,36 +108,55 @@ def sim_and_plot_poa_for_different_tz(df_ws, timezones: list, xy_max=1200):
 
     return df_meta
 
+# #
 sim_and_plot_poa_for_different_tz(
-    df_ws, timezones=['Etc/GMT-2', 'Etc/GMT-1', 'UTC', 'Etc/GMT+1'])
-
+    df_ws, timezones=['Etc/GMT-2',
+                      'Etc/GMT-1',
+                      'UTC', 'Etc/GMT+1'
+                      ])
 
 # #
-# setting bokeh as backend
-hv.extension('bokeh')
-
-compare_plot = hv.Scatter(df_ws, ['POA', 'poa_sim'])
-
-tooltips = [
-    ('Time', '@Datum'),
-    ('POA', '@POA'),
-    ('poa_sim', '@poa_sim')
-]
-hover = HoverTool(tooltips=tooltips)
-
-# Apply options
-compare_plot.opts(
-    opts.Scatter(
-        framewise=True, show_grid=True, width=600, height=500,
-        alpha=0.2, xlim=(0, 1600), ylim=(0, 1600), tools=[hover]),
-    opts.Image(
-        cmap='fire', logz=True, height=800, width=800, xaxis=None, yaxis=None))
-""" dmap.opts(
-    opts.Histogram(framewise=True, logy=True, width=200, xlim=(1, None)),
-    opts.Image(cmap='fire', logz=True, height=600, width=600,
-               xaxis=None, yaxis=None)) """
-
-
-# use show() from bokeh
-show(hv.render(compare_plot))
+df_ws_gmt_m1 = sim_poa(df_ws, timezone='Etc/GMT-1')
 # #
+
+
+def holo_view_poa(df, z, xy_max=1200):
+
+    df['hour'] = df.index.hour
+
+    # setting bokeh as backend
+    hv.extension('bokeh')
+
+    compare_plot = hv.Scatter(
+        df,#[500:25000],
+        kdims=['POA'],
+        vdims=['POA_sim'] + df_ws_gmt_m1.columns.to_list()
+        )
+
+    tooltips = [
+        (col_name, '@'+col_name) for col_name in df.columns
+        ]
+
+    compare_plot.opts(
+        show_grid=True, width=600, height=500,
+        alpha=0.2, tools=[HoverTool(tooltips=tooltips)],
+        xlim=(0, xy_max), ylim=(0, xy_max),
+        color=z, cmap='fire', colorbar=True,
+        colorbar_opts={'title': z}
+        )
+    return compare_plot
+
+
+holo_view_poa(df_ws_gmt_m1, 'GHI')
+
+# #
+holo_view_poa(df_ws_gmt_m1, 'hour')
+
+# #
+holo_view_poa(df_ws_gmt_m1, 'DHI')
+# #
+holo_view_poa(df_ws_gmt_m1, 'TAA')
+# #
+holo_view_poa(df_ws_gmt_m1, 'VW')
+# #
+df_ws_gmt_m1.columns.to_list()

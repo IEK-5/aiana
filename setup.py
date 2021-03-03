@@ -14,6 +14,6 @@ setuptools.setup(
     description='agri pv',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url='git@jugit.fz-juelich.de:pearl-project/agri-pv.git',    
-    packages=setuptools.find_packages()    
+    url='git@jugit.fz-juelich.de:pearl-project/agri-pv.git',
+    packages=setuptools.find_packages()
 )
