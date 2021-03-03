@@ -124,53 +124,6 @@ def comparing_plot_hv(
 
     return scatter * slope
 
-def foo():
-    f, axs = plt.subplots(1, 1, sharex=True, sharey=True)
-
-    for timezone, ax in zip(timezones, axs.ravel()):
-        df_ws = sim_poa(df_ws, timezone)
-
-        ax.plot(df_ws['POA'], df_ws['POA_sim'], '+', alpha=0.02)
-
-        #######
-        # RMSE and MBE
-        df_meta = apv.tools.evaluation.calc_RMSE_MBE(
-            df_ws['POA'], df_ws['POA_sim'])
-
-        mbe = df_meta.loc['MBE'][0]
-        rmse = df_meta.loc['RMSE'][0]
-
-        ax.plot(
-            (0 + mbe*2**0.5, xy_max),
-            (0, xy_max - mbe*2**0.5),
-            color='k', linewidth=0.3)
-
-        ax.fill_between(
-            [0, xy_max],
-            [0 - (mbe - rmse)*2**0.5, xy_max - (mbe - rmse)*2**0.5],
-            [0 - (mbe + rmse)*2**0.5, xy_max - (mbe + rmse)*2**0.5],
-            color='k', alpha=0.2)
-
-        ax.plot((0, xy_max), (0, xy_max), color='r', linewidth=0.3)
-
-        if len(timezones) > 1:
-            title = timezone + ', '
-        else:
-            title = ""
-        title = title+'RMSE: '+'{:.2f}'.format(rmse)+', MBE: '+'{:.2f}'.format(mbe)
-        ax.set_title(title)
-
-        ax.set_xlabel('experiment')
-        ax.set_ylabel('simulation')
-        ax.set_xlim(0, xy_max)
-        ax.set_ylim(0, xy_max)
-        ax.grid()
-
-    fi.save_fig(
-        f, file_name='Widderstall_poa_sim', rel_path='results', dpi=500)
-
-    return df_meta
-
 def plotStyle(
         width_to_height_ratio=1.618, fig_width_in_mm=90,
         plotline_width_in_pt='default',

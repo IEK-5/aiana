@@ -17,7 +17,6 @@ def calc_RMSE_MBE(arr1: pd.Series, arr2: pd.Series) -> namedtuple:
     rmse = ((arr1 - arr2)**2).mean()**0.5
     max_all = max(arr1.max(), arr2.max())
     min_all = min(arr1.min(), arr2.min())
-    (max_all - min_all)/2
     rel_mbe = mbe / ((max_all - min_all)/2)
     rel_rmse = rmse / ((max_all - min_all)/2)
 
