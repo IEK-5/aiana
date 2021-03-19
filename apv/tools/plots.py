@@ -15,6 +15,7 @@ def comparing_plot_sns(
         scatter_alpha=0.4, scatter_size=0.1,
         xy_min='default', xy_max='default'):
 
+    df = df.dropna()
     if xy_max == 'default':
         xy_max = max(df[x].max(), df[y].max())
     else:
@@ -25,7 +26,6 @@ def comparing_plot_sns(
     else:
         xy_min = xy_min
 
-    df = df.dropna()
     # linear regression #############
     slope, intercept, r, p_value, std_err = stats.linregress(df[x], df[y])
 

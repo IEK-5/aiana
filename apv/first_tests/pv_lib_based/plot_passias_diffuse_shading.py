@@ -6,7 +6,7 @@ Modeling the reduction in diffuse irradiance caused by row-to-row diffuse
 shading.
 """
 
-# %%
+# #
 # The term "self-shading" usually refers to adjacent rows blocking direct
 # irradiance and casting shadows on each other. However, the concept also
 # applies to diffuse irradiance because rows block a portion of the sky
@@ -30,7 +30,7 @@ from pvlib import shading, irradiance
 import matplotlib.pyplot as plt
 import numpy as np
 
-# %%
+# #
 # First we'll recreate Figure 4, showing how the average masking angle varies
 # with array tilt and array packing. The masking angle of a given point on a
 # module is the angle from horizontal to the next row's top edge and represents
@@ -61,7 +61,7 @@ plt.ylabel('Average masking angle [degrees]')
 plt.legend()
 plt.show()
 
-# %%
+# #
 # So as the array is packed tighter (decreasing ``k``), the average masking
 # angle increases.
 #
@@ -88,6 +88,8 @@ plt.ylim(0, 105)
 plt.legend()
 plt.show()
 
-# %%
+# #
 # As ``k`` decreases, GCR increases, so self-shading loss increases and
 # collected diffuse irradiance decreases.
+
+# #

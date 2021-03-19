@@ -69,13 +69,9 @@ def sim_and_plot_poa_for_different_tz(df_ws, timezones: list, xy_max=1200):
 
         ax.plot(df_ws['POA'], df_ws['POA_sim'], '+', alpha=0.02)
 
-        #######
         # RMSE and MBE
-        df_meta = apv.tools.evaluation.calc_RMSE_MBE(
+        mbe, rel_mbe, rmse, rel_rmse = apv.tools.evaluation.calc_RMSE_MBE(
             df_ws['POA'], df_ws['POA_sim'])
-
-        mbe = df_meta.loc['MBE'][0]
-        rmse = df_meta.loc['RMSE'][0]
 
         ax.plot(
             (0 + mbe*2**0.5, xy_max),
@@ -105,9 +101,6 @@ def sim_and_plot_poa_for_different_tz(df_ws, timezones: list, xy_max=1200):
 
     fi.save_fig(
         f, file_name='Widderstall_poa_sim', rel_path='results', dpi=500)
-
-    return df_meta
-
 # #
 sim_and_plot_poa_for_different_tz(
     df_ws, timezones=['Etc/GMT-2',
@@ -115,8 +108,6 @@ sim_and_plot_poa_for_different_tz(
                       'UTC', 'Etc/GMT+1'
                       ])
 
-# #
-df_ws_gmt_m1 = sim_poa(df_ws, timezone='Etc/GMT-1')
 # #
 
 

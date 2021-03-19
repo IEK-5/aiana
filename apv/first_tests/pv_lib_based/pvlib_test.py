@@ -1,8 +1,8 @@
-##''
+# #
 #import core as core_module
 import importlib as imp
 import numpy as np
-import pandas as pd 
+import pandas as pd
 import os as os
 import matplotlib.pyplot as plt
 import datetime as dt
@@ -12,7 +12,7 @@ from tqdm.auto import trange, tqdm
 
 import pvlib
 
-##''
+# #
 
 naive_times = pd.date_range(start='2015', end='2016', freq='1h')
 
@@ -37,7 +37,7 @@ temperature_model_parameters = pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS['s
 temp_air = 20
 
 wind_speed = 0
-##''
+# #
 ### browse data base ##################
 df = pvlib.pvsystem.retrieve_sam('CECMod')
 #df = pvlib.pvsystem.retrieve_sam('SandiaMod')
@@ -49,7 +49,7 @@ for col in df.columns:
         cols += [col]
 print(cols)
 #######################
-##''
+# #
 ################# procedual #################
 system = {'module': module, 'inverter': inverter,
           'surface_azimuth': 180}
@@ -94,7 +94,7 @@ for latitude, longitude, name, altitude, timezone in coordinates:
 energies = pd.Series(energies)
 print(energies.round(0))
 
-##''
+# #
 ################# object orientated #################
 
 from pvlib.pvsystem import PVSystem
@@ -121,6 +121,7 @@ for latitude, longitude, name, altitude, timezone in coordinates:
 energies = pd.Series(energies)
 print(energies.round(0))
 
-##''
+# #
 energies.plot(kind='bar', rot=0)
 plt.ylabel('Yearly energy yield (W hr)')
+# #

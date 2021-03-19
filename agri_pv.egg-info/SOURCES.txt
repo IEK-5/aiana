@@ -1,0 +1,6 @@
+README.md
+setup.py
+agri_pv.egg-info/PKG-INFO
+agri_pv.egg-info/SOURCES.txt
+agri_pv.egg-info/dependency_links.txt
+agri_pv.egg-info/top_level.txt

@@ -1,4 +1,4 @@
-##''
+# #
 from pvlib import location
 from pvlib import irradiance
 import pandas as pd
@@ -63,7 +63,7 @@ ax1.legend()
 ax2.legend()
 plt.show()
 
-##''
+# #
 df = pd.DataFrame(columns=['poa_irradiance'])
 df.index.names = ['tilt']
 
@@ -80,7 +80,7 @@ plt.xlabel('tilt')
 plt.ylabel('max poa irradiance [W / m$^2$]')
 plt.grid()
 plt.legend()
-##''
+# #
 df
-##''
+# #
 df[df['poa_irradiance'] == df['poa_irradiance'].max()]

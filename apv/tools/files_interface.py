@@ -19,7 +19,7 @@ def Join_relPath_toHomePath_AndMakeDirsIfNotThere(
 def df_from_file(
         rel_path: str, path_main=path_main,
         skiprows=0, index_col=None,
-        delimiter='\t|,|;',
+        delimiter='\t|,|;', squeeze=False,
         append_all_in_folder=False,
         names=None, header='infer'):
     '''
@@ -40,7 +40,8 @@ def df_from_file(
             index_col=index_col,
             names=names,
             header=header,
-            engine='python')
+            engine='python',
+            squeeze=squeeze)
 
     if append_all_in_folder:
         source_folder = os.path.join(path_main, rel_path)
