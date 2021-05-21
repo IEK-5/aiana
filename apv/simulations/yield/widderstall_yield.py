@@ -46,8 +46,11 @@ def sim_poa(df):
             )
 
     df['POA_sim'] = df_POA_irradiance['poa_global']
+    apv.tools.files_interface.df_export(
+        df, 'poa_widderstall', rel_path='processed-data')
 
     return df
+
 df = sim_poa(df)
 
 df['Tcell'] = pvlib.temperature.sapm_cell(

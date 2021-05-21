@@ -6,7 +6,6 @@ RMSE_MBE_results = namedtuple(
 
 
 def calc_RMSE_MBE(arr1: pd.Series, arr2: pd.Series) -> namedtuple:
-
     """calculates root mean square error (RMSE) and mean bias error (MBE)
     between two series arr1 and arr2.
     note: substracting two series works via the index values not their
@@ -22,8 +21,10 @@ def calc_RMSE_MBE(arr1: pd.Series, arr2: pd.Series) -> namedtuple:
 
     return RMSE_MBE_results(mbe, rel_mbe, rmse, rel_rmse)
 
-def calc_RMSE_MBE_old(arr1: pd.Series, arr2: pd.Series) -> pd.DataFrame:
 
+
+
+def calc_RMSE_MBE_old(arr1: pd.Series, arr2: pd.Series) -> pd.DataFrame:
     """calculates root mean square error (RMSE) and mean bias error (MBE)
     between two series arr1 and arr2.
     note: substracting two series works via the index values not their
@@ -48,3 +49,4 @@ def calc_RMSE_MBE_old(arr1: pd.Series, arr2: pd.Series) -> pd.DataFrame:
     df_meta.loc['MBE/mean', label] = df_meta.loc['MBE', label]/mean_all
 
     return df_meta
+

@@ -53,6 +53,7 @@ def sim_poa(df, timezone):
             )
 
     df['POA_sim'] = df_POA_irradiance['poa_global']
+    
 
     return df
 

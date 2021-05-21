@@ -38,17 +38,7 @@ temp_air = 20
 
 wind_speed = 0
 # #
-### browse data base ##################
-df = pvlib.pvsystem.retrieve_sam('CECMod')
-#df = pvlib.pvsystem.retrieve_sam('SandiaMod')
 
-cols = []
-for col in df.columns:
-    if ('Sanyo' in col) and (
-        ('HIT' in col) or ('240' in col) or ('HED4' in col)):
-        cols += [col]
-print(cols)
-#######################
 # #
 ################# procedual #################
 system = {'module': module, 'inverter': inverter,
