@@ -1,4 +1,5 @@
 # #
+from apv.resources import locations
 import bifacial_radiance as br
 import numpy as np
 import os as os
@@ -9,23 +10,27 @@ from pathlib import Path
 imp.reload(apv.resources.weather.retrieve_APIs)
 imp.reload(apv.resources)
 
-# #
-
-apv.resources.locations.Jülich_Brainergy
-
 
 # #
 ads_file_name = 'ads_weather_data'
-# #
-apv.resources.weather.retrieve_APIs.download_ads_data(file_name=ads_file_name)
+location = apv.resources.locations.Morschenich_AgriPV
 
 # #
-df_ads = apv.tools.files_interface.df_from_file(
+# Download irradiance data
+# (BNI = DNI)
+apv.resources.weather.retrieve_APIs.download_ads_data(
+    file_name=ads_file_name,
+    location=location,
+    date_range='2015-01-01/2015-01-03',
+    time_step='1hour')
+
+# #
+df = apv.tools.files_interface.df_from_file(
     path_main=Path().resolve(),
     rel_path=ads_file_name+'.csv',
     skiprows=42, delimiter=';')
-
-df_ads
+# #
+df[df.DHI>0]
 
 
 # #

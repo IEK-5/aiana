@@ -1,38 +1,54 @@
 import pandas as pd
-import shutil
-import apv
-import os
+# import shutil
+import pvlib
 
 # ######### ADS #################
 import cdsapi
 
+'2015-01-01/2015-01-02'
 
 def download_ads_data(
-    file_name
+    file_name: str,
+    location: pvlib.location,
+    date_range=str,
+    time_step='15minute'
 ):
-    # input: location, start + end time, resolution [minutes]
-    # bool:
+    """
+    method to download via API request satelite based insolation data
+    taking into account the observed weather
+
+    Args:
+        file_name (str): file name, where the data is stored to
+        location (pvlib.location): pvlib location object to pass coordinates
+        date (str): start and end date in the format '2015-01-01/2015-01-02'
+        time_step (str, optional): time step, e.g. '15minute', or '1hour'
+        
+    for access, one needs to register and store a key file on the pc
+    more info:
+    https://ads.atmosphere.copernicus.eu/cdsapp#!/dataset/cams-solar-radiation-timeseries?tab=form
+    """
+
     c = cdsapi.Client()
     c.retrieve(
         'cams-solar-radiation-timeseries',
         {
             'sky_type': 'observed_cloud',
             'location': {
-                'latitude': 48.533,
-                'longitude': 9.717,
+                'latitude': location.latitude,
+                'longitude': location.longitude,
             },
-            'altitude': '750',
-            'date': '2015-01-01/2015-01-02',
-            'time_step': '1minute',
+            'altitude': str(location.altitude),
+            'date': date_range,
+            'time_step': time_step,
             'time_reference': 'universal_time',
             'format': 'csv',
         },
         file_name + '.csv')
 
     # move file
-    #source = os.path.join(os.path.dirname(__file__), file_name+'.csv')
-    #destination = os.path.join(rel_destination_sub_folder, file_name+'.csv')
-    #shutil.move(source, destination)
+    # source = os.path.join(os.path.dirname(__file__), file_name+'.csv')
+    # destination = os.path.join(rel_destination_sub_folder, file_name+'.csv')
+    # shutil.move(source, destination)
 
 
 # ########### NSRDB ################
