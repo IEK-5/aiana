@@ -1,10 +1,8 @@
 import pandas as pd
 import os as os
+from pathlib import Path
 
-path_main = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')
-    )
-
+path_main = Path().resolve().parent.parent.parent.parent
 
 def Join_relPath_toHomePath_AndMakeDirsIfNotThere(
         rel_path: str,

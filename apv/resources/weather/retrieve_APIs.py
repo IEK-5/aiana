@@ -1,23 +1,38 @@
 import pandas as pd
+import shutil
+import apv
+import os
 
 # ######### ADS #################
 import cdsapi
-c = cdsapi.Client()
-c.retrieve(
-    'cams-solar-radiation-timeseries',
-    {
-        'sky_type': 'observed_cloud',
-        'location': {
-            'latitude': 48.533,
-            'longitude': 9.717,
+
+
+def download_ads_data(
+    file_name
+):
+    # input: location, start + end time, resolution [minutes]
+    # bool:
+    c = cdsapi.Client()
+    c.retrieve(
+        'cams-solar-radiation-timeseries',
+        {
+            'sky_type': 'observed_cloud',
+            'location': {
+                'latitude': 48.533,
+                'longitude': 9.717,
+            },
+            'altitude': '750',
+            'date': '2015-01-01/2015-01-02',
+            'time_step': '1minute',
+            'time_reference': 'universal_time',
+            'format': 'csv',
         },
-        'altitude': '750',
-        'date': '2015-01-01/2016-01-01',
-        'time_step': '1minute',
-        'time_reference': 'universal_time',
-        'format': 'csv',
-    },
-    'download.csv')
+        file_name + '.csv')
+
+    # move file
+    #source = os.path.join(os.path.dirname(__file__), file_name+'.csv')
+    #destination = os.path.join(rel_destination_sub_folder, file_name+'.csv')
+    #shutil.move(source, destination)
 
 
 # ########### NSRDB ################
@@ -76,7 +91,7 @@ def retrieve_nsrdb_data(
     return data
 
 
-df = retrieve_nsrdb_data(
-    50.941, 6.367, year=2021, interval=15,
-    attributes='ghi,dhi,dni,wind_speed,air_temperature,surface_albedo')
-df
+#df = retrieve_nsrdb_data(
+#    50.941, 6.367, year=2021, interval=15,
+#    attributes='ghi,dhi,dni,wind_speed,air_temperature,surface_albedo')
+#df
