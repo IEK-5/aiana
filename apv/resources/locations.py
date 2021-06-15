@@ -6,5 +6,5 @@ Widderstall = location.Location(
 Jülich_Brainergy = location.Location(
     50.942, 6.367, altitude=85, tz='Europe/Berlin')
 
-Morschenich_AgriPV = location.Location(
+APV_Morschenich = location.Location(
     50.86351, 6.52946, altitude=123, tz='Europe/Berlin')

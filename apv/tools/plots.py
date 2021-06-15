@@ -10,6 +10,7 @@ from scipy import stats
 import seaborn as sns
 import apv.tools.evaluation
 
+
 def comparing_plot_sns(
         df: pd.Series, x: str, y: str, unit: str, z='none',
         scatter_alpha=0.4, scatter_size=0.1,
@@ -65,12 +66,12 @@ def comparing_plot_sns(
         ('MBE: {0:.2f}{1}\nRMSE: {2:.2f}{1}\n'
          'rel. MBE: {3:.2f}\nrel. RMSE: {4:.2f}\n'
          '(rel. to (max-min)/2)'
-        ).format(mbe, unit, rmse, rel_mbe, rel_rmse),
+         ).format(mbe, unit, rmse, rel_mbe, rel_rmse),
         horizontalalignment='left', verticalalignment='top',
         size='medium', color='black', backgroundcolor="w",
         fontsize=11
         # weight='semibold'
-        )
+    )
     # ####################################
 
     # add histograms to top and right side of the plot
@@ -111,18 +112,20 @@ def comparing_plot_hv(
     scatter = hv.Scatter(df, kdims=[x], vdims=vdims)
 
     scatter.opts(show_grid=True,  # width=600, height=500,
-              xlim=(0, xy_max), ylim=(0, xy_max), alpha=0.2)
+                 xlim=(0, xy_max), ylim=(0, xy_max), alpha=0.2)
 
     if interactive:
         scatter.opts(tools=[HoverTool(tooltips=tooltips)])
     if z is not 'none':
-        scatter.opts(color=z, cmap='fire', colorbar=True, colorbar_opts={'title': z})
+        scatter.opts(color=z, cmap='fire', colorbar=True,
+                     colorbar_opts={'title': z})
     # red 45° line
     slope = hv.Slope(1, 0)
     slope.opts(color='red', line_width=0.5)
     #
 
     return scatter * slope
+
 
 def plotStyle(
         width_to_height_ratio=1.618, fig_width_in_mm=90,
@@ -134,11 +137,11 @@ def plotStyle(
         'figure.figsize': (
             fig_width_in_mm/25.4,  # from pt to mm
             (fig_width_in_mm/25.4) / width_to_height_ratio
-            ),
+        ),
         'font.size': font_size,
         'font.family': 'STIXGeneral',
         'mathtext.fontset': 'stix',
-        }
+    }
 
     if plotline_width_in_pt != 'default':
         params.update({
@@ -151,6 +154,7 @@ def plotStyle(
     plt.rcParams.update(params)
     plt.rcParams['svg.fonttype'] = 'none'  # makes the text in the
     # exported plot real text, which editable in the svg in inkscape
+
 
 plotStyle(fig_width_in_mm=220, width_to_height_ratio=1, marker_size_in_pt=1)
 
@@ -177,4 +181,3 @@ dmap.opts(
 
 # use show() from bokeh
 show(hv.render(dmap)) """
-

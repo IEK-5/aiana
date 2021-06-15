@@ -1,5 +1,4 @@
 # #
-from apv.resources import locations
 import bifacial_radiance as br
 import numpy as np
 import os as os
@@ -7,31 +6,44 @@ import importlib as imp
 import apv
 from pathlib import Path
 
-imp.reload(apv.resources.weather.retrieve_APIs)
-imp.reload(apv.resources)
-
 
 # #
-ads_file_name = 'ads_weather_data'
+imp.reload(apv)
+
+credentials = apv.tools.weather_data.load_API_credentials()
 location = apv.resources.locations.Morschenich_AgriPV
 
 # #
-# Download irradiance data
-# (BNI = DNI)
-apv.resources.weather.retrieve_APIs.download_ads_data(
+# Download wind and temperature data
+cds_file_name = 'temp_and_wind_data'
+
+apv.tools.weather_data.download_wind_and_T_data(
+    credentials,
+    file_name=cds_file_name,
+    location=location,
+    year='2021', month='01', day=['02', '03']
+    )
+
+# #
+df = apv.tools.files_interface.df_from_nc(
+    rel_path='data_downloads/'+cds_file_name+'.nc')
+df
+
+# #
+# Download insolation data
+ads_file_name = 'insolation_data'
+apv.tools.weather_data.download_insolation_data(
+    credentials,
     file_name=ads_file_name,
     location=location,
-    date_range='2015-01-01/2015-01-03',
+    date_range='2015-01-01/2015-01-02',
     time_step='1hour')
 
 # #
 df = apv.tools.files_interface.df_from_file(
-    path_main=Path().resolve(),
-    rel_path=ads_file_name+'.csv',
+    rel_path='data_downloads/'+ads_file_name+'.csv',
     skiprows=42, delimiter=';')
-# #
-df[df.DHI>0]
-
+df  # (BNI = DNI)
 
 # #
 
@@ -56,9 +68,7 @@ axisofrotationTorqueTube = False
 torqueTube = False
 cellLevelModule = True
 
-cellLevelModuleParams = {'numcellsx': 6, 'numcellsy': 12,
-                         'xcell': 0.156, 'ycell': 0.156,
-                         'xcellgap': 0.02, 'ycellgap': 0.02}
+
 
 
 # Create a RadianceObj 'object'
@@ -71,6 +81,7 @@ epwfile = RadObj.getEPW(site.latitude, site.longitude)
 RadObj.readEPW(epwfile)
 # #
 
+# #
 metdata = RadObj.readEPW(epwfile)  # read in the EPW weather data from above
 RadObj.gendaylit(timestamp)  # Use this to simulate only one hour at a time.
 # This allows you to "view" the scene on RVU (see instructions below)
@@ -82,22 +93,14 @@ moduletype = 'PrismSolar'
 numpanels = 2
 sensorsy = 6*numpanels  # this will give 6 sensors per module, 1 per cell
 
-moduleDict = RadObj.makeModule(
-    name=moduletype, x=0.998, y=1.98, numpanels=numpanels,
+moduleDict = RadObj.makeModule(  # if celllevel is defined, x and y aren't needed
+    name=moduletype, numpanels=numpanels,
     xgap=0.10, ygap=0.10,
-    cellLevelModuleParams=cellLevelModuleParams)
-
-# all units are in [m] for distances and in [degree] for angles (tilt, azimuth)
-sceneDict = {'tilt': 20,
-             'pitch': 10,        # distance between two adjacent rows
-             'hub_height': 4.5,  # vert. distance: ground to modules
-             'azimuth': 180,
-             'nMods': 10,        # modules per row
-             'nRows': 3}
-
+    cellLevelModuleParams=apv.settings.SimGeometries.cellLevelModuleParams)
 
 # makeScene creates a .rad file
-scene = RadObj.makeScene(moduletype=moduletype, sceneDict=sceneDict)
+scene = RadObj.makeScene(
+    moduletype=moduletype, sceneDict=apv.settings.SimGeometries.sceneDict)
 # make .oct file
 octfile = RadObj.makeOct(RadObj.getfilelist())
 
@@ -138,8 +141,20 @@ RadObj.appendtoScene(scene.radfiles, customObject, '!xform -rz 0')
 
 # makeOct combines all of the ground, sky and object files into a .oct file.
 octfile = RadObj.makeOct(RadObj.getfilelist())
-# view the .oct file with rvu:
-# !rvu -vf $view_fp -e .01 AgriPV.oct
+
+# #
+# import subprocess
+
+def view_oct_file_with_rvu(view_fp, oct_fn):
+    oct_fn_with_ext = oct_fn + '.oct'
+    # view the .oct file with rvu:
+    !rvu -vf $view_fp -e .01 $oct_fn_with_ext
+    # carefull: evgenii said it works only in vs code or jupyter
+    # can be solved with the subprocess lib
+
+
+view_oct_file_with_rvu(view_fp, oct_fn)
+
 
 # #
 

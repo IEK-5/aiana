@@ -1,8 +1,10 @@
 # #
 import bifacial_radiance as br
-
+br.gui()
 # #
 br.gui()
+
+#bifacial_radiance.gui()
 
 # #
 

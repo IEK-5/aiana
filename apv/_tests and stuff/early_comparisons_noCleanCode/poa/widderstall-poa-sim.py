@@ -28,6 +28,7 @@ df_ws = fi.df_from_file(
 
 # #
 
+
 def sim_poa(df, timezone):
     df = apv.tools.time.column_to_utc_index(
         df, 'Datum', timezone)
@@ -42,18 +43,17 @@ def sim_poa(df, timezone):
         solar_position['apparent_zenith']*np.pi/180)
 
     df_POA_irradiance = irradiance.get_total_irradiance(
-            surface_tilt=40,    # from widderstall description file
-            surface_azimuth=180,  # "
-            dni=DNI,
-            ghi=df['GHI'],
-            dhi=df['DHI'],
-            solar_zenith=solar_position['apparent_zenith'],
-            solar_azimuth=solar_position['azimuth'],
-            #model='klucher'
-            )
+        surface_tilt=40,    # from widderstall description file
+        surface_azimuth=180,  # "
+        dni=DNI,
+        ghi=df['GHI'],
+        dhi=df['DHI'],
+        solar_zenith=solar_position['apparent_zenith'],
+        solar_azimuth=solar_position['azimuth'],
+        # model='klucher'
+    )
 
     df['POA_sim'] = df_POA_irradiance['poa_global']
-    
 
     return df
 
@@ -91,7 +91,8 @@ def sim_and_plot_poa_for_different_tz(df_ws, timezones: list, xy_max=1200):
             title = timezone + ', '
         else:
             title = ""
-        title = title+'RMSE: '+'{:.2f}'.format(rmse)+', MBE: '+'{:.2f}'.format(mbe)
+        title = title+'RMSE: ' + \
+            '{:.2f}'.format(rmse)+', MBE: '+'{:.2f}'.format(mbe)
         ax.set_title(title)
 
         ax.set_xlabel('experiment')
@@ -102,6 +103,8 @@ def sim_and_plot_poa_for_different_tz(df_ws, timezones: list, xy_max=1200):
 
     fi.save_fig(
         f, file_name='Widderstall_poa_sim', rel_path='results', dpi=500)
+
+
 # #
 sim_and_plot_poa_for_different_tz(
     df_ws, timezones=['Etc/GMT-2',
@@ -120,14 +123,14 @@ def holo_view_poa(df, z, xy_max=1200):
     hv.extension('bokeh')
 
     compare_plot = hv.Scatter(
-        df,#[500:25000],
+        df,  # [500:25000],
         kdims=['POA'],
         vdims=['POA_sim'] + df_ws_gmt_m1.columns.to_list()
-        )
+    )
 
     tooltips = [
         (col_name, '@'+col_name) for col_name in df.columns
-        ]
+    ]
 
     compare_plot.opts(
         show_grid=True, width=600, height=500,
@@ -135,7 +138,7 @@ def holo_view_poa(df, z, xy_max=1200):
         xlim=(0, xy_max), ylim=(0, xy_max),
         color=z, cmap='fire', colorbar=True,
         colorbar_opts={'title': z}
-        )
+    )
     return compare_plot
 
 

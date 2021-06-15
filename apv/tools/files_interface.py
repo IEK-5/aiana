@@ -1,16 +1,30 @@
 import pandas as pd
 import os as os
 from pathlib import Path
+import xarray as xr
+import apv
 
-path_main = Path().resolve().parent.parent.parent.parent
+path_main = apv.settings.UserPaths.root_folder
+
+
+def make_dirs_if_not_there(folder_paths: list):
+    """checks if the folders exist and creates them if they were not
+
+    Args:
+        folder_pathes (str or list of str): folder pathes
+    """
+
+    for folder_path in folder_paths:
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+            print('Created folder: ' + str(folder_path))
+
 
 def Join_relPath_toHomePath_AndMakeDirsIfNotThere(
         rel_path: str,
         path_main=path_main):
     destiPath = os.path.join(path_main, rel_path)
-    if not os.path.exists(destiPath):
-        os.makedirs(destiPath)
-        print('Created folder: ' + destiPath)
+    make_dirs_if_not_there(destiPath)
     return destiPath
 
 
@@ -61,6 +75,12 @@ def df_from_file(
             if os.path.exists(folder_path):
                 print("check filename: " + str(os.listdir(folder_path)))
     return df
+
+
+def df_from_nc(rel_path: str) -> pd.DataFrame:
+    file_path = os.path.join(path_main, rel_path)
+    ds = xr.open_dataset(file_path)
+    return ds.to_dataframe()
 
 
 def df_export(
