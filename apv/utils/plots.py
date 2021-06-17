@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 import holoviews as hv
 from holoviews import opts
 from bokeh.models import HoverTool
@@ -8,7 +9,79 @@ from bokeh.plotting import show
 import pandas as pd
 from scipy import stats
 import seaborn as sns
-import apv.tools.evaluation
+
+import apv
+
+
+def plot_heatmap(
+        df: pd.DataFrame,
+        x: str,
+        y: str,
+        z: str,
+        x_label=None,
+        y_label=None,
+        z_label=None,
+        cm='inferno'
+) -> Figure:
+    """Creates a Figure containing a seaborn heatmap
+    (side note, relevant for adding drawings: its colored square patches
+     are string-labeled and have always matplotlib coordinates-based
+     edge-lengths equal to 1)
+
+    Args:
+        df (pd.DataFrame): dataframe containing the input data
+        x, y, z (str): header of the df column, whose data is to be used
+        for the x-axis, y-axis, or color-map, respectivly.
+        x_label, y_label, z_label (str, optional): label overwrites.
+        Defaults to None, which results in label = x, y, or z, respectivly.
+        cm (str, optional): color map style. Defaults to 'inferno'.
+
+    Returns:
+        Figure: matplotlib.figure.Figure object, which can be modified
+        or saved later.
+    """
+
+    # prepare and print heatmap-input data for inspection
+    data = df.pivot(y, x, z)
+    print(data)
+
+    # create a figure object, which is a top level container for subplots
+    # and axes objects, which are the subplots (here only one)
+    fig, ax = plt.subplots(1, 1, figsize=(8, 4))
+
+    # axis label overwrites
+    if x_label is None:
+        x_label = x
+    if y_label is None:
+        y_label = y
+    if z_label is None:
+        z_label = z
+
+    sns.heatmap(
+        data,
+        annot=False,
+        linewidths=0,
+        ax=ax,  # only relevant for later if there are more than one ax
+        square=True,
+        xticklabels=2,  # skip every second tick label
+        cmap=cm,
+        cbar_kws={'label': z_label}
+    )
+    ax.invert_yaxis()  # to make it as usual again
+
+    # overwrites x and y labels given by seaborn
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+
+    # x,y tick labels format and rotation
+    xlabels = ['{:.1f}'.format(float(item.get_text()))
+               for item in ax.get_xticklabels()]
+    ylabels = ['{:.2g}'.format(float(item.get_text()))
+               for item in ax.get_yticklabels()]
+    ax.set_xticklabels(xlabels, rotation=0)
+    ax.set_yticklabels(ylabels, rotation=0)
+
+    return fig
 
 
 def comparing_plot_sns(
@@ -57,7 +130,7 @@ def comparing_plot_sns(
 
     # ####################################
     # RMSE and MBE
-    mbe, rel_mbe, rmse, rel_rmse = apv.tools.evaluation.calc_RMSE_MBE(
+    mbe, rel_mbe, rmse, rel_rmse = apv.utils.evaluation.calc_RMSE_MBE(
         df[x], df[y])
 
     # add text annotation

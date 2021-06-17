@@ -1,3 +1,4 @@
+from matplotlib.figure import Figure
 import pandas as pd
 import os as os
 from pathlib import Path
@@ -7,12 +8,14 @@ import apv
 path_main = apv.settings.UserPaths.root_folder
 
 
-def make_dirs_if_not_there(folder_paths: list):
+def make_dirs_if_not_there(folder_paths: list or str):
     """checks if the folders exist and creates them if they were not
 
     Args:
         folder_pathes (str or list of str): folder pathes
     """
+    if type(folder_paths) == str:
+        folder_paths = [folder_paths]
 
     for folder_path in folder_paths:
         if not os.path.exists(folder_path):
@@ -101,13 +104,33 @@ def df_export(
 
 
 def save_fig(
-        fig, file_name, rel_path='', file_formats=['.jpg'],
-        dpi=300, transparent=False):
+        fig: Figure,
+        file_name: str,
+        sub_folder_name='plots',
+        parent_folder_path=apv.settings.UserPaths.results_folder,
+        file_formats=['.jpg'],
+        dpi=300,
+        transparent=False):
+    """Saves a figure with certain default settings into
+    results_folder/sub_folder and makes directories if not existing.
 
-    desti_path = Join_relPath_toHomePath_AndMakeDirsIfNotThere(rel_path)
+    Args:
+        fig (matplotlib.figure.Figure): figure to be saved
+        file_name (str): file name without extension
+        sub_folder_name (str, optional): Defaults to 'plots'.
+        parent_folder_path ([type], optional):
+        Defaults to apv.settings.UserPaths.results_folder.
+        file_formats (list, optional): list of formats. Defaults to ['.jpg'].
+        dpi (int, optional): Resolution (dots per inch). Defaults to 300.
+        transparent (bool, optional): Defaults to False.
+    """
+
+    destination_folder = os.path.join(parent_folder_path, sub_folder_name)
+
+    make_dirs_if_not_there(destination_folder)
 
     for file_format in file_formats:
-        file_path = os.path.join(desti_path, file_name + file_format)
+        file_path = os.path.join(destination_folder, file_name + file_format)
         fig.savefig(file_path, bbox_inches='tight',
                     dpi=dpi, transparent=transparent)
         print('saved fig ' + file_path)

@@ -10,29 +10,29 @@ from pathlib import Path
 # #
 imp.reload(apv)
 
-credentials = apv.tools.weather_data.load_API_credentials()
+credentials = apv.utils.weather_data.load_API_credentials()
 location = apv.resources.locations.Morschenich_AgriPV
 
 # #
 # Download wind and temperature data
 cds_file_name = 'temp_and_wind_data'
 
-apv.tools.weather_data.download_wind_and_T_data(
+apv.utils.weather_data.download_wind_and_T_data(
     credentials,
     file_name=cds_file_name,
     location=location,
     year='2021', month='01', day=['02', '03']
-    )
+)
 
 # #
-df = apv.tools.files_interface.df_from_nc(
+df = apv.utils.files_interface.df_from_nc(
     rel_path='data_downloads/'+cds_file_name+'.nc')
 df
 
 # #
 # Download insolation data
 ads_file_name = 'insolation_data'
-apv.tools.weather_data.download_insolation_data(
+apv.utils.weather_data.download_insolation_data(
     credentials,
     file_name=ads_file_name,
     location=location,
@@ -40,7 +40,7 @@ apv.tools.weather_data.download_insolation_data(
     time_step='1hour')
 
 # #
-df = apv.tools.files_interface.df_from_file(
+df = apv.utils.files_interface.df_from_file(
     rel_path='data_downloads/'+ads_file_name+'.csv',
     skiprows=42, delimiter=';')
 df  # (BNI = DNI)
@@ -49,7 +49,7 @@ df  # (BNI = DNI)
 
 
 result_folder = os.path.join(
-    apv.tools.files_interface.path_main,
+    apv.utils.files_interface.path_main,
     'results',
     'bifacial_radiance_tutorials')
 
@@ -67,8 +67,6 @@ site = apv.resources.locations.Morschenich_AgriPV
 axisofrotationTorqueTube = False
 torqueTube = False
 cellLevelModule = True
-
-
 
 
 # Create a RadianceObj 'object'
@@ -145,10 +143,11 @@ octfile = RadObj.makeOct(RadObj.getfilelist())
 # #
 # import subprocess
 
+
 def view_oct_file_with_rvu(view_fp, oct_fn):
     oct_fn_with_ext = oct_fn + '.oct'
     # view the .oct file with rvu:
-    !rvu -vf $view_fp -e .01 $oct_fn_with_ext
+    !rvu - vf $view_fp - e .01 $oct_fn_with_ext
     # carefull: evgenii said it works only in vs code or jupyter
     # can be solved with the subprocess lib
 
