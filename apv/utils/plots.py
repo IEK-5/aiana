@@ -47,7 +47,8 @@ def plot_heatmap(
 
     # create a figure object, which is a top level container for subplots
     # and axes objects, which are the subplots (here only one)
-    fig, ax = plt.subplots(1, 1, figsize=(8, 4))
+    fig, ax = plt.subplots(1, 1  # , figsize=(8, 4)
+                           )
 
     # axis label overwrites
     if x_label is None:

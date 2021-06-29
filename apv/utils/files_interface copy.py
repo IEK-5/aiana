@@ -1,4 +1,4 @@
-"""This module contains project independent helper functions to
+"""This module contains helper functions to
 - create files or folders,
 - load files into panda data frames or vise versa,
 - save figures into files
@@ -23,7 +23,7 @@ def make_dirs_if_not_there(folder_paths: str or list):
         folder_paths (str or list of strings)
     """
     # unify Arg to list type
-    if type(folder_paths) != list:
+    if type(folder_paths) == str:
         folder_paths = [folder_paths]
 
     # check all and evt. make
@@ -33,7 +33,7 @@ def make_dirs_if_not_there(folder_paths: str or list):
             print('Made folder: ' + str(folder_path))
 
 
-def df_from_file_or_folder(
+def df_from_file(
         rel_path: str, path_main=path_main,
         skiprows=0, index_col=None,
         delimiter='\t|,|;', squeeze=False,
@@ -97,14 +97,9 @@ def df_from_nc(file_path: str) -> pd.DataFrame:
 
 
 def df_export(
-        df: pd.DataFrame,
-        file_name: str,
-        rel_path='',
-        float_format='%1.3e',
-        sep='\t',
-        index=True,
-        header=True
-) -> None:
+        df, file_name, rel_path='',
+        float_format='%1.3e', sep='\t',
+        index=True, header=True):
     '''
     header: to rename columns provide a list of strings here
     float_formats = '%1.2e' for scientific, '%1.2f for float with

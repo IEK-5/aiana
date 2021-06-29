@@ -1,17 +1,21 @@
 # #
+import subprocess
 import bifacial_radiance as br
 import numpy as np
 import os as os
 import importlib as imp
 import apv
 from pathlib import Path
-
+result_folder = os.path.join(
+    apv.utils.files_interface.path_main,
+    'results',
+    'bifacial_radiance_tutorials')
 
 # #
 imp.reload(apv)
 
 credentials = apv.utils.weather_data.load_API_credentials()
-location = apv.resources.locations.Morschenich_AgriPV
+location = apv.settings.Simulation.apv_location
 
 # #
 # Download wind and temperature data
@@ -48,11 +52,6 @@ df  # (BNI = DNI)
 # #
 
 
-result_folder = os.path.join(
-    apv.utils.files_interface.path_main,
-    'results',
-    'bifacial_radiance_tutorials')
-
 # set the time stamp [h/year]  Noon, June 17th.
 timestamp = 4020
 # name of the .oct file
@@ -61,7 +60,7 @@ oct_fn = 'AgriPV'
 # and thus describes the radiance scene
 
 # Location:
-site = apv.resources.locations.Morschenich_AgriPV
+site = apv.resources.locations.APV_Morschenich
 
 # TorqueTube Parameters
 axisofrotationTorqueTube = False
@@ -91,14 +90,22 @@ moduletype = 'PrismSolar'
 numpanels = 2
 sensorsy = 6*numpanels  # this will give 6 sensors per module, 1 per cell
 
+cellLevelModuleParams = {
+    'numcellsx': 6,
+    'numcellsy': 12,
+    'xcell': 0.156,
+    'ycell': 0.156,
+    'xcellgap': 0.02,
+    'ycellgap': 0.02}
+
 moduleDict = RadObj.makeModule(  # if celllevel is defined, x and y aren't needed
     name=moduletype, numpanels=numpanels,
     xgap=0.10, ygap=0.10,
-    cellLevelModuleParams=apv.settings.SimGeometries.cellLevelModuleParams)
+    cellLevelModuleParams=cellLevelModuleParams)
 
 # makeScene creates a .rad file
 scene = RadObj.makeScene(
-    moduletype=moduletype, sceneDict=apv.settings.SimGeometries.sceneDict)
+    moduletype=moduletype, sceneDict=apv.settings.Simulation.geometries.sceneDict)
 # make .oct file
 octfile = RadObj.makeOct(RadObj.getfilelist())
 
@@ -118,9 +125,27 @@ with open(view_fp, 'w') as f:
             + '-vo 0 -va 0 '  # vo/va: clipping plane before/after
             + '-vs 0 -vl 0')  # vs/vl: horizontal/vertical view offset
 
-# view the .oct file with rvu:
-# !rvu -vf $view_fp -e .01 AgriPV.oct
 
+def view_oct_file_with_rvu(view_fp: str, oct_fn: str):
+    """views an .oct file via radiance/bin/rvu.exe
+
+    Args:
+        view_fp (str): file path of the .vp file storing the camera position
+        and angle (e.g. 'C:\\Users\\Username\\agri-PV\\views\\total.vp')
+        oct_fn (str): file name of the .oct file without extension being
+        located in the view_fp parent directory (e.g. 'Demo1')
+    """
+
+    subprocess.call(['rvu', '-vf', view_fp, '-e', '.01', oct_fn+'.oct'])
+
+
+view_oct_file_with_rvu(view_fp, oct_fn)
+
+# #
+view_fp
+view_oct_file_with_rvu(view_fp, 'Demo1')
+
+# #
 # #
 # # Adding different Albedo Sections
 # Add a surface with a specific reflectivity to represent different
@@ -142,17 +167,6 @@ octfile = RadObj.makeOct(RadObj.getfilelist())
 
 # #
 # import subprocess
-
-
-def view_oct_file_with_rvu(view_fp, oct_fn):
-    oct_fn_with_ext = oct_fn + '.oct'
-    # view the .oct file with rvu:
-    !rvu - vf $view_fp - e .01 $oct_fn_with_ext
-    # carefull: evgenii said it works only in vs code or jupyter
-    # can be solved with the subprocess lib
-
-
-view_oct_file_with_rvu(view_fp, oct_fn)
 
 
 # #

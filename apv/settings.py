@@ -6,16 +6,18 @@ from apv import resources as res
 
 
 class UserPaths():
-    root_folder = Path().home().resolve() / 'Documents' / 'agri-PV'
+    """Paths for working folder, radiance folder
+    """
+    root: Path = Path().home().resolve() / 'Documents/agri-PV'
 
     # bifacial_radiance
     # settings.UserPaths.br_folder
-    radiance_files_folder = root_folder / 'radiance_files'
+    bifacial_radiance_files_folder: Path = root / 'bifacial_radiance_files'
 
     # for plots and tables
-    results_folder = root_folder / 'results'
+    results_folder: Path = root / 'results'
     # for weather data
-    data_download_folder = root_folder / 'data_downloads'
+    data_download_folder: Path = root / 'data_downloads'
 
 
 class Simulation():
@@ -31,8 +33,11 @@ class Simulation():
     apv_location = res.locations.APV_Morschenich
 
     # object containing dictionaries for bifacial_radiance geometry-inputs
-    moduletype = 'SUNFARMING'
+    module_type = 'SUNFARMING'
     geometries = res.geometry_presets.APV_Morschenich
 
     # ground
     ground_albedo = 0.25  # grass
+
+    # Spatial resolution between sensors in [m]
+    spatial_resolution = 1

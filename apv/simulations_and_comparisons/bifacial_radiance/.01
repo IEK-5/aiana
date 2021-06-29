@@ -1,0 +1,20 @@
+**************
+*** PID 13000: rvu -vf C:\Users\l.raumann\Documents\agri-PV\results\bifacial_radiance_tutorials\views\total.vp -e .01 AgriPV.oct
+
+rvu: system - cannot open octree file "AgriPV.oct": No such file or directory
+**************
+*** PID 15948: rvu -vf C:\Users\l.raumann\Documents\agri-PV\results\bifacial_radiance_tutorials\views\total.vp -e .01 AgriPV.oct
+
+rvu: system - cannot open octree file "AgriPV.oct": No such file or directory
+**************
+*** PID  7648: rvu -vf C:\Users\l.raumann\Documents\agri-PV\results\bifacial_radiance_tutorials\views\total.vp -e .01 AgriPV.oct
+
+rvu: system - cannot open octree file "AgriPV.oct": No such file or directory
+**************
+*** PID  5460: rvu -vf C:\Users\l.raumann\Documents\agri-PV\results\bifacial_radiance_tutorials\views\total.vp -e .01 AgriPV.oct
+
+rvu: system - cannot open octree file "AgriPV.oct": No such file or directory
+**************
+*** PID 19596: rvu -vf C:\Users\l.raumann\Documents\agri-PV\results\bifacial_radiance_tutorials\views\total.vp -e .01 AgriPV.oct
+
+rvu: system - cannot open octree file "AgriPV.oct": No such file or directory
