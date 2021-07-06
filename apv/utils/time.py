@@ -1,4 +1,24 @@
 import pandas as pd
+from datetime import datetime
+
+
+def get_hour_of_year(date_time_str: str) -> int:
+    """converts str to hours_of_year
+
+    Args:
+        date_time_str (str): format: 'month-day_hour'+'h',
+        e.g.'06-15_10h'
+
+    Returns:
+        int: hours_of_year
+    """
+    date_time_obj = datetime.strptime(date_time_str, '%m-%d_%Hh')
+
+    date_time_str_ref = '01-01_00h'
+    date_time_obj_ref = datetime.strptime(date_time_str_ref, '%m-%d_%Hh')
+
+    delta = date_time_obj - date_time_obj_ref
+    return delta.days * 24 + date_time_obj.hour
 
 
 def column_to_utc_index(

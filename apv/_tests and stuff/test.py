@@ -1,25 +1,161 @@
 # #
-import hjson
-from types import SimpleNamespace
-from pathlib import Path
-import apv
-from apv.settings import Simulation
-import subprocess
-from bifacial_radiance import *
-from pvlib import *
-import numpy as np
-import pandas as pd
-import json
-import os
-import pytictoc
-import apv.resources.locations as loc
-from apv.settings import Simulation as s
-from apv.settings import UserPaths as up
-from apv.utils import files_interface as fi
-from apv.utils import time
-from apv import br_wrapper as br
 import importlib as imp
+from apv import br_wrapper as br
+from apv.utils import time
+from apv.utils import files_interface as fi
+from apv.settings import UserPaths as up
+from apv.settings import Simulation as s
+import apv.resources.locations as loc
+import pytictoc
+import os
+import json
+import pandas as pd
+import numpy as np
+from pvlib import *
+from bifacial_radiance import *
+import subprocess
+from apv.settings import Simulation
+import apv
+from pathlib import Path
+from types import SimpleNamespace
+import hjson
+import this
+from datetime import datetime
+
+
+# #
+def get_hour_of_year(date_time_str: str) -> int:
+    """converts str to hours_of_year
+
+    Args:
+        date_time_str (str): format: 'month-day_hour'+'h',
+        e.g.'06-15_10h'
+
+    Returns:
+        int: hours_of_year
+    """
+    date_time_obj = datetime.strptime(date_time_str, '%m-%d_%Hh')
+
+    date_time_str_ref = '01-01_00h'
+    date_time_obj_ref = datetime.strptime(date_time_str_ref, '%m-%d_%Hh')
+
+    delta = date_time_obj - date_time_obj_ref
+    return delta.days*24
+
+
+get_hour_of_year('06-07_10h')
+
+# #
 imp.reload(apv)
+# #
+
+
+class Test():
+    x = 1
+
+    def __init__(self):
+        self.y = 3
+
+    def method(self):
+        print(self.x)
+        print(self.y)
+
+    @classmethod
+    def class_method(cls):
+        print(cls.x)
+
+    @staticmethod
+    def static_method(string='hi'):
+        print(string)
+
+
+t = Test()
+t.x = 2
+
+print('method:')
+t.method()
+print('class method:')
+t.class_method()
+print('static method:')
+t.static_method()
+
+
+print('x not changed')
+t = Test()
+print('method:')
+t.method()
+print('class method:')
+t.class_method()
+print('static method:')
+t.static_method('hi2')
+# #
+
+
+class Test():
+    x = 1
+
+    def method(self):
+        print(self.x)
+
+    @classmethod
+    def class_method(cls):
+        print(cls.x)
+
+
+t = Test()
+t.x = 2
+print('method:')
+t.method()
+print('class method:')
+t.class_method()
+
+# #
+
+
+class Test():
+    x = 1
+
+    def __init__(self):
+        self.y = 1
+
+    def method(self):
+        print(self.x)
+        # print(self.y)
+
+
+t = Test()
+t2 = Test()
+t2.x = 2
+t.method()
+Test.x = 3
+t.method()
+t2.method()
+
+
+# #
+
+
+class Test():
+    x = 1
+
+    def __init__(self):
+        self.y = 1
+
+    def method(self):
+        print(self.y)
+        # print(self.y)
+
+
+t = Test()
+t2 = Test()
+t2.y = 2
+t.method()
+Test.y = 3
+t.method()
+t2.method()
+t3 = Test()
+t3.method()
+# t2.method()
 # #
 x = br.setup_br(sky_gen_type='gendaylit', cellLevelModule=False, EPW=True)
 # #
@@ -39,7 +175,7 @@ with open(View_scene, 'w') as f:
             + '-vu 0 0 1 '               # vu = view "Up" ???
             + '-vh 110 -vv 45 '          # vh/vv = horizonor
             + '-vs 0 -vl 0')             # vs/vl:
-br.view_oct_file_with_rvu(view_fp=View_scene, oct_file_name='APV_floating')
+br.view_scene(view_fp=View_scene, oct_file_name='APV_floating')
 # !!
 
 br.ground_simulation(radObj=x[0], scene=x[2], oct_file_name=x[1])
