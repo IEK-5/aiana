@@ -18,7 +18,8 @@ def get_hour_of_year(date_time_str: str) -> int:
     date_time_obj_ref = datetime.strptime(date_time_str_ref, '%m-%d_%Hh')
 
     delta = date_time_obj - date_time_obj_ref
-    return delta.days * 24 + date_time_obj.hour
+    hours_of_year = delta.days * 24 + date_time_obj.hour
+    return hours_of_year
 
 
 def column_to_utc_index(

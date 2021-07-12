@@ -23,7 +23,6 @@ import this
 from datetime import datetime
 
 
-# #
 def get_hour_of_year(date_time_str: str) -> int:
     """converts str to hours_of_year
 
@@ -40,11 +39,13 @@ def get_hour_of_year(date_time_str: str) -> int:
     date_time_obj_ref = datetime.strptime(date_time_str_ref, '%m-%d_%Hh')
 
     delta = date_time_obj - date_time_obj_ref
-    return delta.days*24
+    return delta.days * 24 + date_time_obj.hour
 
 
-get_hour_of_year('06-07_10h')
+get_hour_of_year('06-15_9h')
+# #
 
+get_hour_of_year('06-17_12h')
 # #
 imp.reload(apv)
 # #

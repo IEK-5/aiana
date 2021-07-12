@@ -1,10 +1,6 @@
 # #
 """struktur notizen:
 
-
-    gut wäre, wenn man beim brObj instanziieren die Zeit über settings
-    definiert und ob stündlich oder kumuliert
-
     die line_scan_sim ergebnisse dann in
     br_files/results/oct_file_name/hour/scanXY.csv
 
@@ -28,27 +24,50 @@ import bifacial_radiance as br
 # custom
 import apv
 imp.reload(apv.settings)
-
 imp.reload(apv.br_wrapper)
 # #
+simSettings = apv.settings.Simulation()
+
+simSettings.sim_date_time = '06-15_11h'
+simSettings.spatial_resolution = 6
+
 brObj = apv.br_wrapper.BifacialRadianceObj(
-    # sim_date_time,
+    simSettings=simSettings,
     download_EPW=False
 )
-
-brObj.oct_file_name
 # #
 brObj.view_scene()
 # #
-brObj.ground_simulation(accuracy='low')
-# #
-brObj.csv_file_name
-# #
+brObj.ground_simulation()
+
+imp.reload(apv.utils.plots)
 fig = apv.utils.plots.plot_heatmap(
     brObj.df_ground_results, 'x', 'y', 'Wm2Ground',
-    x_label='x [m]',
-    y_label='y [m]',
+    x_label='x [m]', y_label='y [m]',
     z_label='ground insolation [W m$^{-2}$]'
 )
 
-apv.utils.files_interface.save_fig(fig, 'apv_ground')
+apv.utils.files_interface.save_fig(fig, brObj.oct_file_name)
+
+# #
+# loop through hours:
+
+simSettings = apv.settings.Simulation()
+simSettings.spatial_resolution = 0.5
+
+for hour in range(12, 20, 2):
+    simSettings.sim_date_time = '06-15_'+str(hour)+'h'
+    brObj = apv.br_wrapper.BifacialRadianceObj(
+        simSettings=simSettings,
+        download_EPW=False
+    )
+    brObj.ground_simulation()
+
+    fig = apv.utils.plots.plot_heatmap(
+        brObj.df_ground_results, 'x', 'y', 'Wm2Ground',
+        x_label='x [m]', y_label='y [m]',
+        z_label='ground insolation [W m$^{-2}$]',
+        plot_title=simSettings.sim_date_time.replace('_', ' ')
+    )
+
+    apv.utils.files_interface.save_fig(fig, brObj.oct_file_name)

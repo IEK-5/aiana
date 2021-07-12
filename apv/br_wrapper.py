@@ -19,47 +19,43 @@ from apv.settings import UserPaths
 from apv.settings import Simulation as s
 from apv.utils import files_interface as fi
 
-# read simulation settings
-moduleDict = s.geometries.moduleDict
-sceneDict = s.geometries.sceneDict
-
 
 class BifacialRadianceObj:
     """
     Attributes:
+        simSettings (apv.settings.Simulation): simulation settings object
+        --------
+        radObj (bifacial_radiance.RadianceObj): radiance object
+        scene (bifacial_radiance.SceneObj): scene object
+        oct_file_name (str): .oct file name with or without extension
+        met_data(bifacial_radiance.MetObj): meterologic data object
 
-        radObj (bifacial_radiance.RadianceObj):
-        radiance Object, retrieved from running setup_br().
-
-        scene (bifacial_radiance.SceneObj):
-
-        oct_fn (str): .oct file name with or without extension
-
+        the ones above are retrieved from running setup_br()
+        --------
         x_field (int): lengths of the groundscan area in x direction
         according to scene + 2 m each side
         y_field (int): lengths of the groundscan area in y direction
+
+        the ones above are calculated automatically on initialisation
+        but can also be set manually
+        ---> fehlt noch, besser auch grupieren in ein objekt.
     """
 
     def __init__(
             self,
-            sky_gen_type='gendaylit',
-            sim_date_time=s.sim_date_time,
+            simSettings=apv.settings.Simulation(),
             cellLevelModule=False,
-            download_EPW=True
+            download_EPW=True,
     ):
-        self.sky_gen_type = sky_gen_type
+        self.simSettings: apv.settings.Simulation = simSettings
         self.cellLevelModule = cellLevelModule
         self.download_EPW = download_EPW
-        self.sim_date_time = sim_date_time
 
         self.radObj: br.RadianceObj = None
         self.scene: br.SceneObj = None
         self.oct_file_name: str = None
         self.met_data: br.MetObj = None
         self.setup_br()
-
-        self.moduleDict: dict[str, float] = s.geometries.moduleDict
-        self.sceneDict: dict[str, float] = s.geometries.sceneDict
 
         self.x_field: int = 0
         self.y_field: int = 0
@@ -68,8 +64,6 @@ class BifacialRadianceObj:
 
         self.df_ground_results = pd.DataFrame()
         self.csv_file_name = str()
-
-    # read simulation settings
 
     def setup_br(self):
         """
@@ -107,14 +101,15 @@ class BifacialRadianceObj:
         fi.make_dirs_if_not_there(working_folder)
 
         # create Bifacial_Radiance Object with ground
-        self.radObj = br.RadianceObj(s.name, path=str(working_folder))
-        self.radObj.setGround(s.ground_albedo)
+        self.radObj = br.RadianceObj(
+            self.simSettings.name, path=str(working_folder))
+        self.radObj.setGround(self.simSettings.ground_albedo)
 
         # read TMY or EPW data
         if self.download_EPW is True:
             epw_file = self.radObj.getEPW(
-                lat=s.apv_location.latitude,
-                lon=s.apv_location.longitude)
+                lat=self.simSettings.apv_location.latitude,
+                lon=self.simSettings.apv_location.longitude)
             self.met_data = self.radObj.readEPW(epw_file)
         else:
             # ! noch statisch und provisorisch:
@@ -130,33 +125,37 @@ class BifacialRadianceObj:
                 cellLevelModuleParams = configs['cellLevelModuleParams']
                 print(cellLevelModuleParams)
                 self.radObj.makeModule(
-                    name=s.module_type,
-                    **moduleDict,
+                    name=self.simSettings.module_type,
+                    **self.simSettings.moduleDict,
                     cellLevelModuleParams=cellLevelModuleParams)
 
         else:
-            self.radObj.makeModule(name=s.module_type,
-                                   x=moduleDict['x'],
-                                   y=moduleDict['y'],)
+            self.radObj.makeModule(name=self.simSettings.module_type,
+                                   **self.simSettings.moduleDict)
 
         # create structure <To BE DEFINED LATER>
 
         # Create Sky
 
-        timeindex = apv.utils.time.get_hour_of_year(self.sim_date_time)
-        if self.sky_gen_type == 'gendaylit':
-            # if s.start_time == '' and s.end_time == '':
+        timeindex = apv.utils.time.get_hour_of_year(
+            self.simSettings.sim_date_time)
+        if self.simSettings.sky_gen_type == 'gendaylit':
+            # if (self.simSettings.start_time == '') and (
+            # self.simSettings.end_time == ''):
             self.radObj.gendaylit(timeindex=timeindex)
-            self.oct_file_name = self.radObj.name + '_' + self.sim_date_time
-            self.scene = self.radObj.makeScene(moduletype=s.module_type,
-                                               sceneDict=sceneDict)
+            self.oct_file_name = self.radObj.name \
+                + '_' + self.simSettings.sim_date_time
+            self.scene = self.radObj.makeScene(
+                moduletype=self.simSettings.module_type,
+                sceneDict=self.simSettings.sceneDict
+            )
             self.radObj.makeOct(  # self.radObj.getfilelist(), #passiert autom.
                 octname=self.oct_file_name)
 
         '''
             else:
-                begin = int(s.start_time)
-                end = int(s.end_time) + 1
+                begin = int(self.simSettings.start_time)
+                end = int(self.simSettings.end_time) + 1
                 for timeindex in np.arange(begin, end, 1):
                     dni = self.met_data.dni[timeindex]
                     dhi = self.met_data.dhi[timeindex]
@@ -173,21 +172,19 @@ class BifacialRadianceObj:
 
         elif self.sky_gen_type == 'gencumsky':
             self.radObj.genCumSky(epwfile=epw_file)
-            self.scene = self.radObj.makeScene(moduletype=s.module_type,
-                                               sceneDict=sceneDict)
+            self.scene = self.radObj.makeScene(
+                moduletype=self.simSettings.module_type,
+                sceneDict=self.simSettings.sceneDict)
             # bitte mehr kommentieren
             self.radObj.makeOct(self.radObj.getfilelist())
         '''
-        return self.radObj, self.scene, self.oct_file_name, self.met_data
 
-    def view_scene(
-        self, view_name: str = 'total', oct_file_name=None
-    ):
+    def view_scene(self, view_name: str = 'total', oct_file_name=None):
         """views an .oct file via radiance/bin/rvu.exe
 
         Args:
             view_name (str): select from ['total', ...]
-            as defined in settings.scene_camera_dicts
+            as defined in settingself.simSettings.scene_camera_dicts
             a .vp file will be stored with this name in
             e.g. 'C:\\Users\\Username\\agri-PV\\views\\total.vp'
 
@@ -199,10 +196,10 @@ class BifacialRadianceObj:
         if oct_file_name is None:
             oct_file_name = self.oct_file_name
 
-        scd = s.scene_camera_dicts[view_name]
+        scd = self.simSettings.scene_camera_dicts[view_name]
 
         for key in scd:
-            scd[key] = str(scd[key])+' '
+            scd[key] = str(scd[key]) + ' '
 
         view_fp = UserPaths.bifacial_radiance_files_folder / Path(
             'views/'+view_name+'.vp')
@@ -229,8 +226,11 @@ class BifacialRadianceObj:
             ['rvu', '-vf', view_fp, '-e', '.01', oct_file_name+'.oct'])
 
     def _calc_ground_grid_parameters(self):
+        sceneDict = self.simSettings.sceneDict
+        moduleDict = self.simSettings.moduleDict
+
         self.x_field: int = round(
-            sceneDict['nMods'] * moduleDict['x']) + 2*2
+            sceneDict['nMods'] * moduleDict['x']) + 2*4
 
         self.y_field: int = round(
             sceneDict['pitch'] * sceneDict['nRows']
@@ -239,7 +239,7 @@ class BifacialRadianceObj:
         self.ygrid: list[float] = np.arange(
             -self.y_field / 2,
             (self.y_field / 2) + 1,
-            s.spatial_resolution)
+            self.simSettings.spatial_resolution)
 
     def _set_groundscan(self, groundscan: dict) -> dict:
         """Modifies the groundscan dictionary, except for 'ystart',
@@ -255,16 +255,14 @@ class BifacialRadianceObj:
             groundscan (dict)
         """
         groundscan['xstart'] = - self.x_field / 2
-        groundscan['xinc'] = s.spatial_resolution
+        groundscan['xinc'] = self.simSettings.spatial_resolution
         groundscan['zstart'] = 0.05
         groundscan['zinc'] = 0
         groundscan['yinc'] = 0
 
         return groundscan
 
-    # class Simulator():
-
-    def ground_simulation(self, accuracy: str = s.ray_tracing_accuracy):
+    def ground_simulation(self, accuracy: str = None):
         """provides irradiation readings on ground in form of a Dataframe
         as per predefined resolution.
 
@@ -274,6 +272,9 @@ class BifacialRadianceObj:
         Returns:
             [type]: [description]
         """
+
+        if accuracy is None:
+            accuracy = self.simSettings.ray_tracing_accuracy
 
         octfile = self.oct_file_name
         # add extension if not there:
@@ -285,7 +286,7 @@ class BifacialRadianceObj:
             octfile=octfile, name=self.radObj.name)
 
         # number of sensors on ground against y-axis (along x-axis)
-        sensorsy = self.x_field / s.spatial_resolution
+        sensorsy = self.x_field / self.simSettings.spatial_resolution
         if (sensorsy % 2) == 0:
             sensorsy += 1
 
@@ -296,22 +297,22 @@ class BifacialRadianceObj:
         groundscan = self._set_groundscan(groundscan)
 
         print('\n number of sensor points is {:.0f}'.format(
-            sensorsy*len(self.ygrid)))
+            sensorsy * len(self.ygrid)))
         # Analysis and Results on ground - Time elapsed for analysis shown
         tictoc = pytictoc.TicToc()
         tictoc.tic()
         # simulation time-stamp from settings
 
         '''
-        if s.start_time and s.end_time != '':
+        if self.simSettings.start_time and s.end_time != '':
             try:
-                begin = int(s.start_time)
-                end = int(s.end_time) + 1
+                begin = int(self.simSettings.start_time)
+                end = int(self.simSettings.end_time) + 1
             except ValueError:
                 print('begin and end time must be integers between 0 and 8760')
 
         else:
-            begin = int(s.hour_of_year)
+            begin = int(self.simSettings.hour_of_year)
             end = begin + 1
         '''
 
@@ -328,7 +329,7 @@ class BifacialRadianceObj:
                               accuracy=accuracy)
 
         """achtung! geht bisher nur für 'gendaylit'
-        wegen timeindex=s.hour_of_year
+        wegen timeindex=self.simSettings.hour_of_year
         für file name. Werde später filesinterface "append all in folder"
         benutzen, dann hat sich das problem von selbst erledigt.
         """
@@ -349,7 +350,7 @@ class BifacialRadianceObj:
         groundscan = pd.concat(dfs)
         groundscan = groundscan.reset_index()
         groundscan = groundscan.rename(columns={'Wm2Front': 'Wm2Ground'})
-        self.csv_file_name = self.oct_file_name+'.csv'
+        self.csv_file_name = self.oct_file_name + '.csv'
         groundscan.to_csv(self.csv_file_name)
         print('merged file saved as csv file in\
             {} !'.format(UserPaths.results_folder))

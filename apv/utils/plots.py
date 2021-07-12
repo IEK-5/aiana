@@ -21,6 +21,7 @@ def plot_heatmap(
         x_label=None,
         y_label=None,
         z_label=None,
+        plot_title='',
         cm='inferno'
 ) -> Figure:
     """Creates a Figure containing a seaborn heatmap
@@ -49,6 +50,8 @@ def plot_heatmap(
     # and axes objects, which are the subplots (here only one)
     fig, ax = plt.subplots(1, 1  # , figsize=(8, 4)
                            )
+    # plot title
+    ax.set_title(plot_title)
 
     # axis label overwrites
     if x_label is None:
@@ -75,7 +78,7 @@ def plot_heatmap(
     ax.set_ylabel(y_label)
 
     # x,y tick labels format and rotation
-    xlabels = ['{:.1f}'.format(float(item.get_text()))
+    xlabels = ['{:.2g}'.format(float(item.get_text()))
                for item in ax.get_xticklabels()]
     ylabels = ['{:.2g}'.format(float(item.get_text()))
                for item in ax.get_yticklabels()]
