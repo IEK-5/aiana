@@ -262,7 +262,29 @@ class BifacialRadianceObj:
 
         return groundscan
 
-    def ground_simulation(self, accuracy: str = None):
+    def _merge_line_scans(self):
+        """merge results to create one complete ground DataFrame
+        """
+        temp_results: Path = UserPaths.bifacial_radiance_files_folder / Path(
+            'results')
+        df_ground_results: pd.DataFrame = fi.df_from_file_or_folder(
+            temp_results, append_all_in_folder=True)
+
+        df_ground_results = df_ground_results.reset_index()
+        df_ground_results = df_ground_results.rename(
+            columns={'Wm2Front': 'Wm2Ground'})
+        self.csv_file_name = self.oct_file_name + '.csv'
+        df_ground_results.to_csv(self.csv_file_name)
+        print('merged file saved as csv file in\
+            {} !'.format(UserPaths.results_folder))
+        # print('the tail of the data frame shows number of grid \
+        #    points \n' + groundscan.tail())
+
+        print('#### Results:')
+        print(self.df_ground_results)
+        return df_ground_results
+
+    def ground_simulation(self, accuracy: str = None) -> pd.DataFrame:
         """provides irradiation readings on ground in form of a Dataframe
         as per predefined resolution.
 
@@ -328,36 +350,8 @@ class BifacialRadianceObj:
                               backscan,
                               accuracy=accuracy)
 
-        """achtung! geht bisher nur für 'gendaylit'
-        wegen timeindex=self.simSettings.hour_of_year
-        für file name. Werde später filesinterface "append all in folder"
-        benutzen, dann hat sich das problem von selbst erledigt.
-        """
-        # Merge results to create one complete ground DataFrame
-        dfs = []
-        fi.make_dirs_if_not_there(UserPaths.results_folder)
+        df = self._merge_line_scans()
 
-        for i in self.ygrid:
-            print('reading...\n results\\irr_{}_groundscan{:.3f}.csv'
-                  .format(self.radObj.name, i))
-
-            file_to_add = br.load.read1Result(os.path.join(
-                UserPaths.bifacial_radiance_files_folder,
-                'results\\irr_{}_groundscan{:.3f}.csv'
-                .format(self.radObj.name, i)))
-            dfs.append(file_to_add)
-        print('merging files...')
-        groundscan = pd.concat(dfs)
-        groundscan = groundscan.reset_index()
-        groundscan = groundscan.rename(columns={'Wm2Front': 'Wm2Ground'})
-        self.csv_file_name = self.oct_file_name + '.csv'
-        groundscan.to_csv(self.csv_file_name)
-        print('merged file saved as csv file in\
-            {} !'.format(UserPaths.results_folder))
-        # print('the tail of the data frame shows number of grid \
-        #    points \n' + groundscan.tail())
-
-        self.df_ground_results = br.load.read1Result(self.csv_file_name)
-        print('#### Results:')
-        print(self.df_ground_results)
         tictoc.toc()
+
+        return df

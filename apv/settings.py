@@ -8,7 +8,7 @@ class Simulation:
     name = 'APV_Floating'  # also used as first part of the .oct file name
 
     # Spatial resolution between sensors
-    spatial_resolution = 0.5  # [m]
+    spatial_resolution = 10  # 0.5  # [m]
     # ray tracing accuracy used in br.analysisObj.analysis()
     ray_tracing_accuracy = 'high'  # 'low' or 'high'
     # sky generation type
@@ -72,7 +72,7 @@ class Simulation:
         'nRows': 3
     }
 
-    scene_camera_dicts: dict[dict[str, float]] = {
+    scene_camera_dicts: dict = {
         'total': {
             'cam_pos_x': -15,   # depth
             'cam_pos_y': -1.6,   # left / right

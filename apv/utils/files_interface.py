@@ -34,7 +34,7 @@ def make_dirs_if_not_there(folder_paths: str or list):
 
 
 def df_from_file_or_folder(
-        rel_path: str, path_main=path_main,
+        rel_path: Path, path_main=path_main,
         skiprows=0, index_col=None,
         delimiter='\t|,|;', squeeze=False,
         append_all_in_folder=False,

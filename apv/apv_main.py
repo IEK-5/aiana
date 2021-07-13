@@ -12,6 +12,8 @@
     """
 
 
+import pandas as pd
+from pathlib import Path
 from apv.utils import time
 from apv.utils import files_interface as fi
 from apv.settings import UserPaths
@@ -25,21 +27,21 @@ import bifacial_radiance as br
 import apv
 imp.reload(apv.settings)
 imp.reload(apv.br_wrapper)
+
 # #
 simSettings = apv.settings.Simulation()
 
 simSettings.sim_date_time = '06-15_11h'
-simSettings.spatial_resolution = 6
 
 brObj = apv.br_wrapper.BifacialRadianceObj(
     simSettings=simSettings,
-    download_EPW=False
+    download_EPW=True
 )
 # #
 brObj.view_scene()
 # #
 brObj.ground_simulation()
-
+# #
 imp.reload(apv.utils.plots)
 fig = apv.utils.plots.plot_heatmap(
     brObj.df_ground_results, 'x', 'y', 'Wm2Ground',
