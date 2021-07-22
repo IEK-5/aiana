@@ -7,6 +7,7 @@ import subprocess
 # from pvlib import *
 import numpy as np
 import pandas as pd
+import datetime as dt
 import json
 import os
 import pytictoc
@@ -76,12 +77,12 @@ class BifacialRadianceObj:
         3- read TMY data (from EPW or pre-installed)
         4- create module (either cell defined or not)
         5- create structure object
-        5- define number of panels, rows, and columns and final scene (.oct)
+        6- create sky according to modelling model 'gendaylit' or 'gencumsky'
+        7- define number of panels, rows, and columns and final scene (.oct)
 
         Args:
-            sim_type (str, optional): 'gendaylit' for hourly analysis
-            or 'gencumsky' for annual perez model --> wird perez model
-            nicht auch für gendaylit benutzt?
+            sim_type (str, optional): 'gendaylit' for perez hourly analysis
+            or 'gencumsky' for cumulative perez model
 
             cellLevelModule (bool, optional):
             assign module acccording to cell level parameters if true.
@@ -111,6 +112,7 @@ class BifacialRadianceObj:
                 lat=self.simSettings.apv_location.latitude,
                 lon=self.simSettings.apv_location.longitude)
             self.met_data = self.radObj.readEPW(epw_file)
+
         else:
             # ! noch statisch und provisorisch:
             weather_file = UserPaths.bifacial_radiance_files_folder /\
@@ -136,10 +138,10 @@ class BifacialRadianceObj:
         # create structure <To BE DEFINED LATER>
 
         # Create Sky
-
-        timeindex = apv.utils.time.get_hour_of_year(
-            self.simSettings.sim_date_time)
+        # gendaylit using Perez models for direct and diffuse components
         if self.simSettings.sky_gen_type == 'gendaylit':
+            timeindex = apv.utils.time.get_hour_of_year(
+                self.simSettings.sim_date_time)
             # if (self.simSettings.start_time == '') and (
             # self.simSettings.end_time == ''):
             self.radObj.gendaylit(timeindex=timeindex)
@@ -151,6 +153,22 @@ class BifacialRadianceObj:
             )
             self.radObj.makeOct(  # self.radObj.getfilelist(), #passiert autom.
                 octname=self.oct_file_name)
+
+        # gencumsky
+        if self.simSettings.sky_gen_type == 'gencumsky':
+            self.radObj.genCumSky(epwfile=epw_file,
+                                  startdt=self.simSettings.startdt,
+                                  enddt=self.simSettings.enddt)
+
+            self.oct_file_name = self.radObj.name \
+                + '_' + 'Cumulative'
+
+            self.scene = self.radObj.makeScene(
+                moduletype=self.simSettings.module_type,
+                sceneDict=self.simSettings.sceneDict)
+
+            self.radObj.makeOct(self.radObj.getfilelist(),
+                                octname=self.oct_file_name)
 
         '''
             else:
@@ -168,16 +186,7 @@ class BifacialRadianceObj:
                         + '_{}'.format(timeindex)
                     sky = self.radObj.gendaylit2manual(dni, dhi, sunalt, sunaz)
                     self.radObj.makeOct(octname=self.oct_file_name)
-
-
-        elif self.sky_gen_type == 'gencumsky':
-            self.radObj.genCumSky(epwfile=epw_file)
-            self.scene = self.radObj.makeScene(
-                moduletype=self.simSettings.module_type,
-                sceneDict=self.simSettings.sceneDict)
-            # bitte mehr kommentieren
-            self.radObj.makeOct(self.radObj.getfilelist())
-        '''
+                '''
 
     def view_scene(self, view_name: str = 'total', oct_file_name=None):
         """views an .oct file via radiance/bin/rvu.exe
@@ -274,9 +283,13 @@ class BifacialRadianceObj:
         df_ground_results = df_ground_results.rename(
             columns={'Wm2Front': 'Wm2Ground'})
         self.csv_file_name = self.oct_file_name + '.csv'
-        df_ground_results.to_csv(self.csv_file_name)
+        # Path for saving final results
+        fi.make_dirs_if_not_there(UserPaths.results_folder)
+        f_result_path = os.path.join(UserPaths.results_folder,
+                                     self.csv_file_name)
+        df_ground_results.to_csv(f_result_path)
         print('merged file saved as csv file in\
-            {} !'.format(UserPaths.results_folder))
+            \n {}'.format(UserPaths.results_folder))
         # print('the tail of the data frame shows number of grid \
         #    points \n' + groundscan.tail())
 
@@ -355,3 +368,5 @@ class BifacialRadianceObj:
         tictoc.toc()
 
         return df
+
+# #

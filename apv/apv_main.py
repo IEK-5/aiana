@@ -30,8 +30,7 @@ imp.reload(apv.br_wrapper)
 
 # #
 simSettings = apv.settings.Simulation()
-
-simSettings.sim_date_time = '06-15_11h'
+# simSettings.sim_date_time = '06-15_11h'
 
 brObj = apv.br_wrapper.BifacialRadianceObj(
     simSettings=simSettings,

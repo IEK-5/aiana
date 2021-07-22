@@ -85,7 +85,57 @@ def plot_heatmap(
     ax.set_xticklabels(xlabels, rotation=0)
     ax.set_yticklabels(ylabels, rotation=0)
 
+    add_north_arrow(ax=ax)
+
     return fig
+
+
+def add_north_arrow(
+    ax,
+    text="N",
+    xy=(0.95, 0.95),
+    arrow_length=0.2,
+    text_color="black",
+    arrow_color="black",
+    fontsize=20,
+    width=5,
+    headwidth=15,
+    ha="center",
+    va="center",
+):
+    """Add a north arrow to the map.
+
+    Args:
+        ax (returned from plot_heatmap())
+        text (str, optional): Text for north arrow. Defaults to "N".
+        xy (tuple, optional): Location of the north arrow. Each number
+        representing the percentage length of the map from the upper-left
+        cornor.
+        arrow_length (float, optional): Length of the north arrow. Defaults to
+        0.1 (20% length of the map).
+        text_color (str, optional): Text color. Defaults to "black".
+        arrow_color (str, optional): North arrow color. Defaults to "black".
+        fontsize (int, optional): Text font size. Defaults to 20.
+        width (int, optional): Width of the north arrow. Defaults to 5.
+        headwidth (int, optional): head width of the north arrow. Defaults 15.
+        ha (str, optional): Horizontal alignment. Defaults to "center".
+        va (str, optional): Vertical alignment. Defaults to "center".
+    """
+    ax.annotate(
+        text,
+        xy=xy,
+        xytext=(xy[0], xy[1] - arrow_length),
+        color=text_color,
+        arrowprops=dict(facecolor=arrow_color,
+                        width=width,
+                        headwidth=headwidth),
+        ha=ha,
+        va=va,
+        fontsize=fontsize,
+        xycoords=ax.transAxes,
+    )
+
+    return
 
 
 def comparing_plot_sns(
