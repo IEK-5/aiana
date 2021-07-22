@@ -2,20 +2,27 @@
 
 from pathlib import Path
 from apv import resources as res
+import datetime as dt
 
 
 class Simulation:
     name = 'APV_Floating'  # also used as first part of the .oct file name
 
     # Spatial resolution between sensors
-    spatial_resolution = 10  # 0.5  # [m]
+    spatial_resolution = 8  # 0.5  # [m]
     # ray tracing accuracy used in br.analysisObj.analysis()
     ray_tracing_accuracy = 'high'  # 'low' or 'high'
     # sky generation type
-    sky_gen_type = 'gendaylit'  # 'gendaylit' or (later) 'gencumsky'
+    sky_gen_type = 'gencumsky'  # 'gendaylit' or 'gencumsky'
 
     # time settings
     sim_date_time = '06-15_11h'  # used as second part of the .oct file name
+
+    if sky_gen_type == 'gencumsky':
+        # from (year,month,day,hour) default (2001, January, 1st, 00:00)
+        startdt = dt.datetime(2001, 1, 1, 0)
+        # to (year,month,day,hour) default (2001, march, 31st, 23:00)
+        enddt = dt.datetime(2001, 3, 31, 23)
 
     # hour_of_year = 4020
     # start_time = ''
@@ -114,3 +121,5 @@ class UserPaths:
     results_folder: Path = root / 'results'
     # for weather data
     data_download_folder: Path = root / 'data_downloads'
+
+# #
