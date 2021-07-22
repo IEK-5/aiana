@@ -32,10 +32,14 @@ simSettings = apv.settings.Simulation()
 
 simSettings.sim_date_time = '06-15_11h'
 simSettings.checker_board = True
+simSettings.sky_gen_type = 'gendaylit'
+
+weather_file = UserPaths.bifacial_radiance_files_folder / \
+    Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
+
 brObj = apv.br_wrapper.BifacialRadianceObj(
     simSettings=simSettings,
-    download_EPW=False,
-    cellLevelModule=False
+    weather_file=weather_file  # without this, download happens automatically
 )
 
 brObj.view_scene(

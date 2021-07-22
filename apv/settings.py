@@ -20,7 +20,7 @@ class Simulation:
 
     if sky_gen_type == 'gencumsky':
         # from (year,month,day,hour) default (2001, January, 1st, 00:00)
-        startdt = dt.datetime(2001, 1, 1, 0)
+        startdt = dt.datetime(2001, 1, 1, 12)  # TODO for TMY year isn't needed
         # to (year,month,day,hour) default (2001, march, 31st, 23:00)
         enddt = dt.datetime(2001, 3, 31, 23)
 
@@ -56,7 +56,7 @@ class Simulation:
     }
 
     """ moduleDict:
-    x: module width
+    x: module width (and array-copy distance for nMods > 1)
     y: module height (commonly y is > x and the module is fixed along x)
     xgap: Distance between modules in the row
     ygap: Distance between the 2 modules along the collector slope.
@@ -74,12 +74,11 @@ class Simulation:
         'numpanels': 2
     }
 
-    checker_board = False
+    cellLevelModule = False
+    checker_board = False  # if True, module height is doubled
     cellLevelModuleParams = {
-        'numcellsx': 6,
-        'numcellsy': 12,
-        'xcell': 0.156,
-        'ycell': 0.156,
+        'numcellsx': 6,  # has to be an even number at the moment
+        'numcellsy': 12,  # has to be an even number at the moment
         'xcellgap': 0.02,
         'ycellgap': 0.02
     }

@@ -48,12 +48,10 @@ class BifacialRadianceObj:
     def __init__(
             self,
             simSettings=apv.settings.Simulation(),
-            cellLevelModule=False,
-            download_EPW=True,
+            weather_file=None,
     ):
         self.simSettings: apv.settings.Simulation = simSettings
-        self.cellLevelModule = cellLevelModule
-        self.download_EPW = download_EPW
+        self.weather_file = None
 
         self.radObj: br.RadianceObj = None
         self.scene: br.SceneObj = None
@@ -110,31 +108,51 @@ class BifacialRadianceObj:
         self.radObj.setGround(self.simSettings.ground_albedo)
 
         # read TMY or EPW data
-        if self.download_EPW is True:
-            epw_file = self.radObj.getEPW(
+        if self.weather_file is None:
+            self.weather_file = self.radObj.getEPW(
                 lat=self.simSettings.apv_location.latitude,
                 lon=self.simSettings.apv_location.longitude)
-            self.met_data = self.radObj.readEPW(epw_file)
 
-        else:
-            # ! noch statisch und provisorisch:
-            weather_file = UserPaths.bifacial_radiance_files_folder /\
-                Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
-            self.met_data = self.radObj.readWeatherFile(
-                weatherFile=str(weather_file))
+        self.met_data = self.radObj.readWeatherFile(
+            weatherFile=str(self.weather_file))
+
+        # cellLevelModule = 0 und checkboard = 0 --> normal gapless module
+        # cellLevelModule = 1 und checkboard = 0 --> cellLevelModule
+        # cellLevelModule = 0 und checkboard = 1 --> checkboard
+        # cellLevelModule = 1 und checkboard = 1 --> checkboard
 
         # read and create PV module
-        if self.cellLevelModule:
-            self.radObj.makeModule(
-                name=self.simSettings.module_name,
-                **self.simSettings.moduleDict,
-                cellLevelModuleParams=self.simSettings.cellLevelModuleParams)
 
-        elif self.simSettings.checker_board:
+        def _calc_cell_size(mod_size, num_cell, cell_gap):
+            # x = numcellsx * xcell + (numcellsx-1)*xcellgap
+            # xcell = (x - (numcellsx-1)*xcellgap) / numcellsx
+            cell_size = (mod_size - (num_cell-1)*cell_gap) / num_cell
+            return cell_size
+
+        self.simSettings.cellLevelModuleParams['xcell'] = _calc_cell_size(
+            self.simSettings.moduleDict['x'],
+            self.simSettings.cellLevelModuleParams['numcellsx'],
+            self.simSettings.cellLevelModuleParams['xcellgap']
+        )
+        self.simSettings.cellLevelModuleParams['ycell'] = _calc_cell_size(
+            self.simSettings.moduleDict['y'],
+            self.simSettings.cellLevelModuleParams['numcellsy'],
+            self.simSettings.cellLevelModuleParams['ycellgap']
+        )
+
+        if self.simSettings.checker_board:
+            self.simSettings.moduleDict['y'] *= 2
+            self.simSettings.cellLevelModuleParams['numcellsy'] *= 2
             self.radObj.makeModule(name=self.simSettings.module_name,
                                    **self.simSettings.moduleDict,
                                    text=self.make_text_for_checked_module()
                                    )
+
+        elif self.simSettings.cellLevelModule:
+            self.radObj.makeModule(
+                name=self.simSettings.module_name,
+                **self.simSettings.moduleDict,
+                cellLevelModuleParams=self.simSettings.cellLevelModuleParams)
 
         else:
             self.radObj.makeModule(name=self.simSettings.module_name,
@@ -159,9 +177,9 @@ class BifacialRadianceObj:
             self.radObj.makeOct(  # self.radObj.getfilelist(), #passiert autom.
                 octname=self.oct_file_name)
 
-        # gencumsky
+        # gencumskyself.met_data
         if self.simSettings.sky_gen_type == 'gencumsky':
-            self.radObj.genCumSky(epwfile=epw_file,
+            self.radObj.genCumSky(epwfile=self.weather_file,
                                   startdt=self.simSettings.startdt,
                                   enddt=self.simSettings.enddt)
 
@@ -398,13 +416,17 @@ class BifacialRadianceObj:
             (-y*m['numpanels'] / 2.0)-(m['ygap'] * (m['numpanels']-1) / 2.0),
             0  # offset from axis
         )
+
+        # def copypaste_radiance_geometry(
+        # number_of_copies, displacement_x, displacement_y)
+
         # checker board
         text += '-a {} -t {} 0 0 '.format(
-            c['numcellsx']/2,
+            int(c['numcellsx']/2),
             2 * (c['xcell'] + c['xcellgap']))
 
         text += '-a {} -t 0 {} 0 '.format(
-            c['numcellsy'],
+            c['numcellsy']/2,
             2 * (c['ycell'] + c['ycellgap']))
 
         text += '-a {} -t {} {} 0 '.format(
