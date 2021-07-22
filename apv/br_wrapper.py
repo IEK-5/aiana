@@ -169,7 +169,7 @@ class BifacialRadianceObj:
                 + '_' + 'Cumulative'
 
             self.scene = self.radObj.makeScene(
-                moduletype=self.simSettings.module_type,
+                moduletype=self.simSettings.module_name,
                 sceneDict=self.simSettings.sceneDict)
 
             self.radObj.makeOct(self.radObj.getfilelist(),
