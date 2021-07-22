@@ -28,17 +28,19 @@ import apv
 imp.reload(apv.settings)
 imp.reload(apv.br_wrapper)
 
-# #
 simSettings = apv.settings.Simulation()
 
 simSettings.sim_date_time = '06-15_11h'
-
+simSettings.checker_board = True
 brObj = apv.br_wrapper.BifacialRadianceObj(
     simSettings=simSettings,
-    download_EPW=True
+    download_EPW=False,
+    cellLevelModule=False
 )
-# #
-brObj.view_scene()
+
+brObj.view_scene(
+    view_name='module_zoom'
+)
 # #
 brObj.ground_simulation()
 # #

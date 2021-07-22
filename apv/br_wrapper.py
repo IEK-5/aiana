@@ -1,9 +1,11 @@
+# #
 ''' Called by main.py with the needed parameters to set the neccessary
 objects, create scene and run simulation with Bifacial_Radiance according
 to presets in settings.py
 '''
 # import needed packages
 import subprocess
+from bifacial_radiance.main import RadianceObj
 # from pvlib import *
 import numpy as np
 import pandas as pd
@@ -18,6 +20,7 @@ import apv
 from apv.settings import UserPaths
 from apv.settings import Simulation as s
 from apv.utils import files_interface as fi
+# #
 
 
 class BifacialRadianceObj:
@@ -119,18 +122,20 @@ class BifacialRadianceObj:
                 weatherFile=str(weather_file))
 
         # read and create PV module
-        if self.cellLevelModule is True:
-            with open('configs\apv_morschenich.json') as f:
-                configs = json.load(f)
-                cellLevelModuleParams = configs['cellLevelModuleParams']
-                print(cellLevelModuleParams)
-                self.radObj.makeModule(
-                    name=self.simSettings.module_type,
-                    **self.simSettings.moduleDict,
-                    cellLevelModuleParams=cellLevelModuleParams)
+        if self.cellLevelModule:
+            self.radObj.makeModule(
+                name=self.simSettings.module_name,
+                **self.simSettings.moduleDict,
+                cellLevelModuleParams=self.simSettings.cellLevelModuleParams)
+
+        elif self.simSettings.checker_board:
+            self.radObj.makeModule(name=self.simSettings.module_name,
+                                   **self.simSettings.moduleDict,
+                                   text=self.make_text_for_checked_module()
+                                   )
 
         else:
-            self.radObj.makeModule(name=self.simSettings.module_type,
+            self.radObj.makeModule(name=self.simSettings.module_name,
                                    **self.simSettings.moduleDict)
 
         # create structure <To BE DEFINED LATER>
@@ -146,7 +151,7 @@ class BifacialRadianceObj:
             self.oct_file_name = self.radObj.name \
                 + '_' + self.simSettings.sim_date_time
             self.scene = self.radObj.makeScene(
-                moduletype=self.simSettings.module_type,
+                moduletype=self.simSettings.module_name,
                 sceneDict=self.simSettings.sceneDict
             )
             self.radObj.makeOct(  # self.radObj.getfilelist(), #passiert autom.
@@ -355,3 +360,53 @@ class BifacialRadianceObj:
         tictoc.toc()
 
         return df
+
+    def make_text_for_checked_module(self) -> str:
+        c = self.simSettings.cellLevelModuleParams
+        m = self.simSettings.moduleDict
+
+        # copied from br.main.RadianceObj.makeModule() and modified:
+        x = c['numcellsx']*c['xcell'] + (c['numcellsx']-1)*c['xcellgap']
+        y = c['numcellsy']*c['ycell'] + (c['numcellsy']-1)*c['ycellgap']
+
+        # center cell -
+        if c['numcellsx'] % 2 == 0:
+            cc = c['xcell']/2.0
+            print(
+                "Module was shifted by {} in X to avoid sensors on air".format(
+                    cc))
+
+        text = '! genbox black cellPVmodule {} {} {} | '.format(
+            c['xcell'], c['ycell'],
+            0.02  # module thickness
+        )
+        text += 'xform -t {} {} {} '.format(
+            -x/2.0 + cc,
+            (-y*m['numpanels'] / 2.0)-(m['ygap'] * (m['numpanels']-1) / 2.0),
+            0  # offset from axis
+        )
+        # checker board
+        text += '-a {} -t {} 0 0 '.format(
+            c['numcellsx']/2,
+            2 * (c['xcell'] + c['xcellgap']))
+
+        text += '-a {} -t 0 {} 0 '.format(
+            c['numcellsy'],
+            2 * (c['ycell'] + c['ycellgap']))
+
+        text += '-a {} -t {} {} 0 '.format(
+            2,
+            c['xcell'] + c['xcellgap'],
+            c['ycell'] + c['ycellgap'])
+
+        # copy module in y direction
+        text += '-a {} -t 0 {} 0'.format(m['numpanels'], y+m['ygap'])
+
+        # OPACITY CALCULATION
+        packagingfactor = np.round(
+            (c['xcell']*c['ycell']*c['numcellsx']*c['numcellsy'])/(x*y), 2
+        )
+        print("This is a Cell-Level detailed module with Packaging " +
+              "Factor of {} %".format(packagingfactor))
+
+        return text

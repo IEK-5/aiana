@@ -28,13 +28,27 @@ class Simulation:
     # ground
     ground_albedo = 0.25  # grass
 
-    module_type = 'SUNFARMING'
+    module_name = 'SUNFARMING'
 
     # bifacial_radiance geometry-inputs
 
-    """
+    """ sceneDict:
+    tilt: panel tilt [degree]
+    pitch: distance between two adjacent rows [m]
+    hub_height: vert. distance: ground to modules [m]
+    azimuth: panel face direction [degree]
+    nMods: modules per row (along x in moduleDict) [-]
+    nRows: number of rows [-] """
+    sceneDict = {
+        'tilt': 20,
+        'pitch': 10,
+        'hub_height': 4.5,
+        'azimuth': 180,
+        'nMods': 10,
+        'nRows': 3
+    }
 
-    ### moduleDict:
+    """ moduleDict:
     x: module width
     y: module height (commonly y is > x and the module is fixed along x)
     xgap: Distance between modules in the row
@@ -43,17 +57,7 @@ class Simulation:
         torquetube and the modules. If there is not a module, zgap
         is the distance between the module and the axis of rotation
         (relevant for tracking systems).
-    numpanels: number of panels along y
-
-    ### sceneDict:
-    tilt: panel tilt [degree]
-    pitch: distance between two adjacent rows [m]
-    hub_height: vert. distance: ground to modules [m]
-    azimuth: panel face direction [degree]
-    nMods: modules per row (along x in moduleDict) [-]
-    nRows: number of rows [-]
-
-    """
+    numpanels: number of panels along y """
     moduleDict = {
         'x': 0.998,
         'y': 1.980,
@@ -63,13 +67,14 @@ class Simulation:
         'numpanels': 2
     }
 
-    sceneDict = {
-        'tilt': 20,
-        'pitch': 10,
-        'hub_height': 4.5,
-        'azimuth': 180,
-        'nMods': 10,
-        'nRows': 3
+    checker_board = False
+    cellLevelModuleParams = {
+        'numcellsx': 6,
+        'numcellsy': 12,
+        'xcell': 0.156,
+        'ycell': 0.156,
+        'xcellgap': 0.02,
+        'ycellgap': 0.02
     }
 
     scene_camera_dicts: dict = {
@@ -81,7 +86,17 @@ class Simulation:
             'view_direction_y': 0,
             'view_direction_z': -0.519234,
             'horizontal_view_angle': 110,  # [degree]
-            'vertical_view_angle': 45  # [degree]
+            'vertical_view_angle': 60  # [degree]
+        },
+        'module_zoom': {
+            'cam_pos_x': -5,   # depth
+            'cam_pos_y': -1.1,   # left / right
+            'cam_pos_z': 6.5,     # height
+            'view_direction_x': 1.581,
+            'view_direction_y': 0,
+            'view_direction_z': -1.919234,
+            'horizontal_view_angle': 110,  # [degree]
+            'vertical_view_angle': 60  # [degree]
         }
     }
 
