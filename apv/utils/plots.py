@@ -93,7 +93,7 @@ def plot_heatmap(
 def add_north_arrow(
     ax,
     text="N",
-    xy=(0.95, 0.95),
+    xy=(0.95, 1.5),
     arrow_length=0.2,
     text_color="black",
     arrow_color="black",

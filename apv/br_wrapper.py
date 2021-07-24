@@ -344,7 +344,7 @@ class BifacialRadianceObj:
             octfile=octfile, name=self.radObj.name)
 
         # number of sensors on ground against y-axis (along x-axis)
-        sensorsy = self.x_field / self.simSettings.spatial_resolution
+        sensorsy = np.round(self.x_field / self.simSettings.spatial_resolution)
         if (sensorsy % 2) == 0:
             sensorsy += 1
 
