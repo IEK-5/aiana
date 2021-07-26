@@ -9,7 +9,7 @@ class Simulation:
     name = 'APV_Floating'  # also used as first part of the .oct file name
 
     # Spatial resolution between sensors
-    spatial_resolution = 5  # 0.5  # [m]
+    spatial_resolution = 0.25  # [m]
     # ray tracing accuracy used in br.analysisObj.analysis()
     ray_tracing_accuracy = 'high'  # 'low' or 'high'
     # sky generation type

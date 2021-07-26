@@ -5,7 +5,6 @@ to presets in settings.py
 '''
 # import needed packages
 import subprocess
-from bifacial_radiance.main import RadianceObj
 # from pvlib import *
 import numpy as np
 import pandas as pd
@@ -19,7 +18,6 @@ import bifacial_radiance as br
 
 import apv
 from apv.settings import UserPaths
-from apv.settings import Simulation as s
 from apv.utils import files_interface as fi
 # #
 
@@ -57,7 +55,6 @@ class BifacialRadianceObj:
         self.scene: br.SceneObj = None
         self.oct_file_name: str = None
         self.met_data: br.MetObj = None
-        self.setup_br()
 
         self.x_field: int = 0
         self.y_field: int = 0
@@ -66,6 +63,8 @@ class BifacialRadianceObj:
 
         self.df_ground_results = pd.DataFrame()
         self.csv_file_name = str()
+
+        self.setup_br()
 
     def setup_br(self):
         """
@@ -210,6 +209,8 @@ class BifacialRadianceObj:
                     sky = self.radObj.gendaylit2manual(dni, dhi, sunalt, sunaz)
                     self.radObj.makeOct(octname=self.oct_file_name)
                 '''
+        # placed here to allow for access also without a simulation run
+        self.csv_file_name = self.oct_file_name + '.csv'
 
     def view_scene(self, view_name: str = 'total', oct_file_name=None):
         """views an .oct file via radiance/bin/rvu.exe
@@ -305,7 +306,6 @@ class BifacialRadianceObj:
         df_ground_results = df_ground_results.reset_index()
         df_ground_results = df_ground_results.rename(
             columns={'Wm2Front': 'Wm2Ground'})
-        self.csv_file_name = self.oct_file_name + '.csv'
         # Path for saving final results
         fi.make_dirs_if_not_there(UserPaths.results_folder)
         f_result_path = os.path.join(UserPaths.results_folder,
@@ -333,6 +333,11 @@ class BifacialRadianceObj:
 
         if accuracy is None:
             accuracy = self.simSettings.ray_tracing_accuracy
+
+        # clear temporary line scan results from bifacial_results_folder
+        temp_results = UserPaths.bifacial_radiance_files_folder / Path(
+            'results')
+        fi.clear_folder_content(temp_results)
 
         octfile = self.oct_file_name
         # add extension if not there:
@@ -391,6 +396,29 @@ class BifacialRadianceObj:
         tictoc.toc()
 
         return df
+
+    def plot_ground_insolation(self, df=None):
+        """plots the ground insolation as a heat map and saves it into
+            the results/plots folder.
+
+        Args:
+            df (pd.DataFrame): if None, a df is created
+            from the csv file name stored in an instance of this class.
+            Defaults to None.
+        """
+
+        if df is None:
+            df = apv.utils.files_interface.df_from_file_or_folder(
+                apv.settings.UserPaths.results_folder / Path(
+                    self.csv_file_name))
+
+        fig = apv.utils.plots.plot_heatmap(
+            df, 'y', 'x', 'Wm2Ground',
+            x_label='x [m]', y_label='y [m]',
+            z_label='ground insolation [W m$^{-2}$]'
+        )
+
+        apv.utils.files_interface.save_fig(fig, self.oct_file_name)
 
     def make_text_for_checked_module(self) -> str:
         c = self.simSettings.cellLevelModuleParams

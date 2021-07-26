@@ -11,6 +11,7 @@ from scipy import stats
 import seaborn as sns
 
 import apv
+from apv.settings import Simulation as simSettings
 
 
 def plot_heatmap(
@@ -61,13 +62,19 @@ def plot_heatmap(
     if z_label is None:
         z_label = z
 
+    ticklabels_skip_count_number = max(
+        1,
+        int(2/simSettings.spatial_resolution)
+    )
+
     sns.heatmap(
         data,
         annot=False,
         linewidths=0,
         ax=ax,  # only relevant for later if there are more than one ax
         square=True,
-        xticklabels=2,  # skip every second tick label
+        xticklabels=ticklabels_skip_count_number,
+        yticklabels=ticklabels_skip_count_number,
         cmap=cm,
         cbar_kws={'label': z_label}
     )
@@ -76,7 +83,6 @@ def plot_heatmap(
     # overwrites x and y labels given by seaborn
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
-
     # x,y tick labels format and rotation
     xlabels = ['{:.2g}'.format(float(item.get_text()))
                for item in ax.get_xticklabels()]

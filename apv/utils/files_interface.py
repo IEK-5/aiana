@@ -15,6 +15,12 @@ from apv.settings import UserPaths as UserPaths
 path_main = apv.settings.UserPaths.root
 
 
+def clear_folder_content(folder_path):
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+        os.unlink(file_path)
+
+
 def make_dirs_if_not_there(folder_paths: str or list):
     """Checks if the folder/s exist and makes it/them
     if they are not there yet.

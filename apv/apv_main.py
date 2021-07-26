@@ -12,17 +12,9 @@
     """
 
 
-import seaborn as sns
-import pandas as pd
 from pathlib import Path
-from apv.utils import time
-from apv.utils import files_interface as fi
 from apv.settings import UserPaths
-from apv.settings import Simulation as s
-import subprocess
 import importlib as imp
-import os
-import bifacial_radiance as br
 
 # custom
 import apv
@@ -40,36 +32,19 @@ weather_file = UserPaths.bifacial_radiance_files_folder / \
 
 brObj = apv.br_wrapper.BifacialRadianceObj(
     simSettings=simSettings,
-    weather_file=weather_file  # without this, download happens automatically
+    # weather_file=weather_file  # without this, download happens automatically
 )
-
+# #
 brObj.view_scene(
     view_name='module_zoom'
 )
 # #
-df = brObj.ground_simulation()
-# #
-data = df.pivot('y', 'x', 'Wm2Ground')
-print(data)
-# #
-sns.heatmap(
-    data,
-    annot=False,
-    linewidths=0,
-    # only relevant for later if there are more than one ax
-    square=True,
-    xticklabels=2,  # skip every second tick label
+# can take hours depending on the settings !
+brObj.ground_simulation()
 
-)
 # #
-imp.reload(apv.utils.plots)
-fig = apv.utils.plots.plot_heatmap(
-    df, 'y', 'x', 'Wm2Ground',
-    x_label='x [m]', y_label='y [m]',
-    z_label='ground insolation [W m$^{-2}$]'
-)
+brObj.plot_ground_insolation()
 
-apv.utils.files_interface.save_fig(fig, brObj.oct_file_name)
 
 # #
 # loop through hours:
