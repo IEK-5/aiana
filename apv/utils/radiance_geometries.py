@@ -1,4 +1,5 @@
 import numpy as np
+from apv import settings
 from apv.settings import Simulation as simSettingsObj
 
 
@@ -53,5 +54,41 @@ def checked_module(simSettings: simSettingsObj) -> str:
     )
     print("This is a Cell-Level detailed module with Packaging " +
           "Factor of {} %".format(packagingfactor))
+
+    return text
+
+
+def make_text_EW(simSettings: simSettingsObj) -> str:
+    """creates needed text needed in makemodule() to create E-W. Azimuth angle
+    must be 90! and number of panels must be 2!
+
+    Args:
+        simSettings:
+        name ([str]): module_type
+        moduleDict ([dict]): inherited from br_setup and defined in settings.py
+        sceneDict  ([dict]): inherited from br_setup and defined in settings.py
+
+    Returns:
+        text [str]: [text to rotate second panel to create E-W (270 - 90)]
+    """
+    c = simSettings.sceneDict
+    m = simSettings.moduleDict
+    name = settings.Simulation.sim_name
+    x = m['x']
+    y = m['y']
+    z = 0.02
+    Ny = m['numpanels']  # currently must be 2
+    ygap = m['ygap']
+    offsetfromaxis = 0.01
+    rotation_angle = 2*(90 - c['tilt']) + 180
+
+    name2 = str(name).strip().replace(' ', '_')
+    text = '! genbox black {} {} {} {} '.format(name2, x, y, z)
+    text += '| xform -t {} {} {} '.format(-x/2.0,
+                                          (-y*Ny/2.0)-(ygap*(Ny-1)/2.0),
+                                          offsetfromaxis)
+
+    text += '-a {} -t 0 {} 0 -rx {}'.format(Ny, y+ygap, rotation_angle)
+    packagingfactor = 100.0
 
     return text
