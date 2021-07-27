@@ -13,6 +13,7 @@ import json
 import os
 import pytictoc
 from pathlib import Path
+from tqdm.auto import trange
 
 import bifacial_radiance as br
 
@@ -59,7 +60,6 @@ class BifacialRadianceObj:
         self.x_field: int = 0
         self.y_field: int = 0
         self.ygrid: list[int] = []
-        self._calc_ground_grid_parameters()
 
         self.df_ground_results = pd.DataFrame()
         self.csv_file_name = str()
@@ -72,6 +72,7 @@ class BifacialRadianceObj:
 
         Creates the scene according to parameters and presets defined in
         settings.py - scene created as follows:
+        0- adjust settings
         1- create Radiance-Object
         2- setting albedo of ground
         3- read TMY data (from EPW or pre-installed)
@@ -96,6 +97,9 @@ class BifacialRadianceObj:
             scene:
             metdata: Meteorological csv data
         """
+
+        self.simSettings = apv.utils.settings_adjuster.adjust_settings(
+            self.simSettings)
 
         working_folder = UserPaths.bifacial_radiance_files_folder
         # check working folder
@@ -122,26 +126,7 @@ class BifacialRadianceObj:
 
         # read and create PV module
 
-        def _calc_cell_size(mod_size, num_cell, cell_gap):
-            # x = numcellsx * xcell + (numcellsx-1)*xcellgap
-            # xcell = (x - (numcellsx-1)*xcellgap) / numcellsx
-            cell_size = (mod_size - (num_cell-1)*cell_gap) / num_cell
-            return cell_size
-
-        self.simSettings.cellLevelModuleParams['xcell'] = _calc_cell_size(
-            self.simSettings.moduleDict['x'],
-            self.simSettings.cellLevelModuleParams['numcellsx'],
-            self.simSettings.cellLevelModuleParams['xcellgap']
-        )
-        self.simSettings.cellLevelModuleParams['ycell'] = _calc_cell_size(
-            self.simSettings.moduleDict['y'],
-            self.simSettings.cellLevelModuleParams['numcellsy'],
-            self.simSettings.cellLevelModuleParams['ycellgap']
-        )
-
         if self.simSettings.checker_board:
-            self.simSettings.moduleDict['y'] *= 2
-            self.simSettings.cellLevelModuleParams['numcellsy'] *= 2
 
             rad_text = apv.utils.radiance_geometries.checked_module(
                 self.simSettings
@@ -216,6 +201,27 @@ class BifacialRadianceObj:
         # placed here to allow for access also without a simulation run
         self.csv_file_name = self.oct_file_name + '.csv'
 
+        # calculate ground grid parameters
+        sceneDict = self.simSettings.sceneDict
+        moduleDict = self.simSettings.moduleDict
+        cellLevelModuleParams = self.simSettings.cellLevelModuleParams
+        if self.simSettings.checker_board:
+            self.x_field = cellLevelModuleParams['xcell']*4
+            self.y_field = cellLevelModuleParams['ycell']*4
+
+        else:
+            self.x_field: int = round(
+                sceneDict['nMods'] * moduleDict['x']) + 2*4
+
+            self.y_field: int = round(
+                sceneDict['pitch'] * sceneDict['nRows']
+                + moduleDict['y'] * moduleDict['numpanels']) + 2*2
+
+        self.ygrid: list[float] = np.arange(
+            -self.y_field / 2,
+            (self.y_field / 2) + 1,
+            self.simSettings.spatial_resolution)
+
     def view_scene(self, view_name: str = 'total', oct_file_name=None):
         """views an .oct file via radiance/bin/rvu.exe
 
@@ -262,21 +268,88 @@ class BifacialRadianceObj:
         subprocess.call(
             ['rvu', '-vf', view_fp, '-e', '.01', oct_file_name+'.oct'])
 
-    def _calc_ground_grid_parameters(self):
-        sceneDict = self.simSettings.sceneDict
-        moduleDict = self.simSettings.moduleDict
+    def ground_simulation(self, accuracy: str = None) -> pd.DataFrame:
+        """provides irradiation readings on ground in form of a Dataframe
+        as per predefined resolution.
 
-        self.x_field: int = round(
-            sceneDict['nMods'] * moduleDict['x']) + 2*4
+        Args:
+            accuracy (str): 'high' or 'low'
 
-        self.y_field: int = round(
-            sceneDict['pitch'] * sceneDict['nRows']
-            + moduleDict['y'] * moduleDict['numpanels']) + 2*2
+        Returns:
+            [type]: [description]
+        """
 
-        self.ygrid: list[float] = np.arange(
-            -self.y_field / 2,
-            (self.y_field / 2) + 1,
-            self.simSettings.spatial_resolution)
+        if accuracy is None:
+            accuracy = self.simSettings.ray_tracing_accuracy
+
+        # clear temporary line scan results from bifacial_results_folder
+        temp_results = UserPaths.bifacial_radiance_files_folder / Path(
+            'results')
+        fi.clear_folder_content(temp_results)
+
+        octfile = self.oct_file_name
+        # add extension if not there:
+        if octfile[-4] != '.oct':
+            octfile += '.oct'
+
+        # instantiate analysis
+        analysis = br.AnalysisObj(
+            octfile=octfile, name=self.radObj.name)
+
+        # number of sensors on ground against y-axis (along x-axis)
+        sensorsy = np.round(self.x_field / self.simSettings.spatial_resolution)
+        if (sensorsy % 2) == 0:
+            sensorsy += 1
+
+        # start rough scan to define ground afterwards
+        groundscan, backscan = analysis.moduleAnalysis(scene=self.scene,
+                                                       sensorsy=sensorsy)
+
+        groundscan = self._set_groundscan(groundscan)
+
+        # for now we need only ground so this will save sim time:
+        for key in backscan:
+            backscan[key] = 0
+
+        print('\n number of sensor points is {:.0f}'.format(
+            sensorsy * len(self.ygrid)))
+        # Analysis and Results on ground - Time elapsed for analysis shown
+        tictoc = pytictoc.TicToc()
+        tictoc.tic()
+        # simulation time-stamp from settings
+
+        '''
+        if self.simSettings.start_time and s.end_time != '':
+            try:
+                begin = int(self.simSettings.start_time)
+                end = int(self.simSettings.end_time) + 1
+            except ValueError:
+                print('begin and end time must be integers between 0 and 8760')
+
+        else:
+            begin = int(self.simSettings.hour_of_year)
+            end = begin + 1
+        '''
+
+        # for timeindex in np.arange(begin, end, 1):
+        # oct_file_name = radObj.name + '_{}'.format(timeindex)
+        for i in trange(len(self.ygrid)):
+            y_start = self.ygrid[i]
+            groundscan['ystart'] = y_start
+            temp_name = self.radObj.name + "_groundscan" \
+                + '{:.3f}'.format(y_start)
+
+            analysis.analysis(octfile,
+                              temp_name,
+                              groundscan,
+                              backscan,
+                              accuracy=accuracy)
+
+        df = self._merge_line_scans()
+
+        tictoc.toc()
+
+        return df
 
     def _set_groundscan(self, groundscan: dict) -> dict:
         """Modifies the groundscan dictionary, except for 'ystart',
@@ -323,83 +396,6 @@ class BifacialRadianceObj:
         print('#### Results:')
         print(self.df_ground_results)
         return df_ground_results
-
-    def ground_simulation(self, accuracy: str = None) -> pd.DataFrame:
-        """provides irradiation readings on ground in form of a Dataframe
-        as per predefined resolution.
-
-        Args:
-            accuracy (str): 'high' or 'low'
-
-        Returns:
-            [type]: [description]
-        """
-
-        if accuracy is None:
-            accuracy = self.simSettings.ray_tracing_accuracy
-
-        # clear temporary line scan results from bifacial_results_folder
-        temp_results = UserPaths.bifacial_radiance_files_folder / Path(
-            'results')
-        fi.clear_folder_content(temp_results)
-
-        octfile = self.oct_file_name
-        # add extension if not there:
-        if octfile[-4] != '.oct':
-            octfile += '.oct'
-
-        # instantiate analysis
-        analysis = br.AnalysisObj(
-            octfile=octfile, name=self.radObj.name)
-
-        # number of sensors on ground against y-axis (along x-axis)
-        sensorsy = np.round(self.x_field / self.simSettings.spatial_resolution)
-        if (sensorsy % 2) == 0:
-            sensorsy += 1
-
-        # start rough scan to define ground afterwards
-        groundscan, backscan = analysis.moduleAnalysis(scene=self.scene,
-                                                       sensorsy=sensorsy)
-
-        groundscan = self._set_groundscan(groundscan)
-
-        print('\n number of sensor points is {:.0f}'.format(
-            sensorsy * len(self.ygrid)))
-        # Analysis and Results on ground - Time elapsed for analysis shown
-        tictoc = pytictoc.TicToc()
-        tictoc.tic()
-        # simulation time-stamp from settings
-
-        '''
-        if self.simSettings.start_time and s.end_time != '':
-            try:
-                begin = int(self.simSettings.start_time)
-                end = int(self.simSettings.end_time) + 1
-            except ValueError:
-                print('begin and end time must be integers between 0 and 8760')
-
-        else:
-            begin = int(self.simSettings.hour_of_year)
-            end = begin + 1
-        '''
-
-        # for timeindex in np.arange(begin, end, 1):
-        # oct_file_name = radObj.name + '_{}'.format(timeindex)
-        for i in self.ygrid:
-            groundscan['ystart'] = i
-            temp_name = self.radObj.name + "_groundscan" + '{:.3f}'.format(i)
-
-            analysis.analysis(octfile,
-                              temp_name,
-                              groundscan,
-                              backscan,
-                              accuracy=accuracy)
-
-        df = self._merge_line_scans()
-
-        tictoc.toc()
-
-        return df
 
     def plot_ground_insolation(self, df=None):
         """plots the ground insolation as a heat map and saves it into
