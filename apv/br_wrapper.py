@@ -103,7 +103,7 @@ class BifacialRadianceObj:
 
         # create Bifacial_Radiance Object with ground
         self.radObj = br.RadianceObj(
-            self.simSettings.name, path=str(working_folder))
+            self.simSettings.sim_name, path=str(working_folder))
         self.radObj.setGround(self.simSettings.ground_albedo)
 
         # read TMY or EPW data

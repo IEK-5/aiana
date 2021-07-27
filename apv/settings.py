@@ -6,7 +6,7 @@ import datetime as dt
 
 
 class Simulation:
-    name = 'APV_Floating'  # also used as first part of the .oct file name
+    sim_name = 'APV_Floating'  # also used as first part of the .oct file name
 
     # Spatial resolution between sensors
     spatial_resolution = 0.25  # [m]
