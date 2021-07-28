@@ -74,21 +74,22 @@ def make_text_EW(simSettings: simSettingsObj) -> str:
     c = simSettings.sceneDict
     m = simSettings.moduleDict
     name = settings.Simulation.sim_name
-    x = m['x']
-    y = m['y']
+
     z = 0.02
     Ny = m['numpanels']  # currently must be 2
-    ygap = m['ygap']
     offsetfromaxis = 0.01
     rotation_angle = 2*(90 - c['tilt']) + 180
 
     name2 = str(name).strip().replace(' ', '_')
-    text = '! genbox black {} {} {} {} '.format(name2, x, y, z)
-    text += '| xform -t {} {} {} '.format(-x/2.0,
-                                          (-y*Ny/2.0)-(ygap*(Ny-1)/2.0),
-                                          offsetfromaxis)
+    text = '! genbox black {} {} {} {} '.format(name2, m['x'], m['y'], z)
+    text += '| xform -t {} {} {} '.format(
+        -m['x']/2.0,
+        (-m['y']*Ny/2.0)-(m['ygap']*(Ny-1)/2.0),
+        offsetfromaxis
+    )
 
-    text += '-a {} -t 0 {} 0 -rx {}'.format(Ny, y+ygap, rotation_angle)
+    text += '-a {} -t 0 {} 0 -rx {}'.format(
+        Ny, m['y']+m['ygap'], rotation_angle)
     packagingfactor = 100.0
 
     return text

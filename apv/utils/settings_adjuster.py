@@ -4,9 +4,12 @@ from apv.settings import Simulation as simSettingsObj
 
 def adjust_settings(simSettings: simSettingsObj) -> simSettingsObj:
 
-    # for checkerboard on cell level calculate only one module
-    # and enlarge module in y direction to have the same PV output
-    if simSettings.checker_board:
+    print('\n##### ' + simSettings.sim_mode.replace('_', ' ')
+          + ' simulation mode #####\n')
+
+    if simSettings.sim_mode == 'cell_level_checker_board':
+        # for checkerboard on cell level calculate only one module
+        # and enlarge module in y direction to have the same PV output
         simSettings.moduleDict['y'] *= 2
         simSettings.cellLevelModuleParams['numcellsy'] *= 2
         simSettings.sceneDict['nRows'] = 1

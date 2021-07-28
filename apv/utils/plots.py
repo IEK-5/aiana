@@ -81,6 +81,7 @@ def plot_heatmap(
     ax.invert_yaxis()  # to make it as usual again
 
     # overwrites x and y labels given by seaborn
+    ax.tick_params()
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     # x,y tick labels format and rotation

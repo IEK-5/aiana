@@ -3,6 +3,7 @@
 from pathlib import Path
 from apv import resources as res
 import datetime as dt
+from typing import Literal
 
 
 class Simulation:
@@ -13,12 +14,12 @@ class Simulation:
     # ray tracing accuracy used in br.analysisObj.analysis()
     ray_tracing_accuracy = 'high'  # 'low' or 'high'
     # sky generation type
-    sky_gen_type = 'gencumsky'  # 'gendaylit' or 'gencumsky'
+    sky_gen_mode = 'gencumsky'  # 'gendaylit' or 'gencumsky'
 
     # time settings
     sim_date_time = '06-15_11h'  # used as second part of the .oct file name
 
-    if sky_gen_type == 'gencumsky':
+    if sky_gen_mode == 'gencumsky':
         # from (year,month,day,hour) default (2001, January, 1st, 00:00)
         startdt = dt.datetime(2001, 1, 1, 12)  # TODO for TMY year isn't needed
         # to (year,month,day,hour) default (2001, march, 31st, 23:00)
@@ -76,6 +77,19 @@ class Simulation:
 
     cellLevelModule = False
     checker_board = False  # if True, module height is doubled
+    EW_fixed = False
+
+    sim_mode: Literal[
+        'std',
+        'cell_level',
+        'cell_level_checker_board',
+        'EW_fixed',  # at the moment second modul of roof is created in the
+        # text input for br.radObj.make_module(),
+        # and the tilt is happening later in br.radObj.make_scene()
+        # the second module is facing upwards-down, might be a problem later
+        'cell_level_EW_fixed'  # TODO fehlt noch
+    ] = 'std'
+
     cellLevelModuleParams = {
         'numcellsx': 6,  # has to be an even number at the moment
         'numcellsy': 12,  # has to be an even number at the moment

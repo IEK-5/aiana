@@ -68,7 +68,7 @@ def make_text_EW(name, moduleDict, sceneDict):
 
 
 # #
-demo.makeModule(name=module_type, **moduleDict, text=make_text_EW(module_type))
+demo.makeModule(name=module_type, **moduleDict, text=make_text_EW2(module_type))
 
 sceneObj1 = demo.makeScene(module_type, sceneDict)
 

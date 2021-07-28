@@ -119,38 +119,36 @@ class BifacialRadianceObj:
         self.met_data = self.radObj.readWeatherFile(
             weatherFile=str(self.weather_file))
 
-        # cellLevelModule = 0 und checkboard = 0 --> normal gapless module
-        # cellLevelModule = 1 und checkboard = 0 --> cellLevelModule
-        # cellLevelModule = 0 und checkboard = 1 --> checkboard
-        # cellLevelModule = 1 und checkboard = 1 --> checkboard
+        # create PV module
+        # default for standard:
+        rad_text = None
+        cellLevelModuleParams = None
 
-        # read and create PV module
+        if self.simSettings.sim_mode == 'cell_level':
+            cellLevelModuleParams = self.simSettings.cellLevelModuleParams
 
-        if self.simSettings.checker_board:
-
+        if self.simSettings.sim_mode == 'cell_level_checker_board':
             rad_text = apv.utils.radiance_geometries.checked_module(
                 self.simSettings
             )
-            self.radObj.makeModule(name=self.simSettings.module_name,
-                                   **self.simSettings.moduleDict,
-                                   text=rad_text
-                                   )
 
-        elif self.simSettings.cellLevelModule:
-            self.radObj.makeModule(
-                name=self.simSettings.module_name,
-                **self.simSettings.moduleDict,
-                cellLevelModuleParams=self.simSettings.cellLevelModuleParams)
+        if self.simSettings.sim_mode == 'EW_fixed':
+            rad_text = apv.utils.radiance_geometries.make_text_EW(
+                self.simSettings
+            )
 
-        else:
-            self.radObj.makeModule(name=self.simSettings.module_name,
-                                   **self.simSettings.moduleDict)
+        self.radObj.makeModule(
+            name=self.simSettings.module_name,
+            **self.simSettings.moduleDict,
+            cellLevelModuleParams=cellLevelModuleParams,
+            text=rad_text
+        )
 
         # create structure <To BE DEFINED LATER>
 
         # Create Sky
         # gendaylit using Perez models for direct and diffuse components
-        if self.simSettings.sky_gen_type == 'gendaylit':
+        if self.simSettings.sky_gen_mode == 'gendaylit':
             timeindex = apv.utils.time.get_hour_of_year(
                 self.simSettings.sim_date_time)
             # if (self.simSettings.start_time == '') and (
@@ -166,7 +164,7 @@ class BifacialRadianceObj:
                 octname=self.oct_file_name)
 
         # gencumskyself.met_data
-        if self.simSettings.sky_gen_type == 'gencumsky':
+        if self.simSettings.sky_gen_mode == 'gencumsky':
             self.radObj.genCumSky(epwfile=self.weather_file,
                                   startdt=self.simSettings.startdt,
                                   enddt=self.simSettings.enddt)
