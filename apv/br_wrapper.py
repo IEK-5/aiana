@@ -16,10 +16,12 @@ from pathlib import Path
 from tqdm.auto import trange
 
 import bifacial_radiance as br
+import multiprocessing as mp
 
 import apv
 from apv.settings import UserPaths
 from apv.utils import files_interface as fi
+
 # #
 
 
@@ -48,9 +50,11 @@ class BifacialRadianceObj:
             self,
             simSettings=apv.settings.Simulation(),
             weather_file=None,
+            # create_oct_file=True
     ):
         self.simSettings: apv.settings.Simulation = simSettings
-        self.weather_file = None
+        self.weather_file = weather_file
+        # self.create_oct_file = create_oct_file
 
         self.radObj: br.RadianceObj = None
         self.scene: br.SceneObj = None
@@ -124,15 +128,15 @@ class BifacialRadianceObj:
         rad_text = None
         cellLevelModuleParams = None
 
-        if self.simSettings.sim_mode == 'cell_level':
+        if self.simSettings.module_form == 'cell_level':
             cellLevelModuleParams = self.simSettings.cellLevelModuleParams
 
-        if self.simSettings.sim_mode == 'cell_level_checker_board':
+        if self.simSettings.module_form == 'cell_level_checker_board':
             rad_text = apv.utils.radiance_geometries.checked_module(
                 self.simSettings
             )
 
-        if self.simSettings.sim_mode == 'EW_fixed':
+        if self.simSettings.module_form == 'EW_fixed':
             rad_text = apv.utils.radiance_geometries.make_text_EW(
                 self.simSettings
             )
@@ -262,23 +266,14 @@ class BifacialRadianceObj:
                 + scd['vertical_view_angle']
                 + '-vs 0 -vl 0'
             )
+        if __name__ == '__main__':
+            subprocess.call(
+                ['rvu', '-vf', view_fp, '-e', '.01', oct_file_name+'.oct'])
 
-        subprocess.call(
-            ['rvu', '-vf', view_fp, '-e', '.01', oct_file_name+'.oct'])
-
-    def ground_simulation(self, accuracy: str = None) -> pd.DataFrame:
+    def ground_simulation(self) -> pd.DataFrame:
         """provides irradiation readings on ground in form of a Dataframe
         as per predefined resolution.
-
-        Args:
-            accuracy (str): 'high' or 'low'
-
-        Returns:
-            [type]: [description]
         """
-
-        if accuracy is None:
-            accuracy = self.simSettings.ray_tracing_accuracy
 
         # clear temporary line scan results from bifacial_results_folder
         temp_results = UserPaths.bifacial_radiance_files_folder / Path(
@@ -306,8 +301,8 @@ class BifacialRadianceObj:
         groundscan = self._set_groundscan(groundscan)
 
         # for now we need only ground so this will save sim time:
-        for key in backscan:
-            backscan[key] = 0
+        # for key in backscan:
+        #    backscan[key] = 0
 
         print('\n number of sensor points is {:.0f}'.format(
             sensorsy * len(self.ygrid)))
@@ -331,17 +326,36 @@ class BifacialRadianceObj:
 
         # for timeindex in np.arange(begin, end, 1):
         # oct_file_name = radObj.name + '_{}'.format(timeindex)
-        for i in trange(len(self.ygrid)):
-            y_start = self.ygrid[i]
-            groundscan['ystart'] = y_start
+
+        def run_line_scan(y_start):
+            groundscan_copy = groundscan.copy()
+            groundscan_copy['ystart'] = y_start
             temp_name = self.radObj.name + "_groundscan" \
                 + '{:.3f}'.format(y_start)
 
             analysis.analysis(octfile,
                               temp_name,
-                              groundscan,
+                              groundscan_copy,
                               backscan,
-                              accuracy=accuracy)
+                              accuracy=self.simSettings.ray_tracing_accuracy,
+                              only_ground=self.simSettings.only_ground_scan)
+
+        if self.simSettings.use_multi_processing:
+            processes = 2  # mp.cpu_count()-1
+            pool = mp.Pool(processes=processes)
+            asyncResults = []
+            for y_start in self.ygrid:
+                asyncResult = pool.apply_async(run_line_scan, (y_start,))
+                asyncResults.append(asyncResult)
+            # force python to wait until all parallel processes are finished:
+            [asyncResult.wait() for asyncResult in asyncResults]
+            pool.close()
+            pool.join()
+            pool.terminate()
+        else:
+            # trange for status bar
+            for i in trange(len(self.ygrid)):
+                run_line_scan(self.ygrid[i])
 
         df = self._merge_line_scans()
 
@@ -379,8 +393,13 @@ class BifacialRadianceObj:
             temp_results, append_all_in_folder=True)
 
         df_ground_results = df_ground_results.reset_index()
+
+        if self.simSettings.only_ground_scan:
+            col_name = 'Wm2'
+        else:
+            col_name = 'Wm2Front'
         df_ground_results = df_ground_results.rename(
-            columns={'Wm2Front': 'Wm2Ground'})
+            columns={col_name: 'Wm2Ground'})
         # Path for saving final results
         fi.make_dirs_if_not_there(UserPaths.results_folder)
         f_result_path = os.path.join(UserPaths.results_folder,
@@ -417,3 +436,5 @@ class BifacialRadianceObj:
         )
 
         apv.utils.files_interface.save_fig(fig, self.oct_file_name)
+
+# #

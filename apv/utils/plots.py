@@ -62,10 +62,11 @@ def plot_heatmap(
     if z_label is None:
         z_label = z
 
-    ticklabels_skip_count_number = max(
-        1,
-        int(2/simSettings.spatial_resolution)
-    )
+    # #TODO in the case of low distance/section as in checker board,
+    # this has to be linked to the number of data poitns/patches per axis:
+    ticklabels_skip_count_number = int(2/simSettings.spatial_resolution)
+    if ticklabels_skip_count_number < 2:
+        ticklabels_skip_count_number = "auto"
 
     sns.heatmap(
         data,

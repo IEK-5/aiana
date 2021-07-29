@@ -12,7 +12,10 @@ class Simulation:
     # Spatial resolution between sensors
     spatial_resolution = 0.25  # [m]
     # ray tracing accuracy used in br.analysisObj.analysis()
-    ray_tracing_accuracy = 'high'  # 'low' or 'high'
+    ray_tracing_accuracy = 'low'  # 'low' or 'high'
+
+    use_multi_processing = True
+    only_ground_scan = True
     # sky generation type
     sky_gen_mode = 'gencumsky'  # 'gendaylit' or 'gencumsky'
 
@@ -79,7 +82,7 @@ class Simulation:
     checker_board = False  # if True, module height is doubled
     EW_fixed = False
 
-    sim_mode: Literal[
+    module_form: Literal[
         'std',
         'cell_level',
         'cell_level_checker_board',
