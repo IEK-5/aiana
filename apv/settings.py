@@ -9,13 +9,15 @@ from typing import Literal
 class Simulation:
     sim_name = 'APV_Floating'  # also used as first part of the .oct file name
 
+    # speed up options
+
     # Spatial resolution between sensors
     spatial_resolution = 5  # [m]
     # ray tracing accuracy used in br.analysisObj.analysis()
     ray_tracing_accuracy = 'low'  # 'low' or 'high'
-
     use_multi_processing = True
-    only_ground_scan = True
+    only_ground_scan = True  # if False the backscan will be implemented to
+
     # sky generation type
     sky_gen_mode = 'gendaylit'  # 'gendaylit' or 'gencumsky'
 
@@ -92,9 +94,6 @@ class Simulation:
         # the second module is facing upwards-down, might be a problem later
         'cell_level_EW_fixed'  # TODO fehlt noch
     ] = 'std'
-
-    # speed up options
-    only_ground = True  # if False the backscan will be implemented to
 
     cellLevelModuleParams = {
         'numcellsx': 6,  # has to be an even number at the moment
