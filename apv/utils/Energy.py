@@ -2,16 +2,21 @@
 and mismatch losses.
 '''
 # #
-import pvlib
+from pvlib import pvsystem
+from pvlib.pvsystem import PVSystem
+from pvlib.modelchain import ModelChain
 import apv.resources.locations as loc
 from apv.settings import Simulation as s
 from apv.settings import UserPaths
 from apv.utils import files_interface as fi
+from apv.settings import Simulation as simSettingsObj
+
 
 # #
 
 
-def estimate_energy(met_data,
+def estimate_energy(simSettings: simSettingsObj,
+                    met_data,
                     module_type,
                     time_stamp):
     # load metoerological data used by br_wrapper and location
@@ -46,3 +51,11 @@ def estimate_energy(met_data,
 
 # #
 estimate_energy()
+
+# #
+module = pvsystem.retrieve_sam('SandiaMod')
+inverter = pvsystem.retrieve_sam('SandiaInverter')
+temp_model = pvsystem.temperature.pvsyst_cell()
+system = PVSystem(module_parameters=module,
+                  inverter_parameters=inverter,
+                  temperature_model_parameters=)

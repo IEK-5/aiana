@@ -10,11 +10,11 @@ class Simulation:
     sim_name = 'APV_Floating'  # also used as first part of the .oct file name
 
     # Spatial resolution between sensors
-    spatial_resolution = 0.25  # [m]
+    spatial_resolution = 5  # [m]
     # ray tracing accuracy used in br.analysisObj.analysis()
-    ray_tracing_accuracy = 'high'  # 'low' or 'high'
+    ray_tracing_accuracy = 'low'  # 'low' or 'high'
     # sky generation type
-    sky_gen_mode = 'gencumsky'  # 'gendaylit' or 'gencumsky'
+    sky_gen_mode = 'gendaylit'  # 'gendaylit' or 'gencumsky'
 
     # time settings
     sim_date_time = '06-15_11h'  # used as second part of the .oct file name
@@ -89,6 +89,9 @@ class Simulation:
         # the second module is facing upwards-down, might be a problem later
         'cell_level_EW_fixed'  # TODO fehlt noch
     ] = 'std'
+
+    # speed up options
+    only_ground = True  # if False the backscan will be implemented to
 
     cellLevelModuleParams = {
         'numcellsx': 6,  # has to be an even number at the moment

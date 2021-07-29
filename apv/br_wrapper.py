@@ -18,6 +18,7 @@ from tqdm.auto import trange
 import bifacial_radiance as br
 
 import apv
+from apv import settings
 from apv.settings import UserPaths
 from apv.utils import files_interface as fi
 # #
@@ -306,8 +307,8 @@ class BifacialRadianceObj:
         groundscan = self._set_groundscan(groundscan)
 
         # for now we need only ground so this will save sim time:
-        for key in backscan:
-            backscan[key] = 0
+        # for key in backscan:
+        #     backscan[key] = 0
 
         print('\n number of sensor points is {:.0f}'.format(
             sensorsy * len(self.ygrid)))
@@ -341,6 +342,7 @@ class BifacialRadianceObj:
                               temp_name,
                               groundscan,
                               backscan,
+                              only_ground=settings.Simulation.only_ground,
                               accuracy=accuracy)
 
         df = self._merge_line_scans()
@@ -379,8 +381,15 @@ class BifacialRadianceObj:
             temp_results, append_all_in_folder=True)
 
         df_ground_results = df_ground_results.reset_index()
-        df_ground_results = df_ground_results.rename(
-            columns={'Wm2Front': 'Wm2Ground'})
+
+        if settings.Simulation.only_ground is True:
+            df_ground_results = df_ground_results.rename(
+                columns={'Wm2': 'Wm2Ground'})
+
+        else:
+            df_ground_results = df_ground_results.rename(
+                columns={'Wm2Front': 'Wm2Ground'})
+
         # Path for saving final results
         fi.make_dirs_if_not_there(UserPaths.results_folder)
         f_result_path = os.path.join(UserPaths.results_folder,
@@ -413,7 +422,7 @@ class BifacialRadianceObj:
         fig = apv.utils.plots.plot_heatmap(
             df, 'y', 'x', 'Wm2Ground',
             x_label='x [m]', y_label='y [m]',
-            z_label='ground insolation [W m$^{-2}$]'
+            z_label='ground irradiance [W m$^{-2}$]'
         )
 
         apv.utils.files_interface.save_fig(fig, self.oct_file_name)
