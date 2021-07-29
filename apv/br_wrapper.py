@@ -432,7 +432,7 @@ class BifacialRadianceObj:
         fig = apv.utils.plots.plot_heatmap(
             df, 'y', 'x', 'Wm2Ground',
             x_label='x [m]', y_label='y [m]',
-            z_label='ground insolation [W m$^{-2}$]'
+            z_label='ground irradiance [W m$^{-2}$]'
         )
 
         apv.utils.files_interface.save_fig(fig, self.oct_file_name)
