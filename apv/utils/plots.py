@@ -23,7 +23,8 @@ def plot_heatmap(
         y_label=None,
         z_label=None,
         plot_title='',
-        cm='inferno'
+        cm='inferno',
+        ticklabels_skip_count_number="auto"
 ) -> Figure:
     """Creates a Figure containing a seaborn heatmap
     (side note, relevant for adding drawings: its colored square patches
@@ -61,12 +62,6 @@ def plot_heatmap(
         y_label = y
     if z_label is None:
         z_label = z
-
-    # #TODO in the case of low distance/section as in checker board,
-    # this has to be linked to the number of data poitns/patches per axis:
-    ticklabels_skip_count_number = int(2/simSettings.spatial_resolution)
-    if ticklabels_skip_count_number < 2:
-        ticklabels_skip_count_number = "auto"
 
     sns.heatmap(
         data,

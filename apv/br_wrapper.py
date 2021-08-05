@@ -9,14 +9,14 @@ import subprocess
 import numpy as np
 import pandas as pd
 import datetime as dt
+import time
 import json
 import os
 import pytictoc
 from pathlib import Path
 from tqdm.auto import trange
-
+import concurrent.futures
 import bifacial_radiance as br
-import multiprocessing as mp
 
 import apv
 from apv.settings import UserPaths
@@ -26,6 +26,7 @@ from apv.utils import files_interface as fi
 
 
 class BifacialRadianceObj:
+    # TODO clean up prints (especially data frames)
     """
     Attributes:
         simSettings (apv.settings.Simulation): simulation settings object
@@ -60,10 +61,12 @@ class BifacialRadianceObj:
         self.scene: br.SceneObj = None
         self.oct_file_name: str = None
         self.met_data: br.MetObj = None
+        self.analObj: br.AnalysisObj = None
 
         self.x_field: int = 0
         self.y_field: int = 0
         self.ygrid: list[int] = []
+        self.groundscan = dict()
 
         self.df_ground_results = pd.DataFrame()
         self.csv_file_name = str()
@@ -207,7 +210,7 @@ class BifacialRadianceObj:
         sceneDict = self.simSettings.sceneDict
         moduleDict = self.simSettings.moduleDict
         cellLevelModuleParams = self.simSettings.cellLevelModuleParams
-        if self.simSettings.checker_board:
+        if self.simSettings.module_form == 'cell_level_checker_board':
             self.x_field = cellLevelModuleParams['xcell']*4
             self.y_field = cellLevelModuleParams['ycell']*4
 
@@ -223,6 +226,8 @@ class BifacialRadianceObj:
             -self.y_field / 2,
             (self.y_field / 2) + 1,
             self.simSettings.spatial_resolution)
+
+        self._set_up_AnalObj_and_groundscan()
 
     def view_scene(self, view_name: str = 'total', oct_file_name=None):
         """views an .oct file via radiance/bin/rvu.exe
@@ -266,27 +271,20 @@ class BifacialRadianceObj:
                 + scd['vertical_view_angle']
                 + '-vs 0 -vl 0'
             )
-        if __name__ == '__main__':
-            subprocess.call(
-                ['rvu', '-vf', view_fp, '-e', '.01', oct_file_name+'.oct'])
 
-    def ground_simulation(self) -> pd.DataFrame:
-        """provides irradiation readings on ground in form of a Dataframe
-        as per predefined resolution.
-        """
+        subprocess.call(
+            ['rvu', '-vf', view_fp, '-e', '.01', oct_file_name+'.oct'])
 
-        # clear temporary line scan results from bifacial_results_folder
-        temp_results = UserPaths.bifacial_radiance_files_folder / Path(
-            'results')
-        fi.clear_folder_content(temp_results)
+    def _set_up_AnalObj_and_groundscan(self):
 
         octfile = self.oct_file_name
+
         # add extension if not there:
         if octfile[-4] != '.oct':
             octfile += '.oct'
 
         # instantiate analysis
-        analysis = br.AnalysisObj(
+        self.analObj = br.AnalysisObj(
             octfile=octfile, name=self.radObj.name)
 
         # number of sensors on ground against y-axis (along x-axis)
@@ -294,74 +292,14 @@ class BifacialRadianceObj:
         if (sensorsy % 2) == 0:
             sensorsy += 1
 
+        print(f'\n sensor grid:\nx: {sensorsy}, y: {len(self.ygrid)}, '
+              f'total: {sensorsy * len(self.ygrid)}')
+
         # start rough scan to define ground afterwards
-        groundscan, backscan = analysis.moduleAnalysis(scene=self.scene,
-                                                       sensorsy=sensorsy)
+        groundscan, backscan = self.analObj.moduleAnalysis(scene=self.scene,
+                                                           sensorsy=sensorsy)
 
-        groundscan = self._set_groundscan(groundscan)
-
-        # for now we need only ground so this will save sim time:
-        # for key in backscan:
-        #    backscan[key] = 0
-
-        print('\n number of sensor points is {:.0f}'.format(
-            sensorsy * len(self.ygrid)))
-        # Analysis and Results on ground - Time elapsed for analysis shown
-        tictoc = pytictoc.TicToc()
-        tictoc.tic()
-        # simulation time-stamp from settings
-
-        '''
-        if self.simSettings.start_time and s.end_time != '':
-            try:
-                begin = int(self.simSettings.start_time)
-                end = int(self.simSettings.end_time) + 1
-            except ValueError:
-                print('begin and end time must be integers between 0 and 8760')
-
-        else:
-            begin = int(self.simSettings.hour_of_year)
-            end = begin + 1
-        '''
-
-        # for timeindex in np.arange(begin, end, 1):
-        # oct_file_name = radObj.name + '_{}'.format(timeindex)
-
-        def run_line_scan(y_start):
-            groundscan_copy = groundscan.copy()
-            groundscan_copy['ystart'] = y_start
-            temp_name = self.radObj.name + "_groundscan" \
-                + '{:.3f}'.format(y_start)
-
-            analysis.analysis(octfile,
-                              temp_name,
-                              groundscan_copy,
-                              backscan,
-                              accuracy=self.simSettings.ray_tracing_accuracy,
-                              only_ground=self.simSettings.only_ground_scan)
-
-        if self.simSettings.use_multi_processing:
-            processes = 2  # mp.cpu_count()-1
-            pool = mp.Pool(processes=processes)
-            asyncResults = []
-            for y_start in self.ygrid:
-                asyncResult = pool.apply_async(run_line_scan, (y_start,))
-                asyncResults.append(asyncResult)
-            # force python to wait until all parallel processes are finished:
-            [asyncResult.wait() for asyncResult in asyncResults]
-            pool.close()
-            pool.join()
-            pool.terminate()
-        else:
-            # trange for status bar
-            for i in trange(len(self.ygrid)):
-                run_line_scan(self.ygrid[i])
-
-        df = self._merge_line_scans()
-
-        tictoc.toc()
-
-        return df
+        self.groundscan = self._set_groundscan(groundscan)
 
     def _set_groundscan(self, groundscan: dict) -> dict:
         """Modifies the groundscan dictionary, except for 'ystart',
@@ -384,7 +322,58 @@ class BifacialRadianceObj:
 
         return groundscan
 
-    def _merge_line_scans(self):
+    def run_line_scan(self, y_start):
+        groundscan_copy = self.groundscan.copy()
+        groundscan_copy['ystart'] = y_start
+        temp_name = self.radObj.name + "_groundscan" \
+            + '{:.3f}'.format(y_start)
+
+        backscan = groundscan_copy
+        self.analObj.analysis(self.oct_file_name+'.oct',
+                              temp_name,
+                              groundscan_copy,
+                              backscan,
+                              accuracy=self.simSettings.ray_tracing_accuracy,
+                              only_ground=self.simSettings.only_ground_scan)
+
+        # TODO TypeError: can only concatenate tuple (not "int") to tuple
+        # sim_progress =100*(np.where(self.ygrid == y_start)+1)/len(self.ygrid)
+        # return f'Sim progress {sim_progress} %.'
+        return f'y_start: {y_start} done.'
+
+    def run_raytracing_simulation(self) -> pd.DataFrame:
+        """provides irradiation readings on ground in form of a Dataframe
+        as per predefined resolution.
+        """
+
+        # clear temporary line scan results from bifacial_results_folder
+        temp_results: Path = UserPaths.bifacial_radiance_files_folder / Path(
+            'results')
+        fi.clear_folder_content(temp_results)
+
+        # to measure elapsed time:
+        tictoc = pytictoc.TicToc()
+        tictoc.tic()
+
+        if self.simSettings.use_multi_processing:
+
+            with concurrent.futures.ProcessPoolExecutor() as executor:
+                results = executor.map(self.run_line_scan, self.ygrid)
+
+                for result in results:
+                    print(result)
+        else:
+            # trange for status bar
+            for i in trange(len(self.ygrid)):
+                self.run_line_scan(self.ygrid[i])
+
+        tictoc.toc()
+        print('\n')
+
+        self.merge_line_scans()
+        return
+
+    def merge_line_scans(self):
         """merge results to create one complete ground DataFrame
         """
         temp_results: Path = UserPaths.bifacial_radiance_files_folder / Path(
@@ -405,14 +394,9 @@ class BifacialRadianceObj:
         f_result_path = os.path.join(UserPaths.results_folder,
                                      self.csv_file_name)
         df_ground_results.to_csv(f_result_path)
-        print('merged file saved as csv file in\
-            \n {}'.format(UserPaths.results_folder))
-        # print('the tail of the data frame shows number of grid \
-        #    points \n' + groundscan.tail())
-
-        print('#### Results:')
-        print(self.df_ground_results)
-        return df_ground_results
+        print(f'merged file saved in {f_result_path}\n')
+        self.df_ground_results = df_ground_results
+        return
 
     def plot_ground_insolation(self, df=None):
         """plots the ground insolation as a heat map and saves it into
@@ -429,10 +413,16 @@ class BifacialRadianceObj:
                 apv.settings.UserPaths.results_folder / Path(
                     self.csv_file_name))
 
+        ticklabels_skip_count_number = int(
+            2/self.simSettings.spatial_resolution)
+        if ticklabels_skip_count_number < 2:
+            ticklabels_skip_count_number = "auto"
+
         fig = apv.utils.plots.plot_heatmap(
             df, 'y', 'x', 'Wm2Ground',
             x_label='x [m]', y_label='y [m]',
-            z_label='ground irradiance [W m$^{-2}$]'
+            z_label='ground irradiance [W m$^{-2}$]',
+            ticklabels_skip_count_number=ticklabels_skip_count_number
         )
 
         apv.utils.files_interface.save_fig(fig, self.oct_file_name)

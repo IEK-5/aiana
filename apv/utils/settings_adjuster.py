@@ -13,7 +13,7 @@ def adjust_settings(simSettings: simSettingsObj) -> simSettingsObj:
         simSettings.moduleDict['y'] *= 2
         simSettings.cellLevelModuleParams['numcellsy'] *= 2
         simSettings.sceneDict['nRows'] = 1
-        simSettings.sceneDict['nMods'] = 1
+        simSettings.sceneDict['nMods'] = 5
 
     # add cell sizes
 

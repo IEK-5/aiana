@@ -13,8 +13,8 @@ simSettings = apv.settings.Simulation()
 simSettings.sim_date_time = '06-15_11h'
 simSettings.spatial_resolution = 0.1
 simSettings.sky_gen_mode = 'gendaylit'
-#simSettings.sim_mode = 'cell_level_checker_board'
-simSettings.sim_name = simSettings.sim_mode
+simSettings.module_form = 'cell_level_checker_board'
+simSettings.sim_name = 'checked_board'  # simSettings.sim_mode
 
 weather_file = UserPaths.bifacial_radiance_files_folder / \
     Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
@@ -29,7 +29,9 @@ brObj.view_scene(
 )
 
 # #
-brObj.ground_simulation()
+brObj.run_raytracing_simulation()
 
 # #
+
+imp.reload(apv.utils.plots)
 brObj.plot_ground_insolation()

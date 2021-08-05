@@ -31,7 +31,7 @@ brObj.view_scene(
 )
 
 # #
-brObj.ground_simulation()
+brObj.run_raytracing_simulation()
 
 # #
 brObj.plot_ground_insolation()

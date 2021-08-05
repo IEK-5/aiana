@@ -21,7 +21,7 @@ for hour in range(12, 20, 2):
         simSettings=simSettings,
         download_EPW=False
     )
-    brObj.ground_simulation()
+    brObj.run_raytracing_simulation()
 
     brObj.plot_ground_insolation()
 

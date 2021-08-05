@@ -19,6 +19,8 @@ def clear_folder_content(folder_path):
     for filename in os.listdir(folder_path):
         file_path = os.path.join(folder_path, filename)
         os.unlink(file_path)
+    print(f'cleared {folder_path}')
+    return
 
 
 def make_dirs_if_not_there(folder_paths: str or list):
@@ -37,6 +39,7 @@ def make_dirs_if_not_there(folder_paths: str or list):
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
             print('Made folder: ' + str(folder_path))
+    return
 
 
 def df_from_file_or_folder(
@@ -123,6 +126,7 @@ def df_export(
         file_path, float_format=float_format,
         index=index, sep=sep, header=header)
     print('exported df to ' + desti_path)
+    return
 
 
 def save_fig(
@@ -155,3 +159,4 @@ def save_fig(
         fig.savefig(file_path, bbox_inches='tight',
                     dpi=dpi, transparent=transparent)
         print('saved fig ' + file_path)
+    return

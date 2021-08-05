@@ -12,7 +12,7 @@ class Simulation:
     # speed up options
 
     # Spatial resolution between sensors
-    spatial_resolution = 5  # [m]
+    spatial_resolution = 0.5  # [m]
     # ray tracing accuracy used in br.analysisObj.analysis()
     ray_tracing_accuracy = 'low'  # 'low' or 'high'
     use_multi_processing = True
@@ -79,10 +79,6 @@ class Simulation:
         'zgap': 0,
         'numpanels': 2
     }
-
-    cellLevelModule = False
-    checker_board = False  # if True, module height is doubled
-    EW_fixed = False
 
     module_form: Literal[
         'std',
