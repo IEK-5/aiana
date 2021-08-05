@@ -144,6 +144,11 @@ class BifacialRadianceObj:
                 self.simSettings
             )
 
+        if self.simSettings.module_form == 'cell_level_EW_fixed':
+            rad_text = apv.utils.radiance_geometries.cell_level_EW_fixed(
+                self.simSettings, self.simSettings.cellLevelModuleParams
+            )
+
         self.radObj.makeModule(
             name=self.simSettings.module_name,
             **self.simSettings.moduleDict,
@@ -172,9 +177,18 @@ class BifacialRadianceObj:
 
         # gencumskyself.met_data
         if self.simSettings.sky_gen_mode == 'gencumsky':
+            # from (year,month,day,hour)
+            startdt = dt.datetime(2001, self.simSettings.startdt[0],
+                                  self.simSettings.startdt[1],
+                                  self.simSettings.startdt[2])
+            # to (year,month,day,hour)
+            enddt = dt.datetime(2001, self.simSettings.enddt[0],
+                                self.simSettings.enddt[1],
+                                self.simSettings.enddt[2])
+
             self.radObj.genCumSky(epwfile=self.weather_file,
-                                  startdt=self.simSettings.startdt,
-                                  enddt=self.simSettings.enddt)
+                                  startdt=startdt,
+                                  enddt=enddt)
 
             self.oct_file_name = self.radObj.name \
                 + '_' + 'Cumulative'
@@ -420,8 +434,8 @@ class BifacialRadianceObj:
 
         fig = apv.utils.plots.plot_heatmap(
             df, 'y', 'x', 'Wm2Ground',
-            x_label='x [m]', y_label='y [m]',
-            z_label='ground irradiance [W m$^{-2}$]',
+            x_label='y [m]', y_label='x [m]',
+            z_label='Ground Irradiance [W m$^{-2}$]',
             ticklabels_skip_count_number=ticklabels_skip_count_number
         )
 

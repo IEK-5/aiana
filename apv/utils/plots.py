@@ -74,7 +74,8 @@ def plot_heatmap(
         cmap=cm,
         cbar_kws={'label': z_label}
     )
-    ax.invert_yaxis()  # to make it as usual again
+    # To resemble Radiance coordinates
+    ax.invert_xaxis()
 
     # overwrites x and y labels given by seaborn
     ax.tick_params()
@@ -88,6 +89,7 @@ def plot_heatmap(
     ax.set_xticklabels(xlabels, rotation=0)
     ax.set_yticklabels(ylabels, rotation=0)
 
+    add_module_line(ax=ax)
     add_north_arrow(ax=ax)
 
     return fig
@@ -96,13 +98,10 @@ def plot_heatmap(
 def add_north_arrow(
     ax,
     text="N",
-    xy=(0.95, 1.5),
-    arrow_length=0.2,
+    xy=(0.9, 1.15),
     text_color="black",
     arrow_color="black",
     fontsize=20,
-    width=5,
-    headwidth=15,
     ha="center",
     va="center",
 ):
@@ -115,7 +114,7 @@ def add_north_arrow(
         representing the percentage length of the map from the upper-left
         cornor.
         arrow_length (float, optional): Length of the north arrow. Defaults to
-        0.1 (20% length of the map).
+        0.2 (20% length of the map).
         text_color (str, optional): Text color. Defaults to "black".
         arrow_color (str, optional): North arrow color. Defaults to "black".
         fontsize (int, optional): Text font size. Defaults to 20.
@@ -124,20 +123,53 @@ def add_north_arrow(
         ha (str, optional): Horizontal alignment. Defaults to "center".
         va (str, optional): Vertical alignment. Defaults to "center".
     """
+
     ax.annotate(
         text,
         xy=xy,
-        xytext=(xy[0], xy[1] - arrow_length),
+        xytext=(xy[0], xy[1]),
         color=text_color,
-        arrowprops=dict(facecolor=arrow_color,
-                        width=width,
-                        headwidth=headwidth),
+        horizontalalignment='left',
         ha=ha,
         va=va,
         fontsize=fontsize,
-        xycoords=ax.transAxes,
-    )
+        xycoords=ax.transAxes
 
+    )
+    t = ax.text(0, -0.8, "    ", ha=ha, va=va, rotation=180, size=15,
+                bbox=dict(boxstyle='rarrow, pad=0.5', fc='white',
+                          ec=arrow_color, lw=1))
+
+    return
+
+
+def add_module_line(ax):
+    ''' adds lines in heatmap to indicate PV modules location.
+
+
+    '''
+    # NOT READY! TODO insert geometry formulas for x1,y1,x2,y2
+    sceneDict = simSettings.sceneDict
+    moduleDict = simSettings.moduleDict
+    # Field Geometry
+    x_field = round(
+        sceneDict['nMods'] * moduleDict['x'])
+    y_field = round(
+        sceneDict['pitch'] * (sceneDict['nRows']-1)
+        + moduleDict['y'] * moduleDict['numpanels'])
+    print('GEOMETRIES OF THE FIELD....\n', x_field, y_field)
+
+    x1 = int(x_field/2)
+    x2 = int(x_field/2)
+    y1 = int(0)
+    y2 = int(y_field + 2)
+    print(x1, x2, y1, y2)
+    # endy = y + length * math.sin(math.radians(angle))
+    # endx = length * math.cos(math.radians(angle))
+
+    # plot the points
+    ax.plot([x1, x2], [5, 15], color='b', linestyle='-', linewidth=2)
+    # ax.plot([20, 20], [0, 20])
     return
 
 

@@ -6,4 +6,3 @@ from . import weather_data
 from . import general
 from . import radiance_geometries
 from . import settings_adjuster
-from . import multi_processor

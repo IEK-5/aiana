@@ -93,3 +93,59 @@ def make_text_EW(simSettings: simSettingsObj) -> str:
     packagingfactor = 100.0
 
     return text
+
+# TODO cell_level_EW_fixed not ready yet!
+
+
+def cell_level_EW_fixed(simSettings: simSettingsObj,
+                        cellLevelModuleParams) -> str:
+    """creates needed text needed in makemodule() to create cell-level E-W.
+    Azimuth angle must be 90! and number of panels must be 2!
+
+    Args:
+        simSettings:
+        name ([str]): module_type
+        moduleDict ([dict]): inherited from br_setup and defined in settings.py
+        sceneDict  ([dict]): inherited from br_setup and defined in settings.py
+
+    Returns:
+        text [str]: [text to rotate second panel to create E-W (270 - 90)]
+    """
+    sc = simSettings.sceneDict
+    m = simSettings.moduleDict
+    name = settings.Simulation.sim_name
+    z = 0.02
+    Ny = m['numpanels']  # currently must be 2
+    offsetfromaxis = 0.01
+    rotation_angle = 2*(90 - sc['tilt']) + 180
+
+    name2 = str(name).strip().replace(' ', '_')
+    c = cellLevelModuleParams
+    x = c['numcellsx']*c['xcell'] + (c['numcellsx']-1)*c['xcellgap']
+    y = c['numcellsy']*c['ycell'] + (c['numcellsy']-1)*c['ycellgap']
+
+    # center cell -
+    if c['numcellsx'] % 2 == 0:
+        cc = c['xcell']/2.0
+        print("Module was shifted by {} in X to\
+              avoid sensors on air".format(cc))
+
+    text = '! genbox black cellPVmodule {} {} {} | '.format(c['xcell'],
+                                                            c['ycell'], z)
+    text += 'xform -t {} {} {} '.format(-x/2.0 + cc,
+                                        (-y*Ny / 2.0) -
+                                        (m['ygap']*(Ny-1) / 2.0),
+                                        offsetfromaxis)
+    text += '-a {} -t {} 0 0 '.format(c['numcellsx'], c['xcell'] +
+                                      c['xcellgap'])
+    text += '-a {} -t 0 {} 0 '.format(c['numcellsy'], c['ycell'] +
+                                      c['ycellgap'])
+    text += '-a {} -t 0 {} 0 -rx {}'.format(Ny, y+m['ygap'], rotation_angle)
+
+    # OPACITY CALCULATION
+    packagingfactor = np.round((c['xcell']*c['ycell']*c['numcellsx'] *
+                                c['numcellsy'])/(x*y), 2)
+    print("This is a Cell-Level detailed module with Packaging " +
+          "Factor of {} %".format(packagingfactor))
+
+    return text

@@ -25,10 +25,10 @@ class Simulation:
     sim_date_time = '06-15_11h'  # used as second part of the .oct file name
 
     if sky_gen_mode == 'gencumsky':
-        # from (year,month,day,hour) default (2001, January, 1st, 00:00)
-        startdt = dt.datetime(2001, 1, 1, 12)  # TODO for TMY year isn't needed
-        # to (year,month,day,hour) default (2001, march, 31st, 23:00)
-        enddt = dt.datetime(2001, 3, 31, 23)
+        # Insert start date of the year as [month,day,hour]
+        startdt = [1, 1, 12]
+        # Insert end date of year as [month,day,hour]
+        enddt = [3, 31, 23]
 
     # hour_of_year = 4020
     # start_time = ''
@@ -56,7 +56,7 @@ class Simulation:
         'tilt': 20,
         'pitch': 10,
         'hub_height': 4.5,
-        'azimuth': 180,
+        'azimuth': 90,
         'nMods': 10,
         'nRows': 3
     }
@@ -88,7 +88,7 @@ class Simulation:
         # text input for br.radObj.make_module(),
         # and the tilt is happening later in br.radObj.make_scene()
         # the second module is facing upwards-down, might be a problem later
-        'cell_level_EW_fixed'  # TODO fehlt noch
+        'cell_level_EW_fixed'
     ] = 'std'
 
     cellLevelModuleParams = {

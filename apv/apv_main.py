@@ -16,6 +16,7 @@ if __name__ == '__main__':
     simSettings.spatial_resolution = 5
     simSettings.sky_gen_mode = 'gendaylit'
     simSettings.sim_name = 'APV_floating'
+    simSettings.module_form = 'cell_level_EW_fixed'
 
     weather_file = apv.settings.UserPaths.bifacial_radiance_files_folder / \
         Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
@@ -31,6 +32,7 @@ if __name__ == '__main__':
     # #
     brObj.run_raytracing_simulation()
 
+    # #
     # plot existing data (simulation cell does not need to be repeated)
     brObj.plot_ground_insolation()
 
