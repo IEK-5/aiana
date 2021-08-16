@@ -7,13 +7,14 @@ def adjust_settings(simSettings: simSettingsObj) -> simSettingsObj:
     print('\n##### ' + simSettings.module_form.replace('_', ' ')
           + ' simulation mode #####\n')
 
-    if simSettings.module_form == 'cell_level_checker_board':
-        # for checkerboard on cell level calculate only one module
-        # and enlarge module in y direction to have the same PV output
-        simSettings.moduleDict['y'] *= 2
-        simSettings.cellLevelModuleParams['numcellsy'] *= 2
-        simSettings.sceneDict['nRows'] = 1
-        simSettings.sceneDict['nMods'] = 5
+    # if simSettings.module_form == 'cell_level_checker_board':
+    #     # for checkerboard on cell level calculate only one module
+    #     # and enlarge module in y direction to have the same PV output
+    #     # TODO ??
+    #     simSettings.moduleDict['y'] *= 2
+    #     simSettings.cellLevelModuleParams['numcellsy'] *= 2
+    #     simSettings.sceneDict['nRows'] = 1
+    #     simSettings.sceneDict['nMods'] = 5
 
     # add cell sizes
 

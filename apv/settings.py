@@ -18,8 +18,8 @@ class Simulation:
     use_multi_processing = True
     only_ground_scan = True  # if False the backscan will be implemented to
 
-    # sky generation type
-    sky_gen_mode = 'gendaylit'  # 'gendaylit' or 'gencumsky'
+    # sky generation type:'gendaylit' or 'gencumsky'
+    sky_gen_mode: Literal['gendaylit', 'gencumsky'] = 'gendaylit'
 
     # time settings
     sim_date_time = '06-15_11h'  # used as second part of the .oct file name
@@ -56,9 +56,9 @@ class Simulation:
         'tilt': 20,
         'pitch': 10,
         'hub_height': 4.5,
-        'azimuth': 90,
+        'azimuth': 135,
         'nMods': 10,
-        'nRows': 3
+        'nRows': 3,
     }
 
     """ moduleDict:

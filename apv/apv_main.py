@@ -13,17 +13,17 @@ if __name__ == '__main__':
     # simSettings.only_ground_scan = False
     # use_multi_processing = False
     simSettings.sim_date_time = '06-15_11h'
-    simSettings.spatial_resolution = 5
+    simSettings.spatial_resolution = 1
     simSettings.sky_gen_mode = 'gendaylit'
     simSettings.sim_name = 'APV_floating'
-    simSettings.module_form = 'cell_level_EW_fixed'
+    simSettings.module_form = 'std'
 
     weather_file = apv.settings.UserPaths.bifacial_radiance_files_folder / \
         Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
 
     brObj = apv.br_wrapper.BifacialRadianceObj(
         simSettings=simSettings,
-        weather_file=weather_file  # downloading automatically without this
+        # weather_file=weather_file  # downloading automatically without this
     )
     # #
     brObj.view_scene(

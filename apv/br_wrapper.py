@@ -153,10 +153,10 @@ class BifacialRadianceObj:
             name=self.simSettings.module_name,
             **self.simSettings.moduleDict,
             cellLevelModuleParams=cellLevelModuleParams,
-            text=rad_text
+            text=rad_text,
+            torquetube=True, tubetype='square', diameter=0.1,
+            glass=True,
         )
-
-        # create structure <To BE DEFINED LATER>
 
         # Create Sky
         # gendaylit using Perez models for direct and diffuse components
@@ -220,17 +220,44 @@ class BifacialRadianceObj:
         # placed here to allow for access also without a simulation run
         self.csv_file_name = self.oct_file_name + '.csv'
 
+        # creates mounting structure
+        apv.utils.radiance_geometries.create_mounting_structure(
+            simSettings=self.simSettings,
+            radObj=self.radObj,
+            scene=self.scene,
+            oct_file_name=self.oct_file_name,
+            material='Metal_Aluminum_Anodized'
+        )
+
         # calculate ground grid parameters
         sceneDict = self.simSettings.sceneDict
         moduleDict = self.simSettings.moduleDict
         cellLevelModuleParams = self.simSettings.cellLevelModuleParams
-        if self.simSettings.module_form == 'cell_level_checker_board':
-            self.x_field = cellLevelModuleParams['xcell']*4
-            self.y_field = cellLevelModuleParams['ycell']*4
+
+        if sceneDict['azimuth'] == 0 or sceneDict['azimuth'] == 180:
+            # self.x_field = cellLevelModuleParams['xcell']*4
+            # self.y_field = cellLevelModuleParams['ycell']*4
+            self.x_field: int = round(sceneDict['nMods'] *
+                                      moduleDict['x']) + 2*4
+
+            self.y_field: int = round(
+                sceneDict['pitch'] * sceneDict['nRows']
+                + moduleDict['y'] * moduleDict['numpanels']) + 2*2
+
+        elif sceneDict['azimuth'] == 90 or sceneDict['azimuth'] == 270:
+            self.x_field: int = round(
+                sceneDict['pitch'] * sceneDict['nRows']
+                + moduleDict['y'] * moduleDict['numpanels']) + 2*2
+            self.y_field: int = round(sceneDict['nMods'] *
+                                      moduleDict['x']) + 2*4
 
         else:
             self.x_field: int = round(
-                sceneDict['nMods'] * moduleDict['x']) + 2*4
+                sceneDict['nMods'] * moduleDict['x']) + \
+                round((sceneDict['nRows']-1)*sceneDict['pitch'] *
+                      abs(np.cos(np.radians(180-sceneDict['azimuth'])))) + 2*4
+
+            print(type(self.x_field))
 
             self.y_field: int = round(
                 sceneDict['pitch'] * sceneDict['nRows']
@@ -412,6 +439,30 @@ class BifacialRadianceObj:
         self.df_ground_results = df_ground_results
         return
 
+    def irradiance_to_PAR(self, df=None):
+        """Converts irradiance from [W/m2] to
+        photosynthetic Radiation [μmole.m2/s] [1]
+
+        [1] Čatský, J. (1998): Langhans, R.W., Tibbitts, T.W. (ed.):
+        Plant Growth Chamber Handbook. In Photosynt. 35 (2), p. 232.
+        DOI: 10.1023/A:1006995714717.
+
+        Args:
+            groundscan (DataFrame): [description]
+        """
+        if df is None:
+            df = apv.utils.files_interface.df_from_file_or_folder(
+                apv.settings.UserPaths.results_folder / Path(
+                    self.csv_file_name))
+
+        f_result_path = os.path.join(UserPaths.results_folder,
+                                     self.csv_file_name)
+
+        df['PAR'] = df['Wm2Ground'] * 4.6
+        df.to_csv(f_result_path)
+        print(f'merged file saved in {f_result_path}\n')
+        self.df_ground_results = df
+
     def plot_ground_insolation(self, df=None):
         """plots the ground insolation as a heat map and saves it into
             the results/plots folder.
@@ -433,9 +484,9 @@ class BifacialRadianceObj:
             ticklabels_skip_count_number = "auto"
 
         fig = apv.utils.plots.plot_heatmap(
-            df, 'y', 'x', 'Wm2Ground',
-            x_label='y [m]', y_label='x [m]',
-            z_label='Ground Irradiance [W m$^{-2}$]',
+            df, 'x', 'y', 'Wm2Ground',
+            x_label='x [m]', y_label='y [m]',
+            z_label='Irradiance on Ground [W m$^{-2}$]',
             ticklabels_skip_count_number=ticklabels_skip_count_number
         )
 
