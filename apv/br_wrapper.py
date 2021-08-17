@@ -205,7 +205,7 @@ class BifacialRadianceObj:
             moduletype=self.simSettings.module_name,
             sceneDict=self.simSettings.sceneDict)
 
-        if self.simSettings.add_mountring_structure:
+        if self.simSettings.add_mounting_structure:
             # create mounting structure as custom object:
             # add mounting structure to the radObj
             rad_text = apv.utils.radiance_geometries.mounting_structure(
@@ -314,34 +314,25 @@ class BifacialRadianceObj:
         sceneDict = self.simSettings.sceneDict
         moduleDict = self.simSettings.moduleDict
 
-        if sceneDict['azimuth'] == 0 or sceneDict['azimuth'] == 180:
-            # self.x_field = cellLevelModuleParams['xcell']*4
-            # self.y_field = cellLevelModuleParams['ycell']*4
-            self.x_field: int = round(sceneDict['nMods'] *
-                                      moduleDict['x']) + 2*4
+        x_field: int = round(sceneDict['nMods'] * moduleDict['x']) + 2*4
+        y_field: int = round(sceneDict['pitch'] * sceneDict['nRows']
+                             + moduleDict['y'] * moduleDict['numpanels']) + 2*2
 
-            self.y_field: int = round(
-                sceneDict['pitch'] * sceneDict['nRows']
-                + moduleDict['y'] * moduleDict['numpanels']) + 2*2
+        if sceneDict['azimuth'] == 0 or sceneDict['azimuth'] == 180:
+            self.x_field = x_field
+            self.y_field = y_field
 
         elif sceneDict['azimuth'] == 90 or sceneDict['azimuth'] == 270:
-            self.x_field: int = round(
-                sceneDict['pitch'] * sceneDict['nRows']
-                + moduleDict['y'] * moduleDict['numpanels']) + 2*2
-            self.y_field: int = round(sceneDict['nMods'] *
-                                      moduleDict['x']) + 2*4
+            self.x_field = y_field
+            self.y_field = x_field
 
         else:
             self.x_field: int = round(
                 sceneDict['nMods'] * moduleDict['x']) + \
                 round((sceneDict['nRows']-1)*sceneDict['pitch'] *
                       abs(np.cos(np.radians(180-sceneDict['azimuth'])))) + 2*4
-
             print(type(self.x_field))
-
-            self.y_field: int = round(
-                sceneDict['pitch'] * sceneDict['nRows']
-                + moduleDict['y'] * moduleDict['numpanels']) + 2*2
+            self.y_field = y_field
 
         self.ygrid: list[float] = np.arange(
             -self.y_field / 2,

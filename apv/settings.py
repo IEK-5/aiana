@@ -18,7 +18,7 @@ class Simulation:
     # sim time is increased by x3-x4
     use_multi_processing = True
     only_ground_scan = True  # if False the backscan will be implemented too
-    add_mountring_structure = True
+    add_mounting_structure = True
 
     # sky generation type:'gendaylit' or 'gencumsky'
     sky_gen_mode: Literal['gendaylit', 'gencumsky'] = 'gendaylit'
