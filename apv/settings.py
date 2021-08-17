@@ -14,9 +14,11 @@ class Simulation:
     # Spatial resolution between sensors
     spatial_resolution = 0.5  # [m]
     # ray tracing accuracy used in br.analysisObj.analysis()
-    ray_tracing_accuracy = 'low'  # 'low' or 'high'
+    ray_tracing_accuracy = 'low'  # 'high' does not improve accuracy much but
+    # sim time is increased by x3-x4
     use_multi_processing = True
-    only_ground_scan = True  # if False the backscan will be implemented to
+    only_ground_scan = True  # if False the backscan will be implemented too
+    add_mountring_structure = True
 
     # sky generation type:'gendaylit' or 'gencumsky'
     sky_gen_mode: Literal['gendaylit', 'gencumsky'] = 'gendaylit'
@@ -56,7 +58,7 @@ class Simulation:
         'tilt': 20,
         'pitch': 10,
         'hub_height': 4.5,
-        'azimuth': 135,
+        'azimuth': 180,
         'nMods': 10,
         'nRows': 3,
     }
@@ -100,14 +102,14 @@ class Simulation:
 
     scene_camera_dicts: dict = {
         'total': {
-            'cam_pos_x': -15,   # depth
+            'cam_pos_x': -14,   # depth
             'cam_pos_y': -1.6,   # left / right
-            'cam_pos_z': 6,     # height
+            'cam_pos_z': 8,     # height
             'view_direction_x': 1.581,
             'view_direction_y': 0,
             'view_direction_z': -0.519234,
-            'horizontal_view_angle': 110,  # [degree]
-            'vertical_view_angle': 60  # [degree]
+            'horizontal_view_angle': 120,  # [degree]
+            'vertical_view_angle': 90  # [degree]
         },
         'module_zoom': {
             'cam_pos_x': -5,   # depth
@@ -116,8 +118,8 @@ class Simulation:
             'view_direction_x': 1.581,
             'view_direction_y': 0,
             'view_direction_z': -1.919234,
-            'horizontal_view_angle': 110,  # [degree]
-            'vertical_view_angle': 60  # [degree]
+            'horizontal_view_angle': 120,  # [degree]
+            'vertical_view_angle': 90  # [degree]
         }
     }
 

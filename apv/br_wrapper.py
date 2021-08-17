@@ -126,6 +126,50 @@ class BifacialRadianceObj:
         self.met_data = self.radObj.readWeatherFile(
             weatherFile=str(self.weather_file))
 
+        # Create Sky
+        # gendaylit using Perez models for direct and diffuse components
+        if self.simSettings.sky_gen_mode == 'gendaylit':
+            timeindex = apv.utils.time.get_hour_of_year(
+                self.simSettings.sim_date_time)
+            # if (self.simSettings.start_time == '') and (
+            # self.simSettings.end_time == ''):
+            self.radObj.gendaylit(timeindex=timeindex)
+            self.oct_file_name = self.radObj.name \
+                + '_' + self.simSettings.sim_date_time
+
+        # gencumskyself.met_data
+        if self.simSettings.sky_gen_mode == 'gencumsky':
+            # from (year,month,day,hour)
+            startdt = dt.datetime(2001, self.simSettings.startdt[0],
+                                  self.simSettings.startdt[1],
+                                  self.simSettings.startdt[2])
+            # to (year,month,day,hour)
+            enddt = dt.datetime(2001, self.simSettings.enddt[0],
+                                self.simSettings.enddt[1],
+                                self.simSettings.enddt[2])
+
+            self.radObj.genCumSky(epwfile=self.weather_file,
+                                  startdt=startdt,
+                                  enddt=enddt)
+
+            self.oct_file_name = self.radObj.name \
+                + '_' + 'Cumulative'
+
+        # set csv file name
+        # (placed here to allow for access also without a simulation run)
+        self.csv_file_name = self.oct_file_name + '.csv'
+
+        # create mounting structure (optional) and pv modules
+        self._create_geometries()
+
+        # make oct file
+        self.radObj.makeOct(octname=self.oct_file_name)
+
+        self._set_up_AnalObj_and_groundscan()
+
+    def _create_geometries(self):
+        """create mounting structure (optional), pv modules"""
+
         # create PV module
         # default for standard:
         rad_text = None
@@ -154,51 +198,27 @@ class BifacialRadianceObj:
             **self.simSettings.moduleDict,
             cellLevelModuleParams=cellLevelModuleParams,
             text=rad_text,
-            torquetube=True, tubetype='square', diameter=0.1,
             glass=True,
         )
+        # make scene
+        self.scene = self.radObj.makeScene(
+            moduletype=self.simSettings.module_name,
+            sceneDict=self.simSettings.sceneDict)
 
-        # Create Sky
-        # gendaylit using Perez models for direct and diffuse components
-        if self.simSettings.sky_gen_mode == 'gendaylit':
-            timeindex = apv.utils.time.get_hour_of_year(
-                self.simSettings.sim_date_time)
-            # if (self.simSettings.start_time == '') and (
-            # self.simSettings.end_time == ''):
-            self.radObj.gendaylit(timeindex=timeindex)
-            self.oct_file_name = self.radObj.name \
-                + '_' + self.simSettings.sim_date_time
-            self.scene = self.radObj.makeScene(
-                moduletype=self.simSettings.module_name,
-                sceneDict=self.simSettings.sceneDict
+        if self.simSettings.add_mountring_structure:
+            # create mounting structure as custom object:
+            # add mounting structure to the radObj
+            rad_text = apv.utils.radiance_geometries.mounting_structure(
+                simSettings=self.simSettings,
+                material='Metal_Aluminum_Anodized'
             )
-            self.radObj.makeOct(  # self.radObj.getfilelist(), #passiert autom.
-                octname=self.oct_file_name)
 
-        # gencumskyself.met_data
-        if self.simSettings.sky_gen_mode == 'gencumsky':
-            # from (year,month,day,hour)
-            startdt = dt.datetime(2001, self.simSettings.startdt[0],
-                                  self.simSettings.startdt[1],
-                                  self.simSettings.startdt[2])
-            # to (year,month,day,hour)
-            enddt = dt.datetime(2001, self.simSettings.enddt[0],
-                                self.simSettings.enddt[1],
-                                self.simSettings.enddt[2])
-
-            self.radObj.genCumSky(epwfile=self.weather_file,
-                                  startdt=startdt,
-                                  enddt=enddt)
-
-            self.oct_file_name = self.radObj.name \
-                + '_' + 'Cumulative'
-
-            self.scene = self.radObj.makeScene(
-                moduletype=self.simSettings.module_name,
-                sceneDict=self.simSettings.sceneDict)
-
-            self.radObj.makeOct(self.radObj.getfilelist(),
-                                octname=self.oct_file_name)
+            rz = 180 - self.simSettings.sceneDict["azimuth"]
+            self.radObj.appendtoScene(
+                radfile=self.scene.radfiles,
+                customObject=self.radObj.makeCustomObject(
+                    'structure', rad_text),
+                text=f'!xform -rz {rz}')
 
         '''
             else:
@@ -215,60 +235,7 @@ class BifacialRadianceObj:
                     self.oct_file_name = self.radObj.name \
                         + '_{}'.format(timeindex)
                     sky = self.radObj.gendaylit2manual(dni, dhi, sunalt, sunaz)
-                    self.radObj.makeOct(octname=self.oct_file_name)
-                '''
-        # placed here to allow for access also without a simulation run
-        self.csv_file_name = self.oct_file_name + '.csv'
-
-        # creates mounting structure
-        apv.utils.radiance_geometries.create_mounting_structure(
-            simSettings=self.simSettings,
-            radObj=self.radObj,
-            scene=self.scene,
-            oct_file_name=self.oct_file_name,
-            material='Metal_Aluminum_Anodized'
-        )
-
-        # calculate ground grid parameters
-        sceneDict = self.simSettings.sceneDict
-        moduleDict = self.simSettings.moduleDict
-        cellLevelModuleParams = self.simSettings.cellLevelModuleParams
-
-        if sceneDict['azimuth'] == 0 or sceneDict['azimuth'] == 180:
-            # self.x_field = cellLevelModuleParams['xcell']*4
-            # self.y_field = cellLevelModuleParams['ycell']*4
-            self.x_field: int = round(sceneDict['nMods'] *
-                                      moduleDict['x']) + 2*4
-
-            self.y_field: int = round(
-                sceneDict['pitch'] * sceneDict['nRows']
-                + moduleDict['y'] * moduleDict['numpanels']) + 2*2
-
-        elif sceneDict['azimuth'] == 90 or sceneDict['azimuth'] == 270:
-            self.x_field: int = round(
-                sceneDict['pitch'] * sceneDict['nRows']
-                + moduleDict['y'] * moduleDict['numpanels']) + 2*2
-            self.y_field: int = round(sceneDict['nMods'] *
-                                      moduleDict['x']) + 2*4
-
-        else:
-            self.x_field: int = round(
-                sceneDict['nMods'] * moduleDict['x']) + \
-                round((sceneDict['nRows']-1)*sceneDict['pitch'] *
-                      abs(np.cos(np.radians(180-sceneDict['azimuth'])))) + 2*4
-
-            print(type(self.x_field))
-
-            self.y_field: int = round(
-                sceneDict['pitch'] * sceneDict['nRows']
-                + moduleDict['y'] * moduleDict['numpanels']) + 2*2
-
-        self.ygrid: list[float] = np.arange(
-            -self.y_field / 2,
-            (self.y_field / 2) + 1,
-            self.simSettings.spatial_resolution)
-
-        self._set_up_AnalObj_and_groundscan()
+                    self.radObj.makeOct(octname=self.oct_file_name)'''
 
     def view_scene(self, view_name: str = 'total', oct_file_name=None):
         """views an .oct file via radiance/bin/rvu.exe
@@ -308,7 +275,7 @@ class BifacialRadianceObj:
                 + '-vu 0 0 1 '
                 + '-vh '
                 + scd['horizontal_view_angle']
-                + '- vv '
+                + '-vv '
                 + scd['vertical_view_angle']
                 + '-vs 0 -vl 0'
             )
@@ -318,12 +285,12 @@ class BifacialRadianceObj:
 
     def _set_up_AnalObj_and_groundscan(self):
 
-        octfile = self.oct_file_name
+        self.__calculate_ground_grid_parameters()
 
+        octfile = self.oct_file_name
         # add extension if not there:
         if octfile[-4] != '.oct':
             octfile += '.oct'
-
         # instantiate analysis
         self.analObj = br.AnalysisObj(
             octfile=octfile, name=self.radObj.name)
@@ -340,9 +307,48 @@ class BifacialRadianceObj:
         groundscan, backscan = self.analObj.moduleAnalysis(scene=self.scene,
                                                            sensorsy=sensorsy)
 
-        self.groundscan = self._set_groundscan(groundscan)
+        self.groundscan = self.__set_groundscan(groundscan)
 
-    def _set_groundscan(self, groundscan: dict) -> dict:
+    def __calculate_ground_grid_parameters(self):
+
+        sceneDict = self.simSettings.sceneDict
+        moduleDict = self.simSettings.moduleDict
+
+        if sceneDict['azimuth'] == 0 or sceneDict['azimuth'] == 180:
+            # self.x_field = cellLevelModuleParams['xcell']*4
+            # self.y_field = cellLevelModuleParams['ycell']*4
+            self.x_field: int = round(sceneDict['nMods'] *
+                                      moduleDict['x']) + 2*4
+
+            self.y_field: int = round(
+                sceneDict['pitch'] * sceneDict['nRows']
+                + moduleDict['y'] * moduleDict['numpanels']) + 2*2
+
+        elif sceneDict['azimuth'] == 90 or sceneDict['azimuth'] == 270:
+            self.x_field: int = round(
+                sceneDict['pitch'] * sceneDict['nRows']
+                + moduleDict['y'] * moduleDict['numpanels']) + 2*2
+            self.y_field: int = round(sceneDict['nMods'] *
+                                      moduleDict['x']) + 2*4
+
+        else:
+            self.x_field: int = round(
+                sceneDict['nMods'] * moduleDict['x']) + \
+                round((sceneDict['nRows']-1)*sceneDict['pitch'] *
+                      abs(np.cos(np.radians(180-sceneDict['azimuth'])))) + 2*4
+
+            print(type(self.x_field))
+
+            self.y_field: int = round(
+                sceneDict['pitch'] * sceneDict['nRows']
+                + moduleDict['y'] * moduleDict['numpanels']) + 2*2
+
+        self.ygrid: list[float] = np.arange(
+            -self.y_field / 2,
+            (self.y_field / 2) + 1,
+            self.simSettings.spatial_resolution)
+
+    def __set_groundscan(self, groundscan: dict) -> dict:
         """Modifies the groundscan dictionary, except for 'ystart',
         which is set later by looping through ygrid.
 
@@ -363,7 +369,7 @@ class BifacialRadianceObj:
 
         return groundscan
 
-    def run_line_scan(self, y_start):
+    def _run_line_scan(self, y_start):
         groundscan_copy = self.groundscan.copy()
         groundscan_copy['ystart'] = y_start
         temp_name = self.radObj.name + "_groundscan" \
@@ -399,14 +405,14 @@ class BifacialRadianceObj:
         if self.simSettings.use_multi_processing:
 
             with concurrent.futures.ProcessPoolExecutor() as executor:
-                results = executor.map(self.run_line_scan, self.ygrid)
+                results = executor.map(self._run_line_scan, self.ygrid)
 
                 for result in results:
                     print(result)
         else:
             # trange for status bar
             for i in trange(len(self.ygrid)):
-                self.run_line_scan(self.ygrid[i])
+                self._run_line_scan(self.ygrid[i])
 
         tictoc.toc()
         print('\n')
@@ -483,10 +489,15 @@ class BifacialRadianceObj:
         if ticklabels_skip_count_number < 2:
             ticklabels_skip_count_number = "auto"
 
+        title = (f'Module Form: {self.simSettings.module_form}\n'
+                 f'Date & Time: {self.simSettings.sim_date_time}\n'
+                 f'Resolution: {self.simSettings.spatial_resolution} m')
+
         fig = apv.utils.plots.plot_heatmap(
             df, 'x', 'y', 'Wm2Ground',
             x_label='x [m]', y_label='y [m]',
             z_label='Irradiance on Ground [W m$^{-2}$]',
+            plot_title=title,
             ticklabels_skip_count_number=ticklabels_skip_count_number
         )
 

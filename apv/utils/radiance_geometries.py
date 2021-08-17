@@ -8,8 +8,8 @@ def checked_module(simSettings: simSettingsObj) -> str:
     m = simSettings.moduleDict
 
     # copied from br.main.RadianceObj.makeModule() and modified:
-    x = (c['numcellsx']+1)*c['xcell'] + (c['numcellsx']-1)*c['xcellgap']
-    y = (c['numcellsy']+1)*c['ycell'] + (c['numcellsy']-1)*c['ycellgap']
+    x = c['numcellsx']*c['xcell'] + (c['numcellsx']-1)*c['xcellgap']
+    y = c['numcellsy']*c['ycell'] + (c['numcellsy']-1)*c['ycellgap']
 
     # center cell -
     if c['numcellsx'] % 2 == 0:
@@ -36,11 +36,11 @@ def checked_module(simSettings: simSettingsObj) -> str:
     # checker board
     text += '-a {} -t {} 0 0 '.format(
         int(c['numcellsx']/2),
-        (2 * c['xcell']) + c['xcellgap'])
+        (2 * c['xcell'] + c['xcellgap']))
 
     text += '-a {} -t 0 {} 0 '.format(
         c['numcellsy']/2,
-        (2 * c['ycell']) + c['ycellgap'])
+        (2 * c['ycell'] + c['ycellgap']))
 
     text += '-a {} -t {} {} 0 '.format(
         2,
@@ -151,11 +151,45 @@ def cell_level_EW_fixed(simSettings: simSettingsObj,
     return text
 
 
-def create_mounting_structure(simSettings,
-                              radObj,
-                              scene,
-                              oct_file_name,
-                              material):
+def mounting_structure(simSettings, material):
+    """Creates Aluminum posts and mounting structure
+
+    Args:
+        simSettings : inherited from br_wrapper
+        scene : appends to scene inherited from br_wrapper
+
+    Returns:
+        oct_file: created new oct file including all objects
+    """
+    sceneDict = simSettings.sceneDict
+    moduleDict = simSettings.moduleDict
+
+    y_length = sceneDict['pitch']*(sceneDict['nRows']-1)
+    x_length = moduleDict['x'] * (sceneDict['nMods']) + 0.4
+
+    y_start = -y_length / 2
+    x_start = -x_length / 2
+
+    if sceneDict['nMods'] % 2 == 0:
+        x_start += moduleDict['x']/2
+
+    # create posts
+    text = (f'! genbox {material} post 0.15 0.15 {sceneDict["hub_height"]+0.1}'
+            f' | xform  -t {x_start} {y_start} 0 \
+           -a 2 -t {x_length} 0 0 -a 3 -t 0 {sceneDict["pitch"]} 0 ')
+    # create horizontal beams
+    text += (f'\n! genbox {material} post 0.1 {y_length} 0.1 \
+           | xform  -t {x_start} {y_start} {sceneDict["hub_height"]-0.1} \
+           -a 2 -t {x_length} 0 0 -a 2 -t 0 0 {-0.5} ')
+
+    return text
+
+
+def create_mounting_structure0(simSettings,
+                               radObj,
+                               scene,
+                               oct_file_name,
+                               material):
     """Creates Aluminum posts and mounting structure
 
     Args:
@@ -216,8 +250,8 @@ def create_mounting_structure(simSettings,
     name_5 = 'horPost3'
     name_6 = 'horPost4'
     length = sceneDict['pitch']*(sceneDict['nRows']-1)
-    shift = xstart + 0.1
-    shift2 = xstart2 - 0.1
+    shift = xstart + 0.2
+    shift2 = xstart2 - 0.2
     # horizontal-1
     text4 = '! genbox {} post 0.1 {} 0.1 | xform  -t {} {} {}'.format(
             material, length, shift, -sceneDict['pitch'], height-0.5)

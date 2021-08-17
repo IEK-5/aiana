@@ -1,10 +1,8 @@
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 import holoviews as hv
-from holoviews import opts
 from bokeh.models import HoverTool
 from holoviews.streams import RangeXY
-from bokeh.plotting import show
 
 import pandas as pd
 from scipy import stats
@@ -90,7 +88,7 @@ def plot_heatmap(
     ax.set_yticklabels(ylabels, rotation=0)
 
     # add_module_line(ax=ax)
-    add_north_arrow(ax=ax, fig=fig)
+    ax = add_north_arrow(ax=ax)
 
     return fig
 
@@ -103,8 +101,7 @@ def add_north_arrow(
     arrow_color="black",
     fontsize=20,
     ha="center",
-    va="center",
-    fig=None
+    va="center"
 ):
     """Add a north arrow to the map.
 
@@ -124,12 +121,10 @@ def add_north_arrow(
         ha (str, optional): Horizontal alignment. Defaults to "center".
         va (str, optional): Vertical alignment. Defaults to "center".
     """
-    xy2 = (0.5, -0.1)
     yarrow = xy[1] - 0.05
     if simSettings.sceneDict['azimuth'] == 90 or simSettings.sceneDict == 270:
         xy = (1, 1.3)
         yarrow = xy[1] - 0.15
-        xy2 = (0.5, -0.25)
     # North [N]
     ax.annotate(
         text,
@@ -142,25 +137,6 @@ def add_north_arrow(
         fontsize=fontsize,
         xycoords=ax.transAxes
     )
-    # Simulation stamp
-    stamptext = 'Module Form: {} | Date & Time: {} | Resolution: {}[m]'\
-        .format(
-            simSettings.module_form,
-            simSettings.sim_date_time,
-            simSettings.spatial_resolution
-        )
-
-    ax.annotate(
-        stamptext,
-        xy=xy2,
-        xytext=(xy2[0], xy2[1]),
-        color=text_color,
-        horizontalalignment='left',
-        ha=ha,
-        va=va,
-        fontsize=11,
-        xycoords=ax.transAxes
-    )
     # Arrow
     ax.text(
         xy[0],
@@ -168,7 +144,7 @@ def add_north_arrow(
         bbox=dict(boxstyle='rarrow, pad=0.5', fc='black',
                   ec=arrow_color, lw=1), transform=ax.transAxes)
 
-    return
+    return ax
 
 
 def add_module_line(ax):

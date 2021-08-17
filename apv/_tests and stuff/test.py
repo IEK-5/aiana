@@ -134,6 +134,10 @@ t2.method()
 
 
 # #
+test = f'hi'
+f'{1+2}'
+test
+# #
 
 
 class Test():

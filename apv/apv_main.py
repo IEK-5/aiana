@@ -6,14 +6,18 @@ if __name__ == '__main__':
     import importlib as imp
     import apv
     imp.reload(apv.br_wrapper)
+    imp.reload(apv.settings)
+    imp.reload(apv.utils.radiance_geometries)
 
     simSettings = apv.settings.Simulation()
 
     # ### often changed settings:  ####
     # simSettings.only_ground_scan = False
-    # use_multi_processing = False
+
+    # simSettings.use_multi_processing = False
+    simSettings.add_mountring_structure = False
     simSettings.sim_date_time = '06-15_11h'
-    simSettings.spatial_resolution = 1
+    simSettings.spatial_resolution = 5
     simSettings.sky_gen_mode = 'gendaylit'
     simSettings.sim_name = 'APV_floating'
     simSettings.module_form = 'std'
@@ -23,11 +27,11 @@ if __name__ == '__main__':
 
     brObj = apv.br_wrapper.BifacialRadianceObj(
         simSettings=simSettings,
-        # weather_file=weather_file  # downloading automatically without this
+        weather_file=weather_file  # downloading automatically without this
     )
     # #
     brObj.view_scene(
-        view_name='module_zoom'
+        # view_name='module_zoom'
     )
     # #
     brObj.run_raytracing_simulation()
