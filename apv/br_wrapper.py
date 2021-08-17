@@ -426,7 +426,8 @@ class BifacialRadianceObj:
         temp_results: Path = UserPaths.bifacial_radiance_files_folder / Path(
             'results')
         df_ground_results: pd.DataFrame = fi.df_from_file_or_folder(
-            temp_results, append_all_in_folder=True)
+            temp_results, append_all_in_folder=True,
+            print_reading_messages=False)
 
         df_ground_results = df_ground_results.reset_index()
 

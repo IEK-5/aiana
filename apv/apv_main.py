@@ -15,9 +15,9 @@ if __name__ == '__main__':
     # simSettings.only_ground_scan = False
 
     # simSettings.use_multi_processing = False
-    simSettings.add_mountring_structure = False
+    # simSettings.add_mountring_structure = False
     simSettings.sim_date_time = '06-15_11h'
-    simSettings.spatial_resolution = 5
+    simSettings.spatial_resolution = 0.25
     simSettings.sky_gen_mode = 'gendaylit'
     simSettings.sim_name = 'APV_floating'
     simSettings.module_form = 'std'

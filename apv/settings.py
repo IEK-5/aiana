@@ -12,7 +12,7 @@ class Simulation:
     # speed up options
 
     # Spatial resolution between sensors
-    spatial_resolution = 0.5  # [m]
+    spatial_resolution = 5  # 0.15  # [m]
     # ray tracing accuracy used in br.analysisObj.analysis()
     ray_tracing_accuracy = 'low'  # 'high' does not improve accuracy much but
     # sim time is increased by x3-x4

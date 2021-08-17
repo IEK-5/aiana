@@ -161,129 +161,32 @@ def mounting_structure(simSettings, material):
     Returns:
         oct_file: created new oct file including all objects
     """
-    sceneDict = simSettings.sceneDict
-    moduleDict = simSettings.moduleDict
+    sDict = simSettings.sceneDict
+    mDict = simSettings.moduleDict
 
-    y_length = sceneDict['pitch']*(sceneDict['nRows']-1)
-    x_length = moduleDict['x'] * (sceneDict['nMods']) + 0.4
+    s_beam = 0.075  # beam thickness
+    d_beam = 0.5  # beam distance
+    s_post = 0.15  # post thickness
+    h_post = sDict["hub_height"] + 0.2  # post height
+    y_length = sDict['pitch']*(sDict['nRows'] - 1)
+    x_length = mDict['x'] * (sDict['nMods'] + 1)
 
     y_start = -y_length / 2
     x_start = -x_length / 2
 
-    if sceneDict['nMods'] % 2 == 0:
-        x_start += moduleDict['x']/2
+    if sDict['nMods'] % 2 == 0:
+        x_start += mDict['x']/2
 
     # create posts
-    text = (f'! genbox {material} post 0.15 0.15 {sceneDict["hub_height"]+0.1}'
+    text = (f'! genbox {material} post {s_post} {s_post} {h_post}'
             f' | xform  -t {x_start} {y_start} 0 \
-           -a 2 -t {x_length} 0 0 -a 3 -t 0 {sceneDict["pitch"]} 0 ')
-    # create horizontal beams
-    text += (f'\n! genbox {material} post 0.1 {y_length} 0.1 \
-           | xform  -t {x_start} {y_start} {sceneDict["hub_height"]-0.1} \
-           -a 2 -t {x_length} 0 0 -a 2 -t 0 0 {-0.5} ')
-
+           -a 2 -t {x_length} 0 0 -a 3 -t 0 {sDict["pitch"]} 0 ')
+    # create horizontal beams in y direction
+    text += (f'\n! genbox {material} post {s_beam} {y_length} {s_beam} \
+           | xform  -t {x_start} {y_start} {h_post - s_beam - 0.4} \
+           -a 2 -t {x_length} 0 0 -a 2 -t 0 0 {-d_beam} ')
+    # create horizontal beams in x direction
+    text += (f'\n! genbox {material} post {x_length} {s_beam} {s_beam} \
+            | xform  -t {x_start} {y_start} {h_post - s_beam - 0.2} \
+            -a 3 -t 0 {sDict["pitch"]} 0 -a 2 -t 0 0 {-d_beam} ')
     return text
-
-
-def create_mounting_structure0(simSettings,
-                               radObj,
-                               scene,
-                               oct_file_name,
-                               material):
-    """Creates Aluminum posts and mounting structure
-
-    Args:
-        simSettings : inherited from br_wrapper
-        radObj : inherited from br_wrapper
-        scene : appends to scene inherited from br_wrapper
-        oct_file_name : inherited from br_wrapper
-
-    Returns:
-        oct_file: created new oct file including all objects
-    """
-    sceneDict = simSettings.sceneDict
-    moduleDict = simSettings.moduleDict
-    num_of_posts = sceneDict['nRows']
-    # xstart and y start change with azimuth
-    xstart = round(sceneDict['nMods']*moduleDict['x']/2 + 1)
-    if sceneDict['nMods'] % 2 == 0:
-        # xstart2 for parrallel and adjust symmetry according to # of modules
-        xstart2 = -xstart + moduleDict['x']
-    else:
-        xstart2 = -xstart
-
-    ystart = sceneDict['pitch']*(sceneDict['nRows']-2)
-    height = sceneDict['hub_height']
-    rotate = 180 - sceneDict['azimuth']
-    for post in np.arange(0, num_of_posts*2, 2):
-        name_1 = 'Post{}'.format(post)
-        name_2 = 'Post{}'.format(post+1)
-        # create post
-        text1 = '! genbox {} post 0.1 0.2 {} | xform  -t {} {} 0'.format(
-            material, height+0.2, xstart, ystart)
-        customObject = radObj.makeCustomObject(name_1, text1)
-        radObj.appendtoScene(radfile=scene.radfiles,
-                             customObject=customObject,
-                             text="!xform -rz {}".format(rotate))
-        # post in parallel
-        text2 = '! genbox {} post 0.1 0.2 {} | xform  -t {} {} 0'.format(
-            material, height+0.2, xstart2, ystart)
-        customObject = radObj.makeCustomObject(name_2, text2)
-
-        radObj.appendtoScene(radfile=scene.radfiles,
-                             customObject=customObject,
-                             text="!xform -rz {}".format(rotate))
-        # connection between posts
-        # text3 = '! genbox {} post {} 0.2 0.1 | xform  -t {} {} {}'.format(
-        #     material, abs(xstart2*2+2), xstart2, ystart, height-1)
-        # customObject = radObj.makeCustomObject(name_1+'_'+name_2, text3)
-
-        # radObj.appendtoScene(radfile=scene.radfiles,
-        #                      customObject=customObject,
-        #                      text="!xform -rz {}".format(rotate))
-
-        ystart -= sceneDict['pitch']
-
-    # Add horizontal beams
-    name_3 = 'horPost1'
-    name_4 = 'horPost2'
-    name_5 = 'horPost3'
-    name_6 = 'horPost4'
-    length = sceneDict['pitch']*(sceneDict['nRows']-1)
-    shift = xstart + 0.2
-    shift2 = xstart2 - 0.2
-    # horizontal-1
-    text4 = '! genbox {} post 0.1 {} 0.1 | xform  -t {} {} {}'.format(
-            material, length, shift, -sceneDict['pitch'], height-0.5)
-    customObject = radObj.makeCustomObject(name_3, text4)
-    radObj.appendtoScene(radfile=scene.radfiles,
-                         customObject=customObject,
-                         text="!xform -rz {}".format(rotate))
-    # horizontal-2
-    text5 = '! genbox {} post 0.1 {} 0.1 | xform  -t {} {} {}'.format(
-            material, length, shift2, -sceneDict['pitch'], height-0.5)
-    customObject = radObj.makeCustomObject(name_4, text5)
-
-    radObj.appendtoScene(radfile=scene.radfiles,
-                         customObject=customObject,
-                         text="!xform -rz {}".format(rotate))
-    # horizontal-3 over 1
-    text6 = '! genbox {} post 0.1 {} 0.1 | xform  -t {} {} {}'.format(
-        material, length, shift, -sceneDict['pitch'], height-1)
-    customObject = radObj.makeCustomObject(name_5, text6)
-    radObj.appendtoScene(radfile=scene.radfiles,
-                         customObject=customObject,
-                         text="!xform -rz {}".format(rotate))
-    # horizontal-4 over 2
-    text7 = '! genbox {} post 0.1 {} 0.1 | xform  -t {} {} {}'.format(
-            material, length, shift2, -sceneDict['pitch'], height-0.75)
-    customObject = radObj.makeCustomObject(name_6, text7)
-
-    radObj.appendtoScene(radfile=scene.radfiles,
-                         customObject=customObject,
-                         text="!xform -rz {}".format(rotate))
-
-    octfile = radObj.makeOct(radObj.getfilelist(),
-                             octname=oct_file_name)
-
-    return octfile

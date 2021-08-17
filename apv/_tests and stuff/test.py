@@ -1,7 +1,10 @@
 # #
+import datetime
+import random
+import time
+import sys
 import importlib as imp
 from apv import br_wrapper as br
-from apv.utils import time
 from apv.utils import files_interface as fi
 from apv.settings import UserPaths as up
 from apv.settings import Simulation as s
@@ -21,6 +24,8 @@ from types import SimpleNamespace
 import hjson
 import this
 from datetime import datetime
+
+# #
 
 
 def get_hour_of_year(date_time_str: str) -> int:
@@ -134,9 +139,9 @@ t2.method()
 
 
 # #
-test = f'hi'
-f'{1+2}'
-test
+
+print('hi', end="\r")
+
 # #
 
 

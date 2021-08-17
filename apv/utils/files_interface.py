@@ -47,7 +47,7 @@ def df_from_file_or_folder(
         skiprows=0, index_col=None,
         delimiter='\t|,|;', squeeze=False,
         append_all_in_folder=False,
-        names=None, header='infer'):
+        names=None, header='infer', print_reading_messages=True):
     '''
     rel_path: relative file path with file extension,
     in case of append_all_in_folder=True: rel_path = folder path
@@ -58,7 +58,8 @@ def df_from_file_or_folder(
     df = pd.DataFrame()
 
     def read_file(source_file):
-        print('reading ' + source_file.split('\\')[-1])
+        if print_reading_messages:
+            print('reading ' + source_file.split('\\')[-1])
         return pd.read_csv(
             source_file,
             skiprows=skiprows,
