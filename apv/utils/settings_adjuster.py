@@ -36,4 +36,9 @@ def adjust_settings(simSettings: simSettingsObj) -> simSettingsObj:
         simSettings.cellLevelModuleParams['ycellgap']
     )
 
+    if simSettings.module_form == 'EW_fixed' or \
+            simSettings.module_form == 'cell_level_EW_fixed':
+        simSettings.sceneDict['azimuth'] == 90
+        simSettings.moduleDict['numpanels'] == 2
+
     return simSettings

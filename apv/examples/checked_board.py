@@ -20,7 +20,7 @@ weather_file = UserPaths.bifacial_radiance_files_folder / \
     Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
 
 brObj = apv.br_wrapper.BifacialRadianceObj(
-    simSettings=simSettings,
+    SimSettings=simSettings,
     weather_file=weather_file  # without this, download happens automatically
 )
 

@@ -140,8 +140,14 @@ t2.method()
 
 # #
 
-print('hi', end="\r")
+def clear(): return os.system('clear')
 
+
+for i in range(2):
+    for i in range(1, 4):
+        clear()
+        print('Loading' + "."*i)
+        time.sleep(0.5)
 # #
 
 

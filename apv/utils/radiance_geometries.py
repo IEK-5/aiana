@@ -1,3 +1,16 @@
+"""documentation links
+
+    GENBOX (create a box with a certain size)
+    https://floyd.lbl.gov/radiance/man_html/genbox.1.html
+
+    GENREV (to create tubes, rings, donats, etc.)
+    https://floyd.lbl.gov/radiance/man_html/genrev.1.html
+
+    XFORM (translate, rotate, make arrays):
+    https://floyd.lbl.gov/radiance/man_html/xform.1.html
+
+    """
+
 import numpy as np
 from apv import settings
 from apv.settings import Simulation as simSettingsObj
@@ -73,25 +86,26 @@ def make_text_EW(simSettings: simSettingsObj) -> str:
     Returns:
         text [str]: [text to rotate second panel to create E-W (270 - 90)]
     """
-    c = simSettings.sceneDict
-    m = simSettings.moduleDict
+    sDict = simSettings.sceneDict
+    mDict = simSettings.moduleDict
     name = settings.Simulation.sim_name
 
     z = 0.02
-    Ny = m['numpanels']  # currently must be 2
+    Ny = mDict['numpanels']  # currently must be 2
     offsetfromaxis = 0.01
-    rotation_angle = 2*(90 - c['tilt']) + 180
+    rotation_angle = 2*(90 - sDict['tilt']) + 180
 
     name2 = str(name).strip().replace(' ', '_')
-    text = '! genbox {} {} {} {} {} '.format(name2, m['x'], m['y'], z)
+    text = '! genbox {} {} {} {} {} '.format(
+        name2, 'black', mDict['x'], mDict['y'], z)
     text += '| xform -t {} {} {} '.format(
-        -m['x']/2.0,
-        (-m['y']*Ny/2.0)-(m['ygap']*(Ny-1)/2.0),
+        -mDict['x']/2.0,
+        (-mDict['y']*Ny/2.0)-(mDict['ygap']*(Ny-1)/2.0),
         offsetfromaxis
     )
 
     text += '-a {} -t 0 {} 0 -rx {}'.format(
-        Ny, m['y']+m['ygap'], rotation_angle)
+        Ny, mDict['y']+mDict['ygap'], rotation_angle)
     packagingfactor = 100.0
 
     return text
@@ -151,7 +165,7 @@ def cell_level_EW_fixed(simSettings: simSettingsObj,
     return text
 
 
-def mounting_structure(simSettings, material):
+def mounting_structure(simSettings, APV_SystSettings, material):
     """Creates Aluminum posts and mounting structure
 
     Args:
@@ -169,13 +183,13 @@ def mounting_structure(simSettings, material):
     s_post = 0.15  # post thickness
     h_post = sDict["hub_height"] + 0.2  # post height
     y_length = sDict['pitch']*(sDict['nRows'] - 1)
-    x_length = mDict['x'] * (sDict['nMods'] + 1)
+    x_length = (mDict['x']+mDict['xgap']) * (sDict['nMods'] + 1)
 
     y_start = -y_length / 2
     x_start = -x_length / 2
 
     if sDict['nMods'] % 2 == 0:
-        x_start += mDict['x']/2
+        x_start += (mDict['x']+mDict['xgap'])/2
 
     # create posts
     text = (f'! genbox {material} post {s_post} {s_post} {h_post}'
@@ -190,3 +204,21 @@ def mounting_structure(simSettings, material):
             | xform  -t {x_start} {y_start} {h_post - s_beam - 0.2} \
             -a 3 -t 0 {sDict["pitch"]} 0 -a 2 -t 0 0 {-d_beam} ')
     return text
+
+
+""" def add_box_to_radiance_text(
+    text=str(),
+    material, name,
+    size_x, size_y, size_z,
+    position_x, position_y, position_z,
+    copies_x=1, copies_y=1, copies_z=1,
+    distance_between, array_distance_y, array_distance_z
+    array_distance_x
+    )->str:
+        text += (f'\n! genbox {material} post {x_length} {s_beam} {s_beam} \
+            | xform  -t {x_start} {y_start} {h_post - s_beam - 0.2} \
+            -a 3 -t 0 {sDict["pitch"]} 0 -a 2 -t 0 0 {-d_beam} ')
+
+    return text
+
+def array_copy_ """

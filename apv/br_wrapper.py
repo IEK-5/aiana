@@ -49,11 +49,13 @@ class BifacialRadianceObj:
 
     def __init__(
             self,
-            simSettings=apv.settings.Simulation(),
+            SimSettings=apv.settings.Simulation(),
+            APV_SystSettings=apv.settings.APV_System(),
             weather_file=None,
             # create_oct_file=True
     ):
-        self.simSettings: apv.settings.Simulation = simSettings
+        self.SimSettings: apv.settings.Simulation = SimSettings
+        self.APV_SystSettings: apv.settings.APV_System = APV_SystSettings
         self.weather_file = weather_file
         # self.create_oct_file = create_oct_file
 
@@ -105,8 +107,8 @@ class BifacialRadianceObj:
             metdata: Meteorological csv data
         """
 
-        self.simSettings = apv.utils.settings_adjuster.adjust_settings(
-            self.simSettings)
+        self.SimSettings = apv.utils.settings_adjuster.adjust_settings(
+            self.SimSettings)
 
         working_folder = UserPaths.bifacial_radiance_files_folder
         # check working folder
@@ -114,39 +116,39 @@ class BifacialRadianceObj:
 
         # create Bifacial_Radiance Object with ground
         self.radObj = br.RadianceObj(
-            self.simSettings.sim_name, path=str(working_folder))
-        self.radObj.setGround(self.simSettings.ground_albedo)
+            self.SimSettings.sim_name, path=str(working_folder))
+        self.radObj.setGround(self.SimSettings.ground_albedo)
 
         # read TMY or EPW data
         if self.weather_file is None:
             self.weather_file = self.radObj.getEPW(
-                lat=self.simSettings.apv_location.latitude,
-                lon=self.simSettings.apv_location.longitude)
+                lat=self.SimSettings.apv_location.latitude,
+                lon=self.SimSettings.apv_location.longitude)
 
         self.met_data = self.radObj.readWeatherFile(
             weatherFile=str(self.weather_file))
 
         # Create Sky
         # gendaylit using Perez models for direct and diffuse components
-        if self.simSettings.sky_gen_mode == 'gendaylit':
+        if self.SimSettings.sky_gen_mode == 'gendaylit':
             timeindex = apv.utils.time.get_hour_of_year(
-                self.simSettings.sim_date_time)
+                self.SimSettings.sim_date_time)
             # if (self.simSettings.start_time == '') and (
             # self.simSettings.end_time == ''):
             self.radObj.gendaylit(timeindex=timeindex)
             self.oct_file_name = self.radObj.name \
-                + '_' + self.simSettings.sim_date_time
+                + '_' + self.SimSettings.sim_date_time
 
         # gencumskyself.met_data
-        if self.simSettings.sky_gen_mode == 'gencumsky':
+        if self.SimSettings.sky_gen_mode == 'gencumsky':
             # from (year,month,day,hour)
-            startdt = dt.datetime(2001, self.simSettings.startdt[0],
-                                  self.simSettings.startdt[1],
-                                  self.simSettings.startdt[2])
+            startdt = dt.datetime(2001, self.SimSettings.startdt[0],
+                                  self.SimSettings.startdt[1],
+                                  self.SimSettings.startdt[2])
             # to (year,month,day,hour)
-            enddt = dt.datetime(2001, self.simSettings.enddt[0],
-                                self.simSettings.enddt[1],
-                                self.simSettings.enddt[2])
+            enddt = dt.datetime(2001, self.SimSettings.enddt[0],
+                                self.SimSettings.enddt[1],
+                                self.SimSettings.enddt[2])
 
             self.radObj.genCumSky(epwfile=self.weather_file,
                                   startdt=startdt,
@@ -175,45 +177,45 @@ class BifacialRadianceObj:
         rad_text = None
         cellLevelModuleParams = None
 
-        if self.simSettings.module_form == 'cell_level':
-            cellLevelModuleParams = self.simSettings.cellLevelModuleParams
+        if self.APV_SystSettings.module_form == 'cell_level':
+            cellLevelModuleParams = self.APV_SystSettings.cellLevelModuleParams
 
-        if self.simSettings.module_form == 'cell_level_checker_board':
+        if self.APV_SystSettings.module_form == 'cell_level_checker_board':
             rad_text = apv.utils.radiance_geometries.checked_module(
-                self.simSettings
+                self.SimSettings
             )
 
-        if self.simSettings.module_form == 'EW_fixed':
+        if self.APV_SystSettings.module_form == 'EW_fixed':
             rad_text = apv.utils.radiance_geometries.make_text_EW(
-                self.simSettings
+                self.SimSettings
             )
 
-        if self.simSettings.module_form == 'cell_level_EW_fixed':
+        if self.APV_SystSettings.module_form == 'cell_level_EW_fixed':
             rad_text = apv.utils.radiance_geometries.cell_level_EW_fixed(
-                self.simSettings, self.simSettings.cellLevelModuleParams
+                self.SimSettings, self.APV_SystSettings.cellLevelModuleParams
             )
 
         self.radObj.makeModule(
-            name=self.simSettings.module_name,
-            **self.simSettings.moduleDict,
+            name=self.SimSettings.module_name,
+            **self.SimSettings.moduleDict,
             cellLevelModuleParams=cellLevelModuleParams,
             text=rad_text,
-            glass=True,
+            # glass=True,
         )
         # make scene
         self.scene = self.radObj.makeScene(
-            moduletype=self.simSettings.module_name,
-            sceneDict=self.simSettings.sceneDict)
+            moduletype=self.SimSettings.module_name,
+            sceneDict=self.SimSettings.sceneDict)
 
-        if self.simSettings.add_mounting_structure:
+        if self.SimSettings.add_mounting_structure:
             # create mounting structure as custom object:
             # add mounting structure to the radObj
             rad_text = apv.utils.radiance_geometries.mounting_structure(
-                simSettings=self.simSettings,
+                simSettings=self.SimSettings,
                 material='Metal_Aluminum_Anodized'
             )
 
-            rz = 180 - self.simSettings.sceneDict["azimuth"]
+            rz = 180 - self.SimSettings.sceneDict["azimuth"]
             self.radObj.appendtoScene(
                 radfile=self.scene.radfiles,
                 customObject=self.radObj.makeCustomObject(
@@ -254,7 +256,7 @@ class BifacialRadianceObj:
         if oct_file_name is None:
             oct_file_name = self.oct_file_name
 
-        scd = self.simSettings.scene_camera_dicts[view_name]
+        scd = self.SimSettings.scene_camera_dicts[view_name]
 
         for key in scd:
             scd[key] = str(scd[key]) + ' '
@@ -296,7 +298,7 @@ class BifacialRadianceObj:
             octfile=octfile, name=self.radObj.name)
 
         # number of sensors on ground against y-axis (along x-axis)
-        sensorsy = np.round(self.x_field / self.simSettings.spatial_resolution)
+        sensorsy = np.round(self.x_field / self.SimSettings.spatial_resolution)
         if (sensorsy % 2) == 0:
             sensorsy += 1
 
@@ -311,8 +313,8 @@ class BifacialRadianceObj:
 
     def __calculate_ground_grid_parameters(self):
 
-        sceneDict = self.simSettings.sceneDict
-        moduleDict = self.simSettings.moduleDict
+        sceneDict = self.SimSettings.sceneDict
+        moduleDict = self.SimSettings.moduleDict
 
         x_field: int = round(sceneDict['nMods'] * moduleDict['x']) + 2*4
         y_field: int = round(sceneDict['pitch'] * sceneDict['nRows']
@@ -337,7 +339,7 @@ class BifacialRadianceObj:
         self.ygrid: list[float] = np.arange(
             -self.y_field / 2,
             (self.y_field / 2) + 1,
-            self.simSettings.spatial_resolution)
+            self.SimSettings.spatial_resolution)
 
     def __set_groundscan(self, groundscan: dict) -> dict:
         """Modifies the groundscan dictionary, except for 'ystart',
@@ -353,7 +355,7 @@ class BifacialRadianceObj:
             groundscan (dict)
         """
         groundscan['xstart'] = - self.x_field / 2
-        groundscan['xinc'] = self.simSettings.spatial_resolution
+        groundscan['xinc'] = self.SimSettings.spatial_resolution
         groundscan['zstart'] = 0.05
         groundscan['zinc'] = 0
         groundscan['yinc'] = 0
@@ -371,8 +373,8 @@ class BifacialRadianceObj:
                               temp_name,
                               groundscan_copy,
                               backscan,
-                              accuracy=self.simSettings.ray_tracing_accuracy,
-                              only_ground=self.simSettings.only_ground_scan)
+                              accuracy=self.SimSettings.ray_tracing_accuracy,
+                              only_ground=self.SimSettings.only_ground_scan)
 
         # TODO TypeError: can only concatenate tuple (not "int") to tuple
         # sim_progress =100*(np.where(self.ygrid == y_start)+1)/len(self.ygrid)
@@ -393,7 +395,7 @@ class BifacialRadianceObj:
         tictoc = pytictoc.TicToc()
         tictoc.tic()
 
-        if self.simSettings.use_multi_processing:
+        if self.SimSettings.use_multi_processing:
 
             with concurrent.futures.ProcessPoolExecutor() as executor:
                 results = executor.map(self._run_line_scan, self.ygrid)
@@ -422,7 +424,7 @@ class BifacialRadianceObj:
 
         df_ground_results = df_ground_results.reset_index()
 
-        if self.simSettings.only_ground_scan:
+        if self.SimSettings.only_ground_scan:
             col_name = 'Wm2'
         else:
             col_name = 'Wm2Front'
@@ -477,13 +479,13 @@ class BifacialRadianceObj:
                     self.csv_file_name))
 
         ticklabels_skip_count_number = int(
-            2/self.simSettings.spatial_resolution)
+            2/self.SimSettings.spatial_resolution)
         if ticklabels_skip_count_number < 2:
             ticklabels_skip_count_number = "auto"
 
-        title = (f'Module Form: {self.simSettings.module_form}\n'
-                 f'Date & Time: {self.simSettings.sim_date_time}\n'
-                 f'Resolution: {self.simSettings.spatial_resolution} m')
+        title = (f'Module Form: {self.APV_SystSettings.module_form}\n'
+                 f'Date & Time: {self.SimSettings.sim_date_time}\n'
+                 f'Resolution: {self.SimSettings.spatial_resolution} m')
 
         fig = apv.utils.plots.plot_heatmap(
             df, 'x', 'y', 'Wm2Ground',

@@ -1,9 +1,12 @@
 # #
-"""debugging low res"""
+"""multi processing"""
 if __name__ == '__main__':
     from pathlib import Path
+    from apv.settings import UserPaths
     import importlib as imp
+    import os
 
+    # custom
     import apv
     imp.reload(apv.settings)
     imp.reload(apv.br_wrapper)
@@ -11,14 +14,15 @@ if __name__ == '__main__':
     simSettings = apv.settings.Simulation()
 
     # simSettings.only_ground_scan = False
-    # use_multi_processing = False
+    # simSettings.ray_tracing_accuracy = 'high'
 
     simSettings.sim_date_time = '06-15_11h'
+    simSettings.checker_board = False
     simSettings.spatial_resolution = 5
     simSettings.sky_gen_mode = 'gendaylit'
-    simSettings.sim_name = 'APV_floating'
+    simSettings.sim_name = 'mp'
 
-    weather_file = apv.settings.UserPaths.bifacial_radiance_files_folder / \
+    weather_file = UserPaths.bifacial_radiance_files_folder / \
         Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
 
     brObj = apv.br_wrapper.BifacialRadianceObj(
@@ -40,14 +44,14 @@ if __name__ == '__main__':
 
     # show results
     brObj.df_ground_results
+
     # #
-    # plot existing data (simulation cell does not need to be repeated)
+    imp.reload(apv.utils.plots)
+    imp.reload(apv.br_wrapper)
     brObj = apv.br_wrapper.BifacialRadianceObj(
         SimSettings=simSettings,
         weather_file=weather_file
     )
-    imp.reload(apv.utils.plots)
-    imp.reload(apv.br_wrapper)
     brObj.plot_ground_insolation()
 
 # #
