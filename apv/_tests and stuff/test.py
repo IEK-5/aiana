@@ -218,7 +218,7 @@ data = hjson.loads(text)
 
 
 # #
-str(apv.settings.UserPaths.data_download_folder)
+str(apv.settings.user_pathes.data_download_folder)
 
 # #
 

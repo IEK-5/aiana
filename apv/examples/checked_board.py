@@ -8,7 +8,7 @@ import apv
 imp.reload(apv.settings)
 imp.reload(apv.br_wrapper)
 
-simSettings = apv.settings.Simulation()
+simSettings = apv.settings.simulation.Simulation()
 
 simSettings.sim_date_time = '06-15_11h'
 simSettings.spatial_resolution = 0.1

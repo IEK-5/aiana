@@ -19,7 +19,7 @@ import concurrent.futures
 import bifacial_radiance as br
 
 import apv
-from apv.settings import UserPaths
+import apv.settings.user_pathes as UserPaths  # TODO keine Klasse mehr
 from apv.utils import files_interface as fi
 
 # #
@@ -29,7 +29,8 @@ class BifacialRadianceObj:
     # TODO clean up prints (especially data frames)
     """
     Attributes:
-        simSettings (apv.settings.Simulation): simulation settings object
+        simSettings (apv.settings.simulation.Simulation):
+        simulation settings object
         --------
         radObj (bifacial_radiance.RadianceObj): radiance object
         scene (bifacial_radiance.SceneObj): scene object
@@ -49,13 +50,14 @@ class BifacialRadianceObj:
 
     def __init__(
             self,
-            SimSettings=apv.settings.Simulation(),
-            APV_SystSettings=apv.settings.APV_System(),
+            SimSettings=apv.settings.simulation.Simulation(),
+            APV_SystSettings=apv.settings.apv_systems.Default(),
             weather_file=None,
             # create_oct_file=True
     ):
-        self.SimSettings: apv.settings.Simulation = SimSettings
-        self.APV_SystSettings: apv.settings.APV_System = APV_SystSettings
+        self.SimSettings: apv.settings.simulation.Simulation = SimSettings
+        self.APV_SystSettings: apv.settings.apv_systems.Default = \
+            APV_SystSettings
         self.weather_file = weather_file
         # self.create_oct_file = create_oct_file
 
@@ -180,17 +182,17 @@ class BifacialRadianceObj:
         if self.APV_SystSettings.module_form == 'cell_level':
             cellLevelModuleParams = self.APV_SystSettings.cellLevelModuleParams
 
-        if self.APV_SystSettings.module_form == 'cell_level_checker_board':
+        elif self.APV_SystSettings.module_form == 'cell_level_checker_board':
             rad_text = apv.utils.radiance_geometries.checked_module(
                 self.APV_SystSettings
             )
 
-        if self.APV_SystSettings.module_form == 'EW_fixed':
+        elif self.APV_SystSettings.module_form == 'EW_fixed':
             rad_text = apv.utils.radiance_geometries.make_text_EW(
                 self.APV_SystSettings
             )
 
-        if self.APV_SystSettings.module_form == 'cell_level_EW_fixed':
+        elif self.APV_SystSettings.module_form == 'cell_level_EW_fixed':
             rad_text = apv.utils.radiance_geometries.cell_level_EW_fixed(
                 self.APV_SystSettings,
                 self.APV_SystSettings.cellLevelModuleParams
@@ -207,21 +209,26 @@ class BifacialRadianceObj:
         self.scene = self.radObj.makeScene(
             moduletype=self.APV_SystSettings.module_name,
             sceneDict=self.APV_SystSettings.sceneDict)
-
-        if self.APV_SystSettings.add_mounting_structure:
-            # create mounting structure as custom object:
-            # add mounting structure to the radObj
-            rad_text = apv.utils.radiance_geometries.mounting_structure(
-                APV_SystSettings=self.APV_SystSettings,
-                material='Metal_Aluminum_Anodized'
+        rad_text = ''
+        structure_type = self.APV_SystSettings.mounting_structure_type
+        # create mounting structure as custom object:
+        if structure_type == 'declined_tables':
+            rad_text = apv.utils.radiance_geometries.declined_tables_mount(
+                APV_SystSettings=self.APV_SystSettings
             )
-
+        elif structure_type == 'framed_single_axes':
+            rad_text = apv.utils.radiance_geometries.framed_single_axes_mount(
+                APV_SystSettings=self.APV_SystSettings
+            )
+        if rad_text != '':
             rz = 180 - self.APV_SystSettings.sceneDict["azimuth"]
+            # add mounting structure to the radObj
             self.radObj.appendtoScene(
                 radfile=self.scene.radfiles,
                 customObject=self.radObj.makeCustomObject(
                     'structure', rad_text),
-                text=f'!xform -rz {rz}')
+                text=f'!xform -rz {rz}'
+            )
 
         '''
             else:
@@ -251,13 +258,12 @@ class BifacialRadianceObj:
 
             oct_fn (str): file name of the .oct file without extension
             being located in the view_fp parent directory (e.g. 'Demo1')
-            Defaults to settings.Simulation.name.
-        """
+             """
 
         if oct_file_name is None:
             oct_file_name = self.oct_file_name
 
-        scd = self.SimSettings.scene_camera_dicts[view_name]
+        scd = self.APV_SystSettings.scene_camera_dicts[view_name]
 
         for key in scd:
             scd[key] = str(scd[key]) + ' '
@@ -453,7 +459,7 @@ class BifacialRadianceObj:
         """
         if df is None:
             df = apv.utils.files_interface.df_from_file_or_folder(
-                apv.settings.UserPaths.results_folder / Path(
+                apv.settings.user_pathes.results_folder / Path(
                     self.csv_file_name))
 
         f_result_path = os.path.join(UserPaths.results_folder,
@@ -476,7 +482,7 @@ class BifacialRadianceObj:
 
         if df is None:
             df = apv.utils.files_interface.df_from_file_or_folder(
-                apv.settings.UserPaths.results_folder / Path(
+                apv.settings.user_pathes.results_folder / Path(
                     self.csv_file_name))
 
         ticklabels_skip_count_number = int(
@@ -495,6 +501,10 @@ class BifacialRadianceObj:
             plot_title=title,
             ticklabels_skip_count_number=ticklabels_skip_count_number
         )
+
+        for ax in fig.axes:
+            ax = apv.utils.plots.add_north_arrow(
+                ax, self.APV_SystSettings.sceneDict['azimuth'])
 
         apv.utils.files_interface.save_fig(fig, self.oct_file_name)
 

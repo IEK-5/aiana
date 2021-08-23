@@ -9,7 +9,6 @@ from scipy import stats
 import seaborn as sns
 
 import apv
-from apv.settings import APV_System as APV_SystSettings
 
 
 def plot_heatmap(
@@ -88,13 +87,12 @@ def plot_heatmap(
     ax.set_yticklabels(ylabels, rotation=0)
 
     # add_module_line(ax=ax)
-    ax = add_north_arrow(ax=ax)
-
     return fig
 
 
 def add_north_arrow(
     ax,
+    azimuth,
     text="N",
     xy=(1.17, 1.1),
     text_color="black",
@@ -122,8 +120,7 @@ def add_north_arrow(
         va (str, optional): Vertical alignment. Defaults to "center".
     """
     yarrow = xy[1] - 0.05
-    if APV_SystSettings.sceneDict['azimuth'] == 90 or \
-            APV_SystSettings.sceneDict == 270:
+    if azimuth == 90 or azimuth == 270:
         xy = (1, 1.3)
         yarrow = xy[1] - 0.15
     # North [N]
@@ -148,7 +145,8 @@ def add_north_arrow(
     return ax
 
 
-def add_module_line(ax):
+# TODO brauchen wir nicht mehr, oder? Da man Pfostenschatten sieht.
+""" def add_module_line(ax):
     ''' adds lines in heatmap to indicate PV modules location.
 
 
@@ -175,7 +173,7 @@ def add_module_line(ax):
     # plot the points
     ax.plot([x1, x2], [5, 15], color='b', linestyle='-', linewidth=2)
     # ax.plot([20, 20], [0, 20])
-    return
+    return """
 
 
 def comparing_plot_sns(

@@ -8,7 +8,7 @@ if __name__ == '__main__':
     imp.reload(apv.settings)
     imp.reload(apv.br_wrapper)
 
-    simSettings = apv.settings.Simulation()
+    simSettings = apv.settings.simulation.Simulation()
 
     # simSettings.only_ground_scan = False
     # use_multi_processing = False
@@ -18,7 +18,7 @@ if __name__ == '__main__':
     simSettings.sky_gen_mode = 'gendaylit'
     simSettings.sim_name = 'APV_floating'
 
-    weather_file = apv.settings.UserPaths.bifacial_radiance_files_folder / \
+    weather_file = apv.settings.user_pathes.bifacial_radiance_files_folder / \
         Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
 
     brObj = apv.br_wrapper.BifacialRadianceObj(

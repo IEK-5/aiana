@@ -11,8 +11,7 @@ import os as os
 from pathlib import Path
 import xarray as xr
 import apv
-from apv.settings import UserPaths as UserPaths
-path_main = apv.settings.UserPaths.root
+path_main = apv.settings.user_pathes.root
 
 
 def clear_folder_content(folder_path):
@@ -134,7 +133,7 @@ def save_fig(
         fig: Figure,
         file_name: str,
         sub_folder_name='plots',
-        parent_folder_path=apv.settings.UserPaths.results_folder,
+        parent_folder_path=apv.settings.user_pathes.results_folder,
         file_formats=['.jpg'],
         dpi=300,
         transparent=False):
@@ -146,7 +145,7 @@ def save_fig(
         file_name (str): file name without extension
         sub_folder_name (str, optional): Defaults to 'plots'.
         parent_folder_path ([type], optional):
-        Defaults to apv.settings.UserPaths.results_folder.
+        Defaults to apv.settings.user_pathes.results_folder.
         file_formats (list, optional): list of formats. Defaults to ['.jpg'].
         dpi (int, optional): Resolution (dots per inch). Defaults to 300.
         transparent (bool, optional): Defaults to False.

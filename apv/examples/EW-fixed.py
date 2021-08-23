@@ -9,7 +9,7 @@ imp.reload(apv.settings)
 imp.reload(apv.br_wrapper)
 imp.reload(apv.utils.radiance_geometries)
 
-simSettings = apv.settings.Simulation()
+simSettings = apv.settings.simulation.Simulation()
 
 simSettings.sim_date_time = '06-15_11h'
 simSettings.spatial_resolution = 1

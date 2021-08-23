@@ -108,7 +108,7 @@ def download_wind_and_T_data(
                 'skin_temperature'  # temperature on the surface
             ],
         },
-        os.path.join(apv.settings.UserPaths.data_download_folder, file_name+'.nc')
+        os.path.join(apv.settings.user_pathes.data_download_folder, file_name+'.nc')
     )
 
 
@@ -149,7 +149,7 @@ def download_insolation_data(
             'time_reference': 'universal_time',
             'format': 'csv',
         },
-        os.path.join(apv.settings.UserPaths.data_download_folder, file_name+'.csv')
+        os.path.join(apv.settings.user_pathes.data_download_folder, file_name+'.csv')
     )
 
 

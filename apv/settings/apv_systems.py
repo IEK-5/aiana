@@ -1,13 +1,6 @@
-'''Classes are used here only to group the static parameters'''
 
-from pathlib import Path
-import datetime as dt
 from typing import Literal
-from pvlib import location
-
-
-class APV_System:
-    """
+"""
     sceApneDict:
     tilt: panel tilt [degree]
     pitch: distance between two adjacent module-rows [m]
@@ -27,6 +20,9 @@ class APV_System:
         (relevant for tracking systems).
     numpanels: number of panels along y """
 
+
+class Default:
+    """APV_Syst_Morschenich"""
     module_name = 'SUNFARMING'
 
     # bifacial_radiance geometry-inputs
@@ -67,41 +63,8 @@ class APV_System:
         'cell_level_EW_fixed'
     ] = 'cell_level_EW_fixed'
 
-    add_mounting_structure = True
-
-
-class Simulation:
-    sim_name = 'APV_Floating'  # also used as first part of the .oct file name
-
-    # ground
-    ground_albedo = 0.25  # grass
-
-    # speed up options
-
-    # Spatial resolution between sensors
-    spatial_resolution = 5  # 0.15  # [m]
-    # ray tracing accuracy used in br.analysisObj.analysis()
-    ray_tracing_accuracy = 'low'  # 'high' does not improve accuracy much but
-    # sim time is increased by x3-x4
-    use_multi_processing = True
-    only_ground_scan = True  # if False the backscan will be implemented too
-
-    # time settings
-    sim_date_time = '06-15_11h'  # used as second part of the .oct file name
-
-    # location
-    apv_location = location.Location(
-        50.86351, 6.52946, altitude=123, tz='Europe/Berlin',
-        name='Morchenich')
-
-    # sky generation type:'gendaylit' or 'gencumsky'
-    sky_gen_mode: Literal['gendaylit', 'gencumsky'] = 'gendaylit'
-
-    if sky_gen_mode == 'gencumsky':
-        # Insert start date of the year as [month,day,hour]
-        startdt = [1, 1, 12]
-        # Insert end date of year as [month,day,hour]
-        enddt = [3, 31, 23]
+    mounting_structure_type: Literal[
+        'none', 'declined_tables', 'framed_single_axes'] = 'framed_single_axes'
 
     scene_camera_dicts: dict = {
         'total': {
@@ -127,18 +90,70 @@ class Simulation:
     }
 
 
-class UserPaths:
-    """Paths for working folder, radiance folder
-    """
-    root: Path = Path().home().resolve() / 'Documents/agri-PV'
+class APV_Syst_InclinedTables_Juelich:
 
-    # bifacial_radiance
-    # settings.UserPaths.br_folder
-    bifacial_radiance_files_folder: Path = root / 'bifacial_radiance_files'
+    module_name = 'SUNFARMING'
 
-    # for plots and tables
-    results_folder: Path = root / 'results'
-    # for weather data
-    data_download_folder: Path = root / 'data_downloads'
+    # bifacial_radiance geometry-inputs
 
-# #
+    sceneDict = {
+        'tilt': 15,
+        'pitch': 10,
+        'hub_height': 2.25,
+        'azimuth': 225,
+        'nMods': 10,
+        'nRows': 2,
+    }
+
+    moduleDict = {
+        'y': 0.998,
+        'x': 1.980,
+        'xgap': 0.1,
+        'ygap': 0.1,
+        'zgap': 0,
+        'numpanels': 5
+    }
+
+    cellLevelModuleParams = {
+        'numcellsx': 6,  # has to be an even number at the moment
+        'numcellsy': 12,  # has to be an even number at the moment
+        'xcellgap': 0.02,
+        'ycellgap': 0.02
+    }
+
+    module_form: Literal[
+        'std',
+        'cell_level',
+        'cell_level_checker_board',
+        'EW_fixed',  # at the moment second modul of roof is created in the
+        # text input for br.radObj.make_module(),
+        # and the tilt is happening later in br.radObj.make_scene()
+        # the second module is facing upwards-down, might be a problem later
+        'cell_level_EW_fixed'
+    ] = 'std'
+
+    mounting_structure_type: Literal[
+        'none', 'declined_tables', 'framed_single_axes'] = 'declined_tables'
+
+    scene_camera_dicts: dict = {
+        'total': {
+            'cam_pos_x': -21.5,   # depth
+            'cam_pos_y': 6.9,   # left / right
+            'cam_pos_z': 1,     # height
+            'view_direction_x': 0.9863,
+            'view_direction_y': -0.1567,
+            'view_direction_z': -0.0509,
+            'horizontal_view_angle': 60,  # [degree]
+            'vertical_view_angle': 40  # [degree]
+        },
+        'module_zoom': {
+            'cam_pos_x': -5,   # depth
+            'cam_pos_y': -1.1,   # left / right
+            'cam_pos_z': 6.5,     # height
+            'view_direction_x': 1.581,
+            'view_direction_y': 0,
+            'view_direction_z': -1.919234,
+            'horizontal_view_angle': 120,  # [degree]
+            'vertical_view_angle': 90  # [degree]
+        }
+    }

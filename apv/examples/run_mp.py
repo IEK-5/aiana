@@ -11,7 +11,7 @@ if __name__ == '__main__':
     imp.reload(apv.settings)
     imp.reload(apv.br_wrapper)
 
-    simSettings = apv.settings.Simulation()
+    simSettings = apv.settings.simulation.Simulation()
 
     # simSettings.only_ground_scan = False
     # simSettings.ray_tracing_accuracy = 'high'
