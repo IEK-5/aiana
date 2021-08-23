@@ -13,12 +13,12 @@
 
 import numpy as np
 from apv import settings
-from apv.settings import Simulation as simSettingsObj
+from apv.settings import APV_System as APV_SystSettingsObj
 
 
-def checked_module(simSettings: simSettingsObj) -> str:
-    c = simSettings.cellLevelModuleParams
-    m = simSettings.moduleDict
+def checked_module(APV_SystSettings: APV_SystSettingsObj) -> str:
+    c = APV_SystSettings.cellLevelModuleParams
+    m = APV_SystSettings.moduleDict
 
     # copied from br.main.RadianceObj.makeModule() and modified:
     x = c['numcellsx']*c['xcell'] + (c['numcellsx']-1)*c['xcellgap']
@@ -73,12 +73,12 @@ def checked_module(simSettings: simSettingsObj) -> str:
     return text
 
 
-def make_text_EW(simSettings: simSettingsObj) -> str:
+def make_text_EW(APV_SystSettings: APV_SystSettingsObj) -> str:
     """creates needed text needed in makemodule() to create E-W. Azimuth angle
     must be 90! and number of panels must be 2!
 
     Args:
-        simSettings:
+        APV_SystSettings:
         name ([str]): module_type
         moduleDict ([dict]): inherited from br_setup and defined in settings.py
         sceneDict  ([dict]): inherited from br_setup and defined in settings.py
@@ -86,8 +86,8 @@ def make_text_EW(simSettings: simSettingsObj) -> str:
     Returns:
         text [str]: [text to rotate second panel to create E-W (270 - 90)]
     """
-    sDict = simSettings.sceneDict
-    mDict = simSettings.moduleDict
+    sDict = APV_SystSettings.sceneDict
+    mDict = APV_SystSettings.moduleDict
     name = settings.Simulation.sim_name
 
     z = 0.02
@@ -111,13 +111,13 @@ def make_text_EW(simSettings: simSettingsObj) -> str:
     return text
 
 
-def cell_level_EW_fixed(simSettings: simSettingsObj,
+def cell_level_EW_fixed(APV_SystSettings: APV_SystSettingsObj,
                         cellLevelModuleParams) -> str:
     """creates needed text needed in makemodule() to create cell-level E-W.
     Azimuth angle must be 90! and number of panels must be 2!
 
     Args:
-        simSettings:
+        APV_SystSettings:
         name ([str]): module_type
         moduleDict ([dict]): inherited from br_setup and defined in settings.py
         sceneDict  ([dict]): inherited from br_setup and defined in settings.py
@@ -125,8 +125,8 @@ def cell_level_EW_fixed(simSettings: simSettingsObj,
     Returns:
         text [str]: [text to rotate second panel to create E-W (270 - 90)]
     """
-    sc = simSettings.sceneDict
-    m = simSettings.moduleDict
+    sc = APV_SystSettings.sceneDict
+    m = APV_SystSettings.moduleDict
     name = settings.Simulation.sim_name
     z = 0.02
     Ny = m['numpanels']  # currently must be 2
@@ -137,14 +137,14 @@ def cell_level_EW_fixed(simSettings: simSettingsObj,
     c = cellLevelModuleParams
     x = c['numcellsx']*c['xcell'] + (c['numcellsx']-1)*c['xcellgap']
     y = c['numcellsy']*c['ycell'] + (c['numcellsy']-1)*c['ycellgap']
-
+    material = 'black'
     # center cell -
     if c['numcellsx'] % 2 == 0:
         cc = c['xcell']/2.0
         print("Module was shifted by {} in X to\
               avoid sensors on air".format(cc))
 
-    text = '! genbox {} cellPVmodule {} {} {} | '.format(c['xcell'],
+    text = '! genbox {} cellPVmodule {} {} {} | '.format(material, c['xcell'],
                                                          c['ycell'], z)
     text += 'xform -t {} {} {} '.format(-x/2.0 + cc,
                                         (-y*Ny / 2.0) -
@@ -165,18 +165,18 @@ def cell_level_EW_fixed(simSettings: simSettingsObj,
     return text
 
 
-def mounting_structure(simSettings, APV_SystSettings, material):
+def mounting_structure(APV_SystSettings, material):
     """Creates Aluminum posts and mounting structure
 
     Args:
-        simSettings : inherited from br_wrapper
+        APV_SystSettings : inherited from br_wrapper
         scene : appends to scene inherited from br_wrapper
 
     Returns:
         oct_file: created new oct file including all objects
     """
-    sDict = simSettings.sceneDict
-    mDict = simSettings.moduleDict
+    sDict = APV_SystSettings.sceneDict
+    mDict = APV_SystSettings.moduleDict
 
     s_beam = 0.075  # beam thickness
     d_beam = 0.5  # beam distance

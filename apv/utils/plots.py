@@ -9,7 +9,7 @@ from scipy import stats
 import seaborn as sns
 
 import apv
-from apv.settings import Simulation as simSettings
+from apv.settings import APV_System as APV_SystSettings
 
 
 def plot_heatmap(
@@ -122,7 +122,8 @@ def add_north_arrow(
         va (str, optional): Vertical alignment. Defaults to "center".
     """
     yarrow = xy[1] - 0.05
-    if simSettings.sceneDict['azimuth'] == 90 or simSettings.sceneDict == 270:
+    if APV_SystSettings.sceneDict['azimuth'] == 90 or \
+            APV_SystSettings.sceneDict == 270:
         xy = (1, 1.3)
         yarrow = xy[1] - 0.15
     # North [N]
@@ -153,8 +154,8 @@ def add_module_line(ax):
 
     '''
     # NOT READY! TODO insert geometry formulas for x1,y1,x2,y2
-    sceneDict = simSettings.sceneDict
-    moduleDict = simSettings.moduleDict
+    sceneDict = APV_SystSettings.sceneDict
+    moduleDict = APV_SystSettings.moduleDict
     # Field Geometry
     x_field = round(
         sceneDict['nMods'] * moduleDict['x'])

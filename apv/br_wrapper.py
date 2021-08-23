@@ -107,8 +107,8 @@ class BifacialRadianceObj:
             metdata: Meteorological csv data
         """
 
-        self.SimSettings = apv.utils.settings_adjuster.adjust_settings(
-            self.SimSettings)
+        self.APV_SystSettings = apv.utils.settings_adjuster.adjust_settings(
+            self.APV_SystSettings)
 
         working_folder = UserPaths.bifacial_radiance_files_folder
         # check working folder
@@ -182,40 +182,41 @@ class BifacialRadianceObj:
 
         if self.APV_SystSettings.module_form == 'cell_level_checker_board':
             rad_text = apv.utils.radiance_geometries.checked_module(
-                self.SimSettings
+                self.APV_SystSettings
             )
 
         if self.APV_SystSettings.module_form == 'EW_fixed':
             rad_text = apv.utils.radiance_geometries.make_text_EW(
-                self.SimSettings
+                self.APV_SystSettings
             )
 
         if self.APV_SystSettings.module_form == 'cell_level_EW_fixed':
             rad_text = apv.utils.radiance_geometries.cell_level_EW_fixed(
-                self.SimSettings, self.APV_SystSettings.cellLevelModuleParams
+                self.APV_SystSettings,
+                self.APV_SystSettings.cellLevelModuleParams
             )
 
         self.radObj.makeModule(
-            name=self.SimSettings.module_name,
-            **self.SimSettings.moduleDict,
+            name=self.APV_SystSettings.module_name,
+            **self.APV_SystSettings.moduleDict,
             cellLevelModuleParams=cellLevelModuleParams,
             text=rad_text,
             # glass=True,
         )
         # make scene
         self.scene = self.radObj.makeScene(
-            moduletype=self.SimSettings.module_name,
-            sceneDict=self.SimSettings.sceneDict)
+            moduletype=self.APV_SystSettings.module_name,
+            sceneDict=self.APV_SystSettings.sceneDict)
 
-        if self.SimSettings.add_mounting_structure:
+        if self.APV_SystSettings.add_mounting_structure:
             # create mounting structure as custom object:
             # add mounting structure to the radObj
             rad_text = apv.utils.radiance_geometries.mounting_structure(
-                simSettings=self.SimSettings,
+                APV_SystSettings=self.APV_SystSettings,
                 material='Metal_Aluminum_Anodized'
             )
 
-            rz = 180 - self.SimSettings.sceneDict["azimuth"]
+            rz = 180 - self.APV_SystSettings.sceneDict["azimuth"]
             self.radObj.appendtoScene(
                 radfile=self.scene.radfiles,
                 customObject=self.radObj.makeCustomObject(
@@ -313,8 +314,8 @@ class BifacialRadianceObj:
 
     def __calculate_ground_grid_parameters(self):
 
-        sceneDict = self.SimSettings.sceneDict
-        moduleDict = self.SimSettings.moduleDict
+        sceneDict = self.APV_SystSettings.sceneDict
+        moduleDict = self.APV_SystSettings.moduleDict
 
         x_field: int = round(sceneDict['nMods'] * moduleDict['x']) + 2*4
         y_field: int = round(sceneDict['pitch'] * sceneDict['nRows']

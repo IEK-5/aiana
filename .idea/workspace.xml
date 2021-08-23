@@ -5,8 +5,10 @@
       <change beforePath="$PROJECT_DIR$/apv/apv_main.py" beforeDir="false" afterPath="$PROJECT_DIR$/apv/apv_main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apv/br_wrapper.py" beforeDir="false" afterPath="$PROJECT_DIR$/apv/br_wrapper.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apv/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/apv/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apv/utils/Energy.py" beforeDir="false" afterPath="$PROJECT_DIR$/apv/utils/Energy.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apv/utils/plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/apv/utils/plots.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apv/utils/radiance_geometries.py" beforeDir="false" afterPath="$PROJECT_DIR$/apv/utils/radiance_geometries.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apv/utils/settings_adjuster.py" beforeDir="false" afterPath="$PROJECT_DIR$/apv/utils/settings_adjuster.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

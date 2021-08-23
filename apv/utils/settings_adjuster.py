@@ -1,10 +1,10 @@
 
-from apv.settings import Simulation as simSettingsObj
+from apv.settings import APV_System as APV_SystSettings
 
 
-def adjust_settings(simSettings: simSettingsObj) -> simSettingsObj:
+def adjust_settings(APV_SystSettings: APV_SystSettings) -> APV_SystSettings:
 
-    print('\n##### ' + simSettings.module_form.replace('_', ' ')
+    print('\n##### ' + APV_SystSettings.module_form.replace('_', ' ')
           + ' simulation mode #####\n')
 
     # if simSettings.module_form == 'cell_level_checker_board':
@@ -15,7 +15,10 @@ def adjust_settings(simSettings: simSettingsObj) -> simSettingsObj:
     #     simSettings.cellLevelModuleParams['numcellsy'] *= 2
     #     simSettings.sceneDict['nRows'] = 1
     #     simSettings.sceneDict['nMods'] = 5
-
+    if APV_SystSettings.module_form == 'EW_fixed' or \
+            APV_SystSettings.module_form == 'cell_level_EW_fixed':
+        APV_SystSettings.sceneDict['azimuth'] == 90
+        APV_SystSettings.moduleDict['numpanels'] == 2
     # add cell sizes
 
     def _calc_cell_size(mod_size, num_cell, cell_gap):
@@ -24,21 +27,21 @@ def adjust_settings(simSettings: simSettingsObj) -> simSettingsObj:
         cell_size = (mod_size - (num_cell-1)*cell_gap) / num_cell
         return cell_size
 
-    simSettings.cellLevelModuleParams['xcell'] = _calc_cell_size(
-        simSettings.moduleDict['x'],
-        simSettings.cellLevelModuleParams['numcellsx'],
-        simSettings.cellLevelModuleParams['xcellgap']
+    APV_SystSettings.cellLevelModuleParams['xcell'] = _calc_cell_size(
+        APV_SystSettings.moduleDict['x'],
+        APV_SystSettings.cellLevelModuleParams['numcellsx'],
+        APV_SystSettings.cellLevelModuleParams['xcellgap']
     )
 
-    simSettings.cellLevelModuleParams['ycell'] = _calc_cell_size(
-        simSettings.moduleDict['y'],
-        simSettings.cellLevelModuleParams['numcellsy'],
-        simSettings.cellLevelModuleParams['ycellgap']
+    APV_SystSettings.cellLevelModuleParams['ycell'] = _calc_cell_size(
+        APV_SystSettings.moduleDict['y'],
+        APV_SystSettings.cellLevelModuleParams['numcellsy'],
+        APV_SystSettings.cellLevelModuleParams['ycellgap']
     )
 
-    if simSettings.module_form == 'EW_fixed' or \
-            simSettings.module_form == 'cell_level_EW_fixed':
-        simSettings.sceneDict['azimuth'] == 90
-        simSettings.moduleDict['numpanels'] == 2
+    if APV_SystSettings.module_form == 'EW_fixed' or \
+            APV_SystSettings.module_form == 'cell_level_EW_fixed':
+        APV_SystSettings.sceneDict['azimuth'] == 90
+        APV_SystSettings.moduleDict['numpanels'] == 2
 
-    return simSettings
+    return APV_SystSettings

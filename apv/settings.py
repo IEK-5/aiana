@@ -8,7 +8,7 @@ from pvlib import location
 
 class APV_System:
     """
-    sceneDict:
+    sceApneDict:
     tilt: panel tilt [degree]
     pitch: distance between two adjacent module-rows [m]
     hub_height: vert. distance: ground to modules [m]
@@ -35,7 +35,7 @@ class APV_System:
         'tilt': 20,
         'pitch': 10,
         'hub_height': 4.5,
-        'azimuth': 180,
+        'azimuth': 90,
         'nMods': 10,
         'nRows': 3,
     }
@@ -65,7 +65,7 @@ class APV_System:
         # and the tilt is happening later in br.radObj.make_scene()
         # the second module is facing upwards-down, might be a problem later
         'cell_level_EW_fixed'
-    ] = 'std'
+    ] = 'cell_level_EW_fixed'
 
     add_mounting_structure = True
 
@@ -91,7 +91,8 @@ class Simulation:
 
     # location
     apv_location = location.Location(
-        50.86351, 6.52946, altitude=123, tz='Europe/Berlin')
+        50.86351, 6.52946, altitude=123, tz='Europe/Berlin',
+        name='Morchenich')
 
     # sky generation type:'gendaylit' or 'gencumsky'
     sky_gen_mode: Literal['gendaylit', 'gencumsky'] = 'gendaylit'

@@ -7,23 +7,24 @@ if __name__ == '__main__':
     import apv
     imp.reload(apv.br_wrapper)
 
-    simSettings = apv.settings.Simulation()
+    SimSettings = apv.settings.Simulation()
+    APV_SystSettings = apv.settings.APV_System()
 
     # ### often changed settings:  ####
-    # simSettings.only_ground_scan = False
+    # SimSettings.only_ground_scan = False
     # use_multi_processing = False
-    # simSettings.add_mounting_structure = False
-    simSettings.sim_date_time = '06-15_11h'
-    simSettings.spatial_resolution = 1
-    simSettings.sky_gen_mode = 'gendaylit'
-    simSettings.sim_name = 'APV_floating'
-    # simSettings.module_form = 'EW_fixed'
+    # SimSettings.add_mounting_structure = False
+    SimSettings.sim_date_time = '06-15_11h'
+    SimSettings.spatial_resolution = 5
+    SimSettings.sky_gen_mode = 'gendaylit'
+    SimSettings.sim_name = 'APV_floating'
+    # APV_SystSettings.module_form = 'cell_level'
 
     weather_file = apv.settings.UserPaths.bifacial_radiance_files_folder / \
         Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
 
     brObj = apv.br_wrapper.BifacialRadianceObj(
-        SimSettings=simSettings,
+        SimSettings=SimSettings,
         weather_file=weather_file  # downloading automatically without this
     )
     # #
