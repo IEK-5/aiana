@@ -31,8 +31,11 @@ class Simulation:
     # sky generation type:'gendaylit' or 'gencumsky'
     sky_gen_mode: Literal['gendaylit', 'gencumsky'] = 'gendaylit'
 
-    if sky_gen_mode == 'gencumsky':
-        # Insert start date of the year as [month,day,hour]
-        startdt = [1, 1, 12]
-        # Insert end date of year as [month,day,hour]
-        enddt = [3, 31, 23]
+    # needed for sky_gen_mode = 'gencumsky':
+    # Insert start date of the year as [month,day,hour]
+    startdt = [6, 1, 0]
+    # Insert end date of year as [month,day,hour]
+    enddt = [6, 1, 23]
+
+    ground_scan_margin_x = 8
+    ground_scan_margin_y = 4

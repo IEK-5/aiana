@@ -18,7 +18,7 @@ if __name__ == '__main__':
     # use_multi_processing = False
     # SimSettings.add_mounting_structure = False
     SimSettings.sim_date_time = '06-15_11h'
-    SimSettings.spatial_resolution = 5
+    SimSettings.spatial_resolution = 1
     SimSettings.sky_gen_mode = 'gendaylit'
     SimSettings.sim_name = 'APV_floating'
     APV_SystSettings.module_form = 'std'
@@ -40,6 +40,7 @@ if __name__ == '__main__':
     )
     # #
     brObj.run_raytracing_simulation()
+    # #
 
     # plot existing data (simulation cell does not need to be repeated)
     brObj.plot_ground_insolation()

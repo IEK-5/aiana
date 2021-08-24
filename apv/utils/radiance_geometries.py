@@ -15,6 +15,13 @@ import numpy as np
 from apv.settings.apv_systems import Default as APV_SystSettingsObj
 
 
+def ground(x_field: int, y_field: int) -> str:
+    text = (f'! genbox white_EPDM field {x_field} {y_field} {0.01}'
+            f' | xform -t {-x_field/2} {-y_field/2} 0'
+            )
+    return text
+
+
 def checked_module(APV_SystSettings: APV_SystSettingsObj) -> str:
     c = APV_SystSettings.cellLevelModuleParams
     m = APV_SystSettings.moduleDict

@@ -2,6 +2,21 @@
 ''' Called by main.py with the needed parameters to set the neccessary
 objects, create scene and run simulation with Bifacial_Radiance according
 to presets in settings.py
+
+#TODO
+- gencumsky mit einem Pfosten ("Sonnenuhr"), sollte verwaschen sein ->Leo
+- gencumsky plot einheit und titel
+- ground in rvu darstellen
+- heatmap auch als shadow depths (optional)
+- den modul footprint als 1pixel breiten und 1 µm hohen Rahmen machen
+mit albedo = die des bodens --> resultiert in 100% schatten
+
+- Gewächshaus reflektierend machen
+- bekommen die Module an der Glaswand mehr Licht ab? Falls ja, nicht die Strings
+beider Reihen in Reihe schalten!
+
+
+
 '''
 # import needed packages
 import subprocess
@@ -152,7 +167,7 @@ class BifacialRadianceObj:
                                 self.SimSettings.enddt[1],
                                 self.SimSettings.enddt[2])
 
-            self.radObj.genCumSky(epwfile=self.weather_file,
+            self.radObj.genCumSky(epwfile=str(self.weather_file),
                                   startdt=startdt,
                                   enddt=enddt)
 
@@ -322,10 +337,16 @@ class BifacialRadianceObj:
 
         sceneDict = self.APV_SystSettings.sceneDict
         moduleDict = self.APV_SystSettings.moduleDict
+        m_x = self.SimSettings.ground_scan_margin_x
+        m_y = self.SimSettings.ground_scan_margin_y
+        x_field: int = round(sceneDict['nMods'] * moduleDict['x']) + m_x
 
-        x_field: int = round(sceneDict['nMods'] * moduleDict['x']) + 2*4
-        y_field: int = round(sceneDict['pitch'] * sceneDict['nRows']
-                             + moduleDict['y'] * moduleDict['numpanels']) + 2*2
+        if sceneDict['nRows'] == 1:
+            y_field: int = round(sceneDict['pitch'] * sceneDict['nRows'])
+        else:
+            y_field: int = round(sceneDict['pitch'] * sceneDict['nRows']
+                                 + moduleDict['y'] * moduleDict['numpanels']
+                                 ) + m_y
 
         if sceneDict['azimuth'] == 0 or sceneDict['azimuth'] == 180:
             self.x_field = x_field
@@ -502,9 +523,8 @@ class BifacialRadianceObj:
             ticklabels_skip_count_number=ticklabels_skip_count_number
         )
 
-        for ax in fig.axes:
-            ax = apv.utils.plots.add_north_arrow(
-                ax, self.APV_SystSettings.sceneDict['azimuth'])
+        fig.axes[1] = apv.utils.plots.add_north_arrow(
+            fig.axes[1], self.APV_SystSettings.sceneDict['azimuth'])
 
         apv.utils.files_interface.save_fig(fig, self.oct_file_name)
 

@@ -106,8 +106,8 @@ class APV_Syst_InclinedTables_Juelich:
     }
 
     moduleDict = {
-        'y': 0.998,
         'x': 1.980,
+        'y': 0.998,
         'xgap': 0.1,
         'ygap': 0.1,
         'zgap': 0,
@@ -134,6 +134,76 @@ class APV_Syst_InclinedTables_Juelich:
 
     mounting_structure_type: Literal[
         'none', 'declined_tables', 'framed_single_axes'] = 'declined_tables'
+
+    scene_camera_dicts: dict = {
+        'total': {
+            'cam_pos_x': -21.5,   # depth
+            'cam_pos_y': 6.9,   # left / right
+            'cam_pos_z': 1,     # height
+            'view_direction_x': 0.9863,
+            'view_direction_y': -0.1567,
+            'view_direction_z': -0.0509,
+            'horizontal_view_angle': 60,  # [degree]
+            'vertical_view_angle': 40  # [degree]
+        },
+        'module_zoom': {
+            'cam_pos_x': -5,   # depth
+            'cam_pos_y': -1.1,   # left / right
+            'cam_pos_z': 6.5,     # height
+            'view_direction_x': 1.581,
+            'view_direction_y': 0,
+            'view_direction_z': -1.919234,
+            'horizontal_view_angle': 120,  # [degree]
+            'vertical_view_angle': 90  # [degree]
+        }
+    }
+
+
+class SimpleForCheckerBoard:
+    # as for Perna2019
+
+    module_name = 'SUNFARMING'
+
+    # bifacial_radiance geometry-inputs
+
+    sceneDict = {
+        'tilt': 36.6,
+        'pitch': 7.0,  # "row width"
+        'hub_height': 5,
+        'azimuth': 180,
+        'nMods': 1,
+        'nRows': 1,
+    }
+
+    moduleDict = {
+        'x': 6.0,
+        'y': 3.0,
+        'xgap': 0.001,
+        'ygap': 0.001,
+        'zgap': 0,
+        'numpanels': 1
+    }
+
+    cellLevelModuleParams = {
+        'numcellsx': 20,  # has to be an even number at the moment
+        'numcellsy': 10,  # has to be an even number at the moment
+        'xcellgap': 0.00,
+        'ycellgap': 0.00
+    }
+
+    module_form: Literal[
+        'std',
+        'cell_level',
+        'cell_level_checker_board',
+        'EW_fixed',  # at the moment second modul of roof is created in the
+        # text input for br.radObj.make_module(),
+        # and the tilt is happening later in br.radObj.make_scene()
+        # the second module is facing upwards-down, might be a problem later
+        'cell_level_EW_fixed'
+    ] = 'cell_level_checker_board'
+
+    mounting_structure_type: Literal[
+        'none', 'declined_tables', 'framed_single_axes'] = 'none'
 
     scene_camera_dicts: dict = {
         'total': {
