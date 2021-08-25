@@ -11,7 +11,7 @@ if __name__ == '__main__':
     SimSettings = apv.settings.simulation.Simulation()
     # APV_SystSettings = apv.settings.apv_systems.Default()
     APV_SystSettings = \
-        apv.settings.apv_systems.APV_Syst_InclinedTables_Juelich()
+        apv.settings.apv_systems.Default()
 
     # ### often changed settings:  ####
     # SimSettings.only_ground_scan = False
@@ -22,10 +22,12 @@ if __name__ == '__main__':
     SimSettings.sky_gen_mode = 'gendaylit'
     SimSettings.sim_name = 'APV_floating'
     APV_SystSettings.module_form = 'std'
-    APV_SystSettings.mounting_structure_type = 'declined_tables'
+    # APV_SystSettings.mounting_structure_type = 'declined_tables'
     # APV_SystSettings.sceneDict['nRows'] = 3
     # APV_SystSettings.sceneDict['nMods'] = 6
-
+    APV_SystSettings.sceneDict['azimuth'] = 180
+    SimSettings.ground_scan_margin_x = 0
+    SimSettings.ground_scan_margin_y = 0
     weather_file = apv.settings.user_pathes.bifacial_radiance_files_folder / \
         Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
 
@@ -36,7 +38,7 @@ if __name__ == '__main__':
     )
     # #
     brObj.view_scene(
-        # view_name='module_zoom'
+        view_name='top_down'
     )
     # #
     brObj.run_raytracing_simulation()

@@ -5,15 +5,14 @@ to presets in settings.py
 
 #TODO
 - gencumsky mit einem Pfosten ("Sonnenuhr"), sollte verwaschen sein ->Leo
-- gencumsky plot einheit und titel
+- gencumsky plot color bar einheit
 - ground in rvu darstellen
 - heatmap auch als shadow depths (optional)
-- den modul footprint als 1pixel breiten und 1 µm hohen Rahmen machen
-mit albedo = die des bodens --> resultiert in 100% schatten
+
 
 - Gewächshaus reflektierend machen
-- bekommen die Module an der Glaswand mehr Licht ab? Falls ja, nicht die Strings
-beider Reihen in Reihe schalten!
+- bekommen die Module an der Glaswand mehr Licht ab?
+Falls ja, nicht die Strings beider Reihen in Reihe schalten!
 
 
 
@@ -55,12 +54,11 @@ class BifacialRadianceObj:
         the ones above are retrieved from running setup_br()
         --------
         x_field (int): lengths of the groundscan area in x direction
-        according to scene + 2 m each side
+        according to scene
         y_field (int): lengths of the groundscan area in y direction
 
         the ones above are calculated automatically on initialisation
-        but can also be set manually
-        ---> fehlt noch, besser auch grupieren in ein objekt.
+        but the extra margin can be set automatically
     """
 
     def __init__(
@@ -178,6 +176,9 @@ class BifacialRadianceObj:
         # (placed here to allow for access also without a simulation run)
         self.csv_file_name = self.oct_file_name + '.csv'
 
+        # set self.x_field, self.y_field and self.y_grid
+        self._calculate_ground_grid_parameters()
+
         # create mounting structure (optional) and pv modules
         self._create_geometries()
 
@@ -191,24 +192,24 @@ class BifacialRadianceObj:
 
         # create PV module
         # default for standard:
-        rad_text = None
+        module_text = None
         cellLevelModuleParams = None
 
         if self.APV_SystSettings.module_form == 'cell_level':
             cellLevelModuleParams = self.APV_SystSettings.cellLevelModuleParams
 
         elif self.APV_SystSettings.module_form == 'cell_level_checker_board':
-            rad_text = apv.utils.radiance_geometries.checked_module(
+            module_text = apv.utils.radiance_geometries.checked_module(
                 self.APV_SystSettings
             )
 
         elif self.APV_SystSettings.module_form == 'EW_fixed':
-            rad_text = apv.utils.radiance_geometries.make_text_EW(
+            module_text = apv.utils.radiance_geometries.make_text_EW(
                 self.APV_SystSettings
             )
 
         elif self.APV_SystSettings.module_form == 'cell_level_EW_fixed':
-            rad_text = apv.utils.radiance_geometries.cell_level_EW_fixed(
+            module_text = apv.utils.radiance_geometries.cell_level_EW_fixed(
                 self.APV_SystSettings,
                 self.APV_SystSettings.cellLevelModuleParams
             )
@@ -217,7 +218,7 @@ class BifacialRadianceObj:
             name=self.APV_SystSettings.module_name,
             **self.APV_SystSettings.moduleDict,
             cellLevelModuleParams=cellLevelModuleParams,
-            text=rad_text,
+            text=module_text,
             # glass=True,
         )
         # make scene
@@ -235,15 +236,32 @@ class BifacialRadianceObj:
             rad_text = apv.utils.radiance_geometries.framed_single_axes_mount(
                 APV_SystSettings=self.APV_SystSettings
             )
+
         if rad_text != '':
             rz = 180 - self.APV_SystSettings.sceneDict["azimuth"]
-            # add mounting structure to the radObj
-            self.radObj.appendtoScene(
+            # add mounting structure to the radObj with rotation
+            self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
                 radfile=self.scene.radfiles,
                 customObject=self.radObj.makeCustomObject(
                     'structure', rad_text),
                 text=f'!xform -rz {rz}'
             )
+
+        # add ground scan area visualization to the radObj without rotation
+        ground_rad_text = apv.utils.radiance_geometries.groundscan_area(
+            self.x_field, self.y_field)
+
+        self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
+            radfile=self.scene.radfiles,
+            customObject=self.radObj.makeCustomObject(
+                'scan_area', ground_rad_text),
+            text='!xform '  # with text = '' (default, it does not work!)
+            # all scene objects are stored in
+            # bifacial_radiance_files/objects/... e.g.
+            # SUNFARMING_C_3.81425_rtr_10.00000_tilt_20.00000_10modsx3rows_...
+            # within this file different custom .rad files are concatenated by
+            # !xform object/customObjectName.rad
+        )
 
         '''
             else:
@@ -309,8 +327,6 @@ class BifacialRadianceObj:
 
     def _set_up_AnalObj_and_groundscan(self):
 
-        self.__calculate_ground_grid_parameters()
-
         octfile = self.oct_file_name
         # add extension if not there:
         if octfile[-4] != '.oct':
@@ -333,7 +349,7 @@ class BifacialRadianceObj:
 
         self.groundscan = self.__set_groundscan(groundscan)
 
-    def __calculate_ground_grid_parameters(self):
+    def _calculate_ground_grid_parameters(self):
 
         sceneDict = self.APV_SystSettings.sceneDict
         moduleDict = self.APV_SystSettings.moduleDict

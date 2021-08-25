@@ -15,8 +15,9 @@ import numpy as np
 from apv.settings.apv_systems import Default as APV_SystSettingsObj
 
 
-def ground(x_field: int, y_field: int) -> str:
-    text = (f'! genbox white_EPDM field {x_field} {y_field} {0.01}'
+def groundscan_area(x_field: int, y_field: int) -> str:
+    # TODO change material to a green ground with 0.25 albedo
+    text = (f'! genbox white_EPDM field {x_field} {y_field} 0.00001'
             f' | xform -t {-x_field/2} {-y_field/2} 0'
             )
     return text
@@ -171,7 +172,7 @@ def cell_level_EW_fixed(APV_SystSettings: APV_SystSettingsObj,
 def declined_tables_mount(
         APV_SystSettings: APV_SystSettingsObj) -> str:
     """
-    origin x: x-center of the "int(nMods/2)"ths module
+    origin x: x-center of the "int((nMods+1)/2)"ths module
     origin y: nRow uneven: y-center of the center row
               nRow even: y_center of the the row south to the system center
     """
@@ -260,7 +261,7 @@ def framed_single_axes_mount(
     sDict = APV_SystSettings.sceneDict
     mDict = APV_SystSettings.moduleDict
 
-    s_beam = 0.075  # beam thickness
+    s_beam = 0.1  # beam thickness
     d_beam = 0.5  # beam distance
     s_post = 0.15  # post thickness
     h_post = sDict["hub_height"] + 0.2  # post height

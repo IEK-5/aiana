@@ -31,7 +31,7 @@ class Default:
         'tilt': 20,
         'pitch': 10,
         'hub_height': 4.5,
-        'azimuth': 90,
+        'azimuth': 180,
         'nMods': 10,
         'nRows': 3,
     }
@@ -86,7 +86,17 @@ class Default:
             'view_direction_z': -1.919234,
             'horizontal_view_angle': 120,  # [degree]
             'vertical_view_angle': 90  # [degree]
-        }
+        },
+        'top_down': {
+            'cam_pos_x': 0,   # depth
+            'cam_pos_y': 0,   # left / right
+            'cam_pos_z': 10,     # height
+            'view_direction_x': 0.001,
+            'view_direction_y': 0,
+            'view_direction_z': -1,
+            'horizontal_view_angle': 40,  # [degree]
+            'vertical_view_angle': 40  # [degree]
+        },
     }
 
 
