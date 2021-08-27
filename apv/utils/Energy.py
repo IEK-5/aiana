@@ -5,7 +5,7 @@ import pvlib
 from pathlib import Path
 import pandas as pd
 import os
-from apv.settings import Simulation as s
+from apv.settings import Simulation
 from apv.settings import UserPaths
 import apv.utils
 

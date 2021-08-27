@@ -19,22 +19,23 @@ if __name__ == '__main__':
     # SimSettings.add_mounting_structure = False
     SimSettings.sim_date_time = '06-15_11h'
     SimSettings.spatial_resolution = 1
-    SimSettings.sky_gen_mode = 'gendaylit'
+    SimSettings.sky_gen_mode = 'gencumsky'
+    SimSettings.units = 'PAR'
     SimSettings.sim_name = 'APV_floating'
     APV_SystSettings.module_form = 'std'
     # APV_SystSettings.mounting_structure_type = 'declined_tables'
     # APV_SystSettings.sceneDict['nRows'] = 3
     # APV_SystSettings.sceneDict['nMods'] = 6
     APV_SystSettings.sceneDict['azimuth'] = 180
-    SimSettings.ground_scan_margin_x = 0
-    SimSettings.ground_scan_margin_y = 0
+    SimSettings.ground_scan_margin_x = 5
+    SimSettings.ground_scan_margin_y = 5
     weather_file = apv.settings.user_pathes.bifacial_radiance_files_folder / \
         Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
 
     brObj = apv.br_wrapper.BifacialRadianceObj(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings,
-        weather_file=weather_file  # downloading automatically without this
+        # weather_file=weather_file  # downloading automatically without this
     )
     # #
     brObj.view_scene(
@@ -42,11 +43,11 @@ if __name__ == '__main__':
     )
     # #
     brObj.run_raytracing_simulation()
-    # #
 
+    # #
     # plot existing data (simulation cell does not need to be repeated)
     brObj.plot_ground_insolation()
-
+    # #
     # show result data frame
     brObj.df_ground_results
 
