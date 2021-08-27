@@ -31,13 +31,14 @@ from pathlib import Path
 from tqdm.auto import trange
 import concurrent.futures
 import bifacial_radiance as br
+from datetime import datetime
 from typing import Literal
 
 import apv
 import apv.settings.user_pathes as UserPaths  # TODO keine Klasse mehr
 from apv.settings.apv_systems import Default as APV_SystSettingsObj
 from apv.utils import files_interface as fi
-
+from apv.utils import units_converter as uc
 # #
 
 
@@ -159,13 +160,9 @@ class BifacialRadianceObj:
         # gencumskyself.met_data
         if self.SimSettings.sky_gen_mode == 'gencumsky':
             # from (year,month,day,hour)
-            startdt = dt.datetime(2001, self.SimSettings.startdt[0],
-                                  self.SimSettings.startdt[1],
-                                  self.SimSettings.startdt[2])
+            startdt = datetime.strptime(self.SimSettings.startdt, '%m-%d_%Hh')
             # to (year,month,day,hour)
-            enddt = dt.datetime(2001, self.SimSettings.enddt[0],
-                                self.SimSettings.enddt[1],
-                                self.SimSettings.enddt[2])
+            enddt = datetime.strptime(self.SimSettings.enddt, '%m-%d_%Hh')
 
             self.radObj.genCumSky(epwfile=str(self.weather_file),
                                   startdt=startdt,
@@ -507,30 +504,6 @@ class BifacialRadianceObj:
         self.df_ground_results = df_ground_results
         return
 
-    def irradiance_to_PAR(self, df=None):
-        """Converts irradiance from [W/m2] to
-        photosynthetic Radiation [μmole.m2/s] [1]
-
-        [1] Čatský, J. (1998): Langhans, R.W., Tibbitts, T.W. (ed.):
-        Plant Growth Chamber Handbook. In Photosynt. 35 (2), p. 232.
-        DOI: 10.1023/A:1006995714717.
-
-        Args:
-            groundscan (DataFrame): [description]
-        """
-        if df is None:
-            df = apv.utils.files_interface.df_from_file_or_folder(
-                apv.settings.user_pathes.results_folder / Path(
-                    self.csv_file_name))
-
-        f_result_path = os.path.join(UserPaths.results_folder,
-                                     self.csv_file_name)
-
-        df['PAR'] = df['Wm2Ground'] * 4.6
-        df.to_csv(f_result_path)
-        print(f'merged file saved in {f_result_path}\n')
-        self.df_ground_results = df
-
     def plot_ground_insolation(self, df=None):
         """plots the ground insolation as a heat map and saves it into
             the results/plots folder.
@@ -551,14 +524,42 @@ class BifacialRadianceObj:
         if ticklabels_skip_count_number < 2:
             ticklabels_skip_count_number = "auto"
 
-        title = (f'Module Form: {self.APV_SystSettings.module_form}\n'
-                 f'Date & Time: {self.SimSettings.sim_date_time}\n'
-                 f'Resolution: {self.SimSettings.spatial_resolution} m')
+        if self.SimSettings.sky_gen_mode == 'gendaylit':
+            title = (f'Module Form: {self.APV_SystSettings.module_form}\n'
+                     f'Date & Time: {self.SimSettings.sim_date_time}\n'
+                     f'Resolution: {self.SimSettings.spatial_resolution} m')
+        else:
+            title = (f'Module Form: {self.APV_SystSettings.module_form}\n'
+                     f'From: [{self.SimSettings.startdt}] '
+                     f'To: [{self.SimSettings.enddt}]\n'
+                     f'Resolution: {self.SimSettings.spatial_resolution} m')
 
+        if self.SimSettings.units == 'PAR':
+            df = uc.irradiance_to_PAR(df=df)
+            f_result_path = os.path.join(UserPaths.results_folder,
+                                         self.csv_file_name)
+            df.to_csv(f_result_path)
+            z = 'PARGround'
+            colormap = 'YlOrBr'
+            z_label = 'PAR [μmol quanta.m$^{-2}$.s$^{-1}$]'
+
+        elif self.SimSettings.units == 'Shadow-Depth':
+            df = uc.irradiance_to_shadowdepth(df=df,
+                                              SimSettings=self.SimSettings)
+            f_result_path = os.path.join(UserPaths.results_folder,
+                                         self.csv_file_name)
+            df.to_csv(f_result_path)
+            z = 'ShadowDepth'
+            colormap = 'Greys'
+            z_label = 'Shadow-Depth [%]'
+        else:
+            z = 'Wm2Ground'
+            colormap = 'inferno'
+            # z_label
         fig = apv.utils.plots.plot_heatmap(
-            df, 'x', 'y', 'Wm2Ground',
+            df=df, x='x', y='y', z=z, cm=colormap,
             x_label='x [m]', y_label='y [m]',
-            z_label='Irradiance on Ground [W m$^{-2}$]',
+            z_label=z_label,
             plot_title=title,
             ticklabels_skip_count_number=ticklabels_skip_count_number
         )

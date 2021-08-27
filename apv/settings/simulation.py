@@ -3,6 +3,8 @@ import datetime as dt
 from typing import Literal
 from pvlib import location
 
+# #
+
 
 class Simulation:
     sim_name = 'APV_Floating'  # also used as first part of the .oct file name
@@ -33,6 +35,13 @@ class Simulation:
 
     # needed for sky_gen_mode = 'gencumsky':
     # Insert start date of the year as [month,day,hour]
-    startdt = [6, 1, 0]
+    startdt = '6-1_0h'
     # Insert end date of year as [month,day,hour]
-    enddt = [6, 1, 23]
+    enddt = '6-1_23h'
+
+    ground_scan_margin_x = 8
+    ground_scan_margin_y = 4
+
+    units: Literal['Irradiance', 'PAR', 'Shadow-Depth'] = 'Irradiance'
+
+# #
