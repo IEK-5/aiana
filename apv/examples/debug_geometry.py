@@ -1,9 +1,7 @@
 # #
 """apv main"""
 
-
 if __name__ == '__main__':
-    from pvlib import location
     from pathlib import Path
     import importlib as imp
     import apv
@@ -13,36 +11,41 @@ if __name__ == '__main__':
     SimSettings = apv.settings.simulation.Simulation()
     # APV_SystSettings = apv.settings.apv_systems.Default()
     APV_SystSettings = \
-        apv.settings.apv_systems.SimpleForCheckerBoard()
+        apv.settings.apv_systems.Default()
 
     # ### often changed settings:  ####
     # SimSettings.only_ground_scan = False
     # use_multi_processing = False
     # SimSettings.add_mounting_structure = False
-    SimSettings.apv_location = location.Location(
-        36.7922, -119.7932, altitude=94, tz=-7, name='Fresno_CA')
-    SimSettings.sim_date_time = '06-01_11h'  # whole day
-    SimSettings.spatial_resolution = 0.01  # 0.01
-    #SimSettings.sky_gen_mode = 'gencumsky'
-    SimSettings.sim_name = 'checker_board_Perna'
-
-    SimSettings.ground_scan_margin_x = 0
-    SimSettings.ground_scan_margin_y = 0
+    SimSettings.sim_date_time = '06-15_11h'
+    SimSettings.spatial_resolution = 1
+    SimSettings.sky_gen_mode = 'gendaylit'
+    SimSettings.sim_name = 'APV_floating'
+    APV_SystSettings.module_form = 'std'
+    APV_SystSettings.moduleDict['xgap'] = 0.1
+    # APV_SystSettings.mounting_structure_type = 'declined_tables'
     # APV_SystSettings.sceneDict['nRows'] = 3
-    # APV_SystSettings.sceneDict['nMods'] = 6
-
+    APV_SystSettings.sceneDict['nMods'] = 6
+    APV_SystSettings.sceneDict['azimuth'] = 180
+    APV_SystSettings.ground_scan_margin_x = -3
+    APV_SystSettings.ground_scan_margin_y = -32
     weather_file = apv.settings.user_pathes.bifacial_radiance_files_folder / \
-        Path('EPWs/USA_CA_Fresno.Air.Terminal.723890_TMY3.epw')
+        Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
 
     brObj = apv.br_wrapper.BifacialRadianceObj(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings,
-        weather_file=weather_file  # downloading automatically without this
+        weather_file=weather_file,  # downloading automatically without this,
+        debug_mode=True
     )
     brObj.setup_br()
     # #
+    imp.reload(apv.utils.radiance_geometries)
+    imp.reload(apv.br_wrapper)
+    brObj._create_geometries(APV_SystSettings=APV_SystSettings)
     brObj.view_scene(
-        # view_name='module_zoom'
+        view_name='top_down',
+        view_type='parallel'
     )
     # #
     brObj.run_raytracing_simulation()

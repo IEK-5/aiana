@@ -95,9 +95,12 @@ class Default:
             'view_direction_y': 0,
             'view_direction_z': -1,
             'horizontal_view_angle': 40,  # [degree]
-            'vertical_view_angle': 40  # [degree]
+            'vertical_view_angle': 30  # [degree]
         },
     }
+
+    ground_scan_margin_x = 8
+    ground_scan_margin_y = 4
 
 
 class APV_Syst_InclinedTables_Juelich:
@@ -167,6 +170,8 @@ class APV_Syst_InclinedTables_Juelich:
             'vertical_view_angle': 90  # [degree]
         }
     }
+    ground_scan_margin_x = 8
+    ground_scan_margin_y = 4
 
 
 class SimpleForCheckerBoard:
@@ -237,3 +242,5 @@ class SimpleForCheckerBoard:
             'vertical_view_angle': 90  # [degree]
         }
     }
+    ground_scan_margin_x = 8
+    ground_scan_margin_y = 4

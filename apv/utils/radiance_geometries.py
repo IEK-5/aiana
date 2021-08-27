@@ -14,10 +14,82 @@
 import numpy as np
 from apv.settings.apv_systems import Default as APV_SystSettingsObj
 
+# #
+
+# #
+import apv
+
+
+class RadTextWriterObj:
+    """"""
+
+    def __init__(
+            self,
+            SimSettings: apv.settings.simulation.Simulation,
+            APV_SystSettings: apv.settings.apv_systems.Default,
+            # debug_mode=False
+    ):
+        self.SimSettings: apv.settings.simulation.Simulation = SimSettings
+        self.APV_SystSettings: apv.settings.apv_systems.Default = \
+            APV_SystSettings
+        # self.debug_mode = debug_mode
+
+        self.mod = APV_SystSettings.moduleDict
+        self.scn = APV_SystSettings.sceneDict
+
+        self.center_offset_x = 0
+        if self.scn['nMods'] % 2 == 0:  # even
+            self.center_offset_x = (self.mod['x']+self.mod['xgap'])/2
+        self.center_offset_y = int(
+            (self.scn['nRows']-1)/2
+        ) * self.scn['pitch']
+
+    def framed_single_axes_mount(self) -> str:
+        """Creates Aluminum posts and mounting structure
+
+        Args:
+            APV_SystSettings : inherited from br_wrapper
+            scene : appends to scene inherited from br_wrapper
+
+        Returns:
+            oct_file: created new oct file including all objects
+        """
+
+        material = 'Metal_Aluminum_Anodized'
+
+        s_beam = 0.1  # beam thickness
+        d_beam = 0.5  # beam distance
+        s_post = 0.15  # post thickness
+        h_post = self.scn["hub_height"] + 0.2  # post height
+        y_length = self.scn['pitch']*(self.scn['nRows'] - 1)
+        x_length = (self.mod['x']+self.mod['xgap']) * (self.scn['nMods'] + 1)
+
+        y_start = -y_length / 2
+        x_start = -x_length / 2 + self.center_offset_x
+
+        # create posts
+        text = (f'! genbox {material} post {s_post} {s_post} {h_post}'
+                f' | xform  -t {x_start} {y_start} 0 \
+                -a 2 -t {x_length} 0 0 \
+                -a {self.scn["nRows"]} -t 0 {self.scn["pitch"]} 0 '
+                )
+        # create horizontal beams in y direction
+        text += (f'\n! genbox {material} post {s_beam} {y_length} {s_beam} \
+            | xform  -t {x_start} {y_start} {h_post - s_beam - 0.4} \
+            -a 2 -t {x_length} 0 0 -a 2 -t 0 0 {-d_beam} ')
+        # create horizontal beams in x direction
+        text += (f'\n! genbox {material} post {x_length} {s_beam} {s_beam} \
+                | xform  -t {x_start} {y_start} {h_post - s_beam - 0.2} \
+                -a {self.scn["nRows"]} -t 0 {self.scn["pitch"]} 0 \
+                -a 2 -t 0 0 {-d_beam} '
+                 )
+        return text
+
 
 def groundscan_area(x_field: int, y_field: int) -> str:
     # TODO change material to a green ground with 0.25 albedo
-    text = (f'! genbox white_EPDM field {x_field} {y_field} 0.00001'
+
+    text = (f'! genbox white_EPDM field {x_field} {y_field} 7.00001'
             f' | xform -t {-x_field/2} {-y_field/2} 0'
             )
     return text
@@ -239,55 +311,6 @@ def declined_tables_mount(
             -a {post_count_in_x} -t {post_distance_x} 0 0 \
             -a {sDict["nRows"]} -t 0 {sDict["pitch"]} 0 ')
 
-    # mark origin
-    # text += f'\n! genbox {material} post {s_post} {s_post} 20'
-
-    return text
-
-
-def framed_single_axes_mount(
-        APV_SystSettings: APV_SystSettingsObj) -> str:
-    """Creates Aluminum posts and mounting structure
-
-    Args:
-        APV_SystSettings : inherited from br_wrapper
-        scene : appends to scene inherited from br_wrapper
-
-    Returns:
-        oct_file: created new oct file including all objects
-    """
-
-    material = 'Metal_Aluminum_Anodized'
-    sDict = APV_SystSettings.sceneDict
-    mDict = APV_SystSettings.moduleDict
-
-    s_beam = 0.1  # beam thickness
-    d_beam = 0.5  # beam distance
-    s_post = 0.15  # post thickness
-    h_post = sDict["hub_height"] + 0.2  # post height
-    y_length = sDict['pitch']*(sDict['nRows'] - 1)
-    x_length = (mDict['x']+mDict['xgap']) * (sDict['nMods'] + 1)
-
-    y_start = -y_length / 2
-    x_start = -x_length / 2
-
-    if sDict['nMods'] % 2 == 0:
-        x_start += (mDict['x']+mDict['xgap'])/2
-
-    # create posts
-    text = (f'! genbox {material} post {s_post} {s_post} {h_post}'
-            f' | xform  -t {x_start} {y_start} 0 \
-           -a 2 -t {x_length} 0 0 -a {sDict["nRows"]} -t 0 {sDict["pitch"]} 0 '
-            )
-    # create horizontal beams in y direction
-    text += (f'\n! genbox {material} post {s_beam} {y_length} {s_beam} \
-           | xform  -t {x_start} {y_start} {h_post - s_beam - 0.4} \
-           -a 2 -t {x_length} 0 0 -a 2 -t 0 0 {-d_beam} ')
-    # create horizontal beams in x direction
-    text += (f'\n! genbox {material} post {x_length} {s_beam} {s_beam} \
-            | xform  -t {x_start} {y_start} {h_post - s_beam - 0.2} \
-            -a {sDict["nRows"]} -t 0 {sDict["pitch"]} 0 -a 2 -t 0 0 {-d_beam} '
-             )
     return text
 
 
