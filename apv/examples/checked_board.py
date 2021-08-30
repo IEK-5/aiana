@@ -26,15 +26,15 @@ if __name__ == '__main__':
     #SimSettings.sky_gen_mode = 'gencumsky'
     SimSettings.sim_name = 'checker_board_Perna'
 
-    SimSettings.ground_scan_margin_x = 0
-    SimSettings.ground_scan_margin_y = 0
+    APV_SystSettings.ground_scan_margin_x = 0
+    APV_SystSettings.ground_scan_margin_y = 0
     # APV_SystSettings.sceneDict['nRows'] = 3
     # APV_SystSettings.sceneDict['nMods'] = 6
 
     weather_file = apv.settings.user_pathes.bifacial_radiance_files_folder / \
         Path('EPWs/USA_CA_Fresno.Air.Terminal.723890_TMY3.epw')
 
-    brObj = apv.br_wrapper.BifacialRadianceObj(
+    brObj = apv.br_wrapper.BR_Wrapper(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings,
         weather_file=weather_file  # downloading automatically without this

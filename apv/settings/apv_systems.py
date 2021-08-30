@@ -61,7 +61,7 @@ class Default:
         # and the tilt is happening later in br.radObj.make_scene()
         # the second module is facing upwards-down, might be a problem later
         'cell_level_EW_fixed'
-    ] = 'cell_level_EW_fixed'
+    ] = 'std'
 
     mounting_structure_type: Literal[
         'none', 'declined_tables', 'framed_single_axes'] = 'framed_single_axes'
@@ -91,16 +91,22 @@ class Default:
             'cam_pos_x': 0,   # depth
             'cam_pos_y': 0,   # left / right
             'cam_pos_z': 10,     # height
-            'view_direction_x': 0.001,
-            'view_direction_y': 0,
+            'view_direction_x': 0,
+            'view_direction_y': 0.001,
             'view_direction_z': -1,
             'horizontal_view_angle': 40,  # [degree]
             'vertical_view_angle': 30  # [degree]
         },
     }
+    glass_modules: bool = False
+    # one-sided margins [m]
+    ground_scan_margin_x: float = 8
+    ground_scan_margin_y: float = 4
+    # shift scan area [m]
+    ground_scan_shift_x: float = -1  # positiv: towards east
+    ground_scan_shift_y: float = 1  # positiv: towards north
 
-    ground_scan_margin_x = 8
-    ground_scan_margin_y = 4
+    round_up_field_dimensions: bool = True
 
 
 class APV_Syst_InclinedTables_Juelich:
@@ -168,10 +174,27 @@ class APV_Syst_InclinedTables_Juelich:
             'view_direction_z': -1.919234,
             'horizontal_view_angle': 120,  # [degree]
             'vertical_view_angle': 90  # [degree]
-        }
+        },
+        'top_down': {
+            'cam_pos_x': 0,   # depth
+            'cam_pos_y': 0,   # left / right
+            'cam_pos_z': 10,     # height
+            'view_direction_x': 0,
+            'view_direction_y': 0.001,
+            'view_direction_z': -1,
+            'horizontal_view_angle': 40,  # [degree]
+            'vertical_view_angle': 30  # [degree]
+        },
     }
-    ground_scan_margin_x = 8
-    ground_scan_margin_y = 4
+    glass_modules: bool = False
+    # one-sided margins [m]
+    ground_scan_margin_x: float = 8
+    ground_scan_margin_y: float = 4
+    # shift scan area [m]
+    ground_scan_shift_x: float = -1  # positiv: towards east
+    ground_scan_shift_y: float = 1  # positiv: towards north
+
+    round_up_field_dimensions: bool = True
 
 
 class SimpleForCheckerBoard:
@@ -242,5 +265,12 @@ class SimpleForCheckerBoard:
             'vertical_view_angle': 90  # [degree]
         }
     }
-    ground_scan_margin_x = 8
-    ground_scan_margin_y = 4
+    glass_modules: bool = False
+    # one-sided margins [m]
+    ground_scan_margin_x: float = 8
+    ground_scan_margin_y: float = 4
+    # shift scan area [m]
+    ground_scan_shift_x: float = -1  # positiv: towards east
+    ground_scan_shift_y: float = 1  # positiv: towards north
+
+    round_up_field_dimensions: bool = True

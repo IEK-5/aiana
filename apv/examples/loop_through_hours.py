@@ -17,7 +17,7 @@ weather_file = UserPaths.bifacial_radiance_files_folder / \
 
 for hour in range(12, 20, 2):
     simSettings.sim_date_time = '06-15_'+str(hour)+'h'
-    brObj = apv.br_wrapper.BifacialRadianceObj(
+    brObj = apv.br_wrapper.BR_Wrapper(
         SimSettings=simSettings,
         download_EPW=False
     )

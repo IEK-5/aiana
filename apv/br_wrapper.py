@@ -36,14 +36,14 @@ from typing import Literal
 
 import apv
 import apv.settings.user_pathes as UserPaths  # TODO keine Klasse mehr
-from apv.settings.apv_systems import Default as APV_SystSettingsObj
+from apv.utils.GeometriesHandler import GeometriesHandler
+from apv.settings.apv_systems import Default as APV_SystSettings
 from apv.utils import files_interface as fi
 from apv.utils import units_converter as uc
 # #
 
 
-class BifacialRadianceObj:
-    # TODO clean up prints (especially data frames)
+class BR_Wrapper:
     """
     Attributes:
         simSettings (apv.settings.simulation.Simulation):
@@ -56,9 +56,6 @@ class BifacialRadianceObj:
 
         the ones above are retrieved from running setup_br()
         --------
-        x_field (int): lengths of the groundscan area in x direction
-        according to scene
-        y_field (int): lengths of the groundscan area in y direction
 
         the ones above are calculated automatically on initialisation
         but the extra margin can be set automatically
@@ -75,6 +72,10 @@ class BifacialRadianceObj:
         self.SimSettings: apv.settings.simulation.Simulation = SimSettings
         self.APV_SystSettings: apv.settings.apv_systems.Default = \
             APV_SystSettings
+
+        self.geomObj = GeometriesHandler(
+            SimSettings, APV_SystSettings, debug_mode)
+
         self.weather_file = weather_file
         self.debug_mode = debug_mode
         # self.create_oct_file = create_oct_file
@@ -85,8 +86,6 @@ class BifacialRadianceObj:
         self.met_data: br.MetObj = None
         self.analObj: br.AnalysisObj = None
 
-        self.x_field: int = 0
-        self.y_field: int = 0
         self.ygrid: list[int] = []
         self.groundscan = dict()
 
@@ -180,12 +179,13 @@ class BifacialRadianceObj:
 
         self._set_up_AnalObj_and_groundscan()
 
-    def _create_geometries(self, APV_SystSettings: APV_SystSettingsObj):
+    def _create_geometries(self, APV_SystSettings: APV_SystSettings,
+                           debug_mode=False):
         """create mounting structure (optional), pv modules"""
 
-        # set self.x_field, self.y_field and self.y_grid
-        self._calculate_ground_grid_parameters(
-            APV_SystSettings=self.APV_SystSettings)
+        GeometriesHandlerObj = GeometriesHandler(
+            self.SimSettings, APV_SystSettings, debug_mode)
+        GeometriesHandlerObj._set_init_variables()
 
         # create PV module
         # default for standard:
@@ -216,7 +216,7 @@ class BifacialRadianceObj:
             **APV_SystSettings.moduleDict,
             cellLevelModuleParams=cellLevelModuleParams,
             text=module_text,
-            # glass=True,
+            glass=APV_SystSettings.glass_modules,
         )
         # make scene
 
@@ -227,11 +227,9 @@ class BifacialRadianceObj:
         structure_type = APV_SystSettings.mounting_structure_type
         # create mounting structure as custom object:
         if structure_type == 'declined_tables':
-            rad_text = apv.utils.radiance_geometries.declined_tables_mount(
-                APV_SystSettings=APV_SystSettings)
+            rad_text = GeometriesHandlerObj.declined_tables_mount()
         elif structure_type == 'framed_single_axes':
-            rad_text = apv.utils.radiance_geometries.framed_single_axes_mount(
-                APV_SystSettings=APV_SystSettings)
+            rad_text = GeometriesHandlerObj.framed_single_axes_mount()
 
         if rad_text != '':
             rz = 180 - APV_SystSettings.sceneDict["azimuth"]
@@ -244,16 +242,7 @@ class BifacialRadianceObj:
             )
 
         # add ground scan area visualization to the radObj without rotation
-        ground_rad_text = apv.utils.radiance_geometries.groundscan_area(
-            self.x_field, self.y_field)
-        if self.debug_mode:
-            ground_rad_text += (
-                # mark origin
-                f'\n! genbox black post {0.5} {0.5} 10'
-                f'\n! genbox white_EPDM post {0.2} {0.2} 10'
-                # mark field center
-                f'\n! genbox black post {0.3} {0.3} 8'
-                f' | xform  -t {self.x_field/2} {self.y_field/2} 0')
+        ground_rad_text = GeometriesHandlerObj.groundscan_area()
 
         self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
             radfile=self.scene.radfiles,
@@ -290,7 +279,7 @@ class BifacialRadianceObj:
     def view_scene(
         self,
         view_type: Literal['perspective', 'parallel'] = 'perspective',
-        view_name: str = 'total',
+        view_name: Literal['total', 'module_zoom', 'top_down'] = 'total',
         oct_file_name=None,
         tool='rvu'
     ):
@@ -357,9 +346,16 @@ class BifacialRadianceObj:
             octfile=octfile, name=self.radObj.name)
 
         # number of sensors on ground against y-axis (along x-axis)
-        sensorsy = np.round(self.x_field / self.SimSettings.spatial_resolution)
+        sensorsy = np.round(
+            self.geomObj.x_field / self.SimSettings.spatial_resolution)
         if (sensorsy % 2) == 0:
             sensorsy += 1
+
+        self.ygrid: list[float] = np.arange(
+            self.geomObj.sw_corner_scan_y,
+            (self.geomObj.sw_corner_scan_y + self.geomObj.y_field
+             + self.SimSettings.spatial_resolution),
+            self.SimSettings.spatial_resolution)
 
         print(f'\n sensor grid:\nx: {sensorsy}, y: {len(self.ygrid)}, '
               f'total: {sensorsy * len(self.ygrid)}')
@@ -368,64 +364,20 @@ class BifacialRadianceObj:
         groundscan, backscan = self.analObj.moduleAnalysis(scene=self.scene,
                                                            sensorsy=sensorsy)
 
-        self.groundscan = self.__set_groundscan(groundscan)
-
-    def _calculate_ground_grid_parameters(self, APV_SystSettings):
-
-        sceneDict = APV_SystSettings.sceneDict
-        moduleDict = APV_SystSettings.moduleDict
-        m_x = APV_SystSettings.ground_scan_margin_x
-        m_y = APV_SystSettings.ground_scan_margin_y
-        x_field: int = round(sceneDict['nMods'] * moduleDict['x']) + m_x
-
-        if sceneDict['nRows'] == 1:
-            y_field: int = round(sceneDict['pitch'] * sceneDict['nRows'])
-        else:
-            y_field: int = round(sceneDict['pitch'] * sceneDict['nRows']
-                                 + moduleDict['y'] * moduleDict['numpanels']
-                                 ) + m_y
-
-        if sceneDict['azimuth'] == 0 or sceneDict['azimuth'] == 180:
-            self.x_field = x_field
-            self.y_field = y_field
-
-        elif sceneDict['azimuth'] == 90 or sceneDict['azimuth'] == 270:
-            self.x_field = y_field
-            self.y_field = x_field
-
-        else:
-            self.x_field: int = round(
-                sceneDict['nMods'] * moduleDict['x']) + \
-                round((sceneDict['nRows']-1)*sceneDict['pitch'] *
-                      abs(np.cos(np.radians(180-sceneDict['azimuth'])))) + 2*4
-            print(type(self.x_field))
-            self.y_field = y_field
-
-        self.ygrid: list[float] = np.arange(
-            -self.y_field / 2,
-            (self.y_field / 2) + 1,
-            self.SimSettings.spatial_resolution)
-
-    def __set_groundscan(self, groundscan: dict) -> dict:
-        """Modifies the groundscan dictionary, except for 'ystart',
+        """Modifying the groundscan dictionary, except for 'ystart',
         which is set later by looping through ygrid.
 
-        Args:
-            groundscan (dict): dictionary containing the XYZ-start and
-            -increments values for a bifacial_radiance linescan.
-            It describes where the virtual ray tracing sensors are placed.
-            The origin (x=0, y=0) of the PV facility is in its center.
-
-        Returns:
-            groundscan (dict)
+        groundscan (dict): dictionary containing the XYZ-start and
+        -increments values for a bifacial_radiance linescan.
+        It describes where the virtual ray tracing sensors are placed.
+        The origin (x=0, y=0) of the PV facility is in its center.
         """
-        groundscan['xstart'] = - self.x_field / 2
+        groundscan['xstart'] = self.geomObj.sw_corner_scan_x
         groundscan['xinc'] = self.SimSettings.spatial_resolution
         groundscan['zstart'] = 0.05
         groundscan['zinc'] = 0
         groundscan['yinc'] = 0
-
-        return groundscan
+        self.groundscan = groundscan
 
     def _run_line_scan(self, y_start):
         groundscan_copy = self.groundscan.copy()
@@ -504,7 +456,11 @@ class BifacialRadianceObj:
         self.df_ground_results = df_ground_results
         return
 
-    def plot_ground_insolation(self, df=None):
+    def plot_ground_insolation(
+        self,
+        df=None,
+        cm_unit: Literal['Irradiance', 'PAR', 'Shadow-Depth'] = None
+    ):
         """plots the ground insolation as a heat map and saves it into
             the results/plots folder.
 
@@ -518,6 +474,8 @@ class BifacialRadianceObj:
             df = apv.utils.files_interface.df_from_file_or_folder(
                 apv.settings.user_pathes.results_folder / Path(
                     self.csv_file_name))
+        if cm_unit is None:
+            cm_unit = self.SimSettings.cm_unit
 
         ticklabels_skip_count_number = int(
             2/self.SimSettings.spatial_resolution)
@@ -534,7 +492,7 @@ class BifacialRadianceObj:
                      f'To: [{self.SimSettings.enddt}]\n'
                      f'Resolution: {self.SimSettings.spatial_resolution} m')
 
-        if self.SimSettings.units == 'PAR':
+        if cm_unit == 'PAR':
             df = uc.irradiance_to_PAR(df=df)
             f_result_path = os.path.join(UserPaths.results_folder,
                                          self.csv_file_name)
@@ -543,19 +501,19 @@ class BifacialRadianceObj:
             colormap = 'YlOrBr'
             z_label = 'PAR [μmol quanta.m$^{-2}$.s$^{-1}$]'
 
-        elif self.SimSettings.units == 'Shadow-Depth':
+        elif cm_unit == 'Shadow-Depth':
             df = uc.irradiance_to_shadowdepth(df=df,
                                               SimSettings=self.SimSettings)
             f_result_path = os.path.join(UserPaths.results_folder,
                                          self.csv_file_name)
             df.to_csv(f_result_path)
             z = 'ShadowDepth'
-            colormap = 'Greys'
+            colormap = 'viridis_r'
             z_label = 'Shadow-Depth [%]'
         else:
             z = 'Wm2Ground'
             colormap = 'inferno'
-            # z_label
+            z_label = 'Irradiance on Ground [W m$^{-2}$]'
         fig = apv.utils.plots.plot_heatmap(
             df=df, x='x', y='y', z=z, cm=colormap,
             x_label='x [m]', y_label='y [m]',

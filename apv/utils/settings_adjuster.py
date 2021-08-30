@@ -1,9 +1,9 @@
-from apv.settings.apv_systems import Default as APV_SystSettingsObj
+from apv.settings.apv_systems import Default as APV_SystSettings
 
 
 def adjust_settings(
-    APV_SystSettings: APV_SystSettingsObj
-) -> APV_SystSettingsObj:
+    APV_SystSettings: APV_SystSettings
+) -> APV_SystSettings:
 
     print('\n##### ' + APV_SystSettings.module_form.replace('_', ' ')
           + ' simulation mode #####\n')

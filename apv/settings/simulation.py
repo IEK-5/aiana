@@ -15,7 +15,7 @@ class Simulation:
     # speed up options
 
     # Spatial resolution between sensors
-    spatial_resolution = 5  # 0.15  # [m]
+    spatial_resolution = 1  # 0.15  # [m]
     # ray tracing accuracy used in br.analysisObj.analysis()
     ray_tracing_accuracy = 'low'  # 'high' does not improve accuracy much but
     # sim time is increased by x3-x4
@@ -39,9 +39,6 @@ class Simulation:
     # Insert end date of year as [month,day,hour]
     enddt = '6-1_23h'
 
-    ground_scan_margin_x = 8
-    ground_scan_margin_y = 4
-
-    units: Literal['Irradiance', 'PAR', 'Shadow-Depth'] = 'Irradiance'
+    cm_unit: Literal['Irradiance', 'PAR', 'Shadow-Depth'] = 'Irradiance'
 
 # #

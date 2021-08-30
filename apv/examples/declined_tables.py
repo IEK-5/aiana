@@ -11,7 +11,7 @@ if __name__ == '__main__':
     SimSettings = apv.settings.simulation.Simulation()
     # APV_SystSettings = apv.settings.apv_systems.Default()
     APV_SystSettings = \
-        apv.settings.apv_systems.Default()
+        apv.settings.apv_systems.APV_Syst_InclinedTables_Juelich()
 
     # ### often changed settings:  ####
     # SimSettings.only_ground_scan = False
@@ -21,10 +21,6 @@ if __name__ == '__main__':
     SimSettings.spatial_resolution = 1
     SimSettings.sky_gen_mode = 'gendaylit'
     SimSettings.sim_name = 'APV_floating'
-    APV_SystSettings.module_form = 'std'
-    APV_SystSettings.moduleDict['xgap'] = 0.1
-    # APV_SystSettings.mounting_structure_type = 'declined_tables'
-    # APV_SystSettings.sceneDict['nRows'] = 3
 
     weather_file = apv.settings.user_pathes.bifacial_radiance_files_folder / \
         Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
@@ -37,30 +33,22 @@ if __name__ == '__main__':
     )
     brObj.setup_br()
     # #
+    # TODO if this cell is executed to debug the scene,
+    # to run a simulation one has to restart session and skip this cell
+    # to avoid an error, how to fix?
     imp.reload(apv.utils.radiance_geometries)
     imp.reload(apv.br_wrapper)
-    #APV_SystSettings.sceneDict['nMods'] = 4
-    #APV_SystSettings.sceneDict['nRows'] = 4
-    #APV_SystSettings.sceneDict['pitch'] = 4
-    # APV_SystSettings.sceneDict['azimuth'] = 200
-    # APV_SystSettings.moduleDict['y'] = 0.5
-    APV_SystSettings.mounting_structure_type = 'framed_single_axes'
-    # APV_SystSettings.glass_modules = True
+
     APV_SystSettings.round_up_field_dimensions = False
 
-    APV_SystSettings.scene_camera_dicts['top_down']['horizontal_view_angle'] = 25
-    APV_SystSettings.scene_camera_dicts['top_down']['vertical_view_angle'] = 20
+    APV_SystSettings.scene_camera_dicts['top_down']['horizontal_view_angle'] = 50
+    APV_SystSettings.scene_camera_dicts['top_down']['vertical_view_angle'] = 40
 
-    APV_SystSettings.ground_scan_margin_x = 0  # -3
-    APV_SystSettings.ground_scan_margin_y = 0  # -32
-
-    # for azimuth in [10]:
-    for azimuth in range(180, 361, 30):
+    for azimuth in [225]:
 
         APV_SystSettings.sceneDict['azimuth'] = azimuth
         brObj._create_geometries(
-            APV_SystSettings=APV_SystSettings,
-            debug_mode=True
+            APV_SystSettings=APV_SystSettings
         )
         brObj.view_scene(
             # view_name='top_down',
