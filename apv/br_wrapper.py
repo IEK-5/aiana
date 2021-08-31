@@ -196,17 +196,17 @@ class BR_Wrapper:
             cellLevelModuleParams = APV_SystSettings.cellLevelModuleParams
 
         elif APV_SystSettings.module_form == 'cell_level_checker_board':
-            module_text = apv.utils.radiance_geometries.checked_module(
+            module_text = apv.utils.GeometriesHandler.checked_module(
                 APV_SystSettings
             )
 
         elif APV_SystSettings.module_form == 'EW_fixed':
-            module_text = apv.utils.radiance_geometries.make_text_EW(
+            module_text = apv.utils.GeometriesHandler.make_text_EW(
                 APV_SystSettings
             )
 
         elif APV_SystSettings.module_form == 'cell_level_EW_fixed':
-            module_text = apv.utils.radiance_geometries.cell_level_EW_fixed(
+            module_text = apv.utils.GeometriesHandler.cell_level_EW_fixed(
                 APV_SystSettings,
                 APV_SystSettings.cellLevelModuleParams
             )
@@ -286,7 +286,7 @@ class BR_Wrapper:
         """views an .oct file via radiance/bin/rvu.exe
 
         options:
-        https://floyd.lbl.gov/radiance/man_html/rpict.1.html
+        https://floyd.lbl.gov/radianppce/man_html/rpict.1.html
 
         Args:
             view_name (str): select from ['total', ...]

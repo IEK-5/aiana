@@ -60,7 +60,7 @@ def irradiance_to_shadowdepth(df, SimSettings):
         cumulative_GHI = 0
         stdt = time.get_hour_of_year(SimSettings.startdt)
         enddt = time.get_hour_of_year(SimSettings.enddt)
-        for timeindex in np.arange(stdt, enddt):
+        for timeindex in np.arange(stdt, enddt+1):
             GHI = int(epw.loc[timeindex][0].split()[0])
             cumulative_GHI += GHI
         df['ShadowDepth'] = 100 - ((df['Wm2Ground']/cumulative_GHI)*100)

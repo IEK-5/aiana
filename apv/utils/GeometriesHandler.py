@@ -312,8 +312,8 @@ def checked_module(APV_SystSettings: APV_SystSettings) -> str:
 
 
 def make_text_EW(APV_SystSettings: APV_SystSettings) -> str:
-    """creates needed text needed in makemodule() to create E-W. Azimuth angle
-    must be 90! and number of panels must be 2!
+    """creates the needed text needed in makemodule() to create E-W.
+    Azimuth angle must be 90! and number of panels must be 2!
 
     Args:
         APV_SystSettings:
@@ -326,23 +326,20 @@ def make_text_EW(APV_SystSettings: APV_SystSettings) -> str:
     """
     sDict = APV_SystSettings.sceneDict
     mDict = APV_SystSettings.moduleDict
-
+    name = 'EWstd'
     z = 0.02
     Ny = mDict['numpanels']  # currently must be 2
     offsetfromaxis = 0.01
+    tranistion_y = (-mDict['y']*Ny/2.0)-(mDict['ygap']*(Ny-1)/2.0)
     rotation_angle = 2*(90 - sDict['tilt']) + 180
 
-    text = '! genbox {} {} {} {} {} '.format(
-        'EW_module', 'black', mDict['x'], mDict['y'], z)
+    text = '! genbox black {} {} {} {} '.format(
+        name, mDict['x'], mDict['y'], z)
     text += '| xform -t {} {} {} '.format(
-        -mDict['x']/2.0,
-        (-mDict['y']*Ny/2.0)-(mDict['ygap']*(Ny-1)/2.0),
-        offsetfromaxis
-    )
-
+        -mDict['x']/2.0, (-mDict['y']*Ny/2.0)-(mDict['ygap']*(Ny-1)/2.0),
+        offsetfromaxis)
     text += '-a {} -t 0 {} 0 -rx {}'.format(
         Ny, mDict['y']+mDict['ygap'], rotation_angle)
-    packagingfactor = 100.0
 
     return text
 

@@ -18,8 +18,8 @@ def adjust_settings(
     #     simSettings.sceneDict['nMods'] = 5
     if APV_SystSettings.module_form == 'EW_fixed' or \
             APV_SystSettings.module_form == 'cell_level_EW_fixed':
-        APV_SystSettings.sceneDict['azimuth'] == 90
-        APV_SystSettings.moduleDict['numpanels'] == 2
+        APV_SystSettings.sceneDict['azimuth'] = 90
+        APV_SystSettings.moduleDict['numpanels'] = 2
     # add cell sizes
 
     def _calc_cell_size(mod_size, num_cell, cell_gap):
@@ -39,10 +39,5 @@ def adjust_settings(
         APV_SystSettings.cellLevelModuleParams['numcellsy'],
         APV_SystSettings.cellLevelModuleParams['ycellgap']
     )
-
-    if APV_SystSettings.module_form == 'EW_fixed' or \
-            APV_SystSettings.module_form == 'cell_level_EW_fixed':
-        APV_SystSettings.sceneDict['azimuth'] == 90
-        APV_SystSettings.moduleDict['numpanels'] == 2
 
     return APV_SystSettings
