@@ -1,20 +1,6 @@
-import numpy as np
+
 import pandas as pd
 import itertools
-
-
-class Parameters():
-    def __init__(self, resolution: str):
-
-        if resolution == 'fine':
-            self.tilt = np.arange(0, 56, 2)
-            # self.azimut = np.arange(150, 211, 1)
-            self.gcr = np.arange(0.1, 1.01, 0.05)  # ground covering ratio
-
-        if resolution == 'coarse':
-            self.tilt = np.arange(15, 56, 15)
-            # self.azimut = np.arange(150, 211, 15)
-            self.gcr = np.arange(0.5, 1.001, 0.25)  # ground covering ratio
 
 
 def create_parameters_permutated_df(parameters, exclude=[]) -> pd.DataFrame:
@@ -38,3 +24,15 @@ def create_parameters_permutated_df(parameters, exclude=[]) -> pd.DataFrame:
     df = pd.DataFrame(data, index=sim_IDs, columns=parameters_list)
     df.index.names = ['sim_ID']
     return df
+
+
+def get_attribute_names(class_or_object, exclude=[]):
+    # create list from parameters object:
+    attribute_list = []
+    for attribute in dir(class_or_object):
+        if not attribute.startswith('__') and not callable(
+                getattr(class_or_object, attribute)):
+
+            if attribute not in exclude:
+                attribute_list += [attribute]
+    return attribute_list

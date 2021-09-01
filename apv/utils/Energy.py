@@ -8,7 +8,7 @@ import pandas as pd
 import os
 
 from apv.settings.simulation import Simulation
-import apv.settings.user_pathes as UserPaths
+import apv.settings.user_pathes as user_pathes
 import apv.utils
 
 # #
@@ -20,11 +20,11 @@ def estimate_energy(SimSettings, APV_SystSettings):
     time_stamp = apv.utils.time.get_hour_of_year(
         SimSettings.sim_date_time)
     # read EPW data from bifacial radiance files
-    epw = UserPaths.bifacial_radiance_files_folder / Path(
+    epw = user_pathes.bifacial_radiance_files_folder / Path(
         'EPWs/')
     for file in os.listdir(epw):
         if file.endswith(".epw"):
-            epw = UserPaths.bifacial_radiance_files_folder / Path(
+            epw = user_pathes.bifacial_radiance_files_folder / Path(
                 'EPWs/' + file)
 
     (tmydata, metadata) = pvlib.iotools.epw.read_epw(epw, coerce_year=2001)
