@@ -204,7 +204,7 @@ class GeometriesHandler:
                 f'-t {self.center_offset_x} {self.center_offset_y} 0'
                 # mark system edge
                 f'\n! genbox black post {0.2} {0.2} 8 | xform '
-                f'-t {south_west_corner_x} {south_west_corner_y} 0'
+                f'-t {self.sw_corner_scan_x} {self.sw_corner_scan_y} 0'
             )
 
         return text

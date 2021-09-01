@@ -5,7 +5,7 @@ if __name__ == '__main__':
     from pathlib import Path
     import importlib as imp
     import apv
-    imp.reload(apv.utils.radiance_geometries)
+    imp.reload(apv.utils.GeometriesHandler)
     imp.reload(apv.br_wrapper)
 
     SimSettings = apv.settings.simulation.Simulation()
@@ -36,7 +36,7 @@ if __name__ == '__main__':
     # TODO if this cell is executed to debug the scene,
     # to run a simulation one has to restart session and skip this cell
     # to avoid an error, how to fix?
-    imp.reload(apv.utils.radiance_geometries)
+    imp.reload(apv.utils.GeometriesHandler)
     imp.reload(apv.br_wrapper)
 
     APV_SystSettings.round_up_field_dimensions = False

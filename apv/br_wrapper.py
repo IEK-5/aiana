@@ -179,18 +179,17 @@ class BR_Wrapper:
 
         self._set_up_AnalObj_and_groundscan()
 
-    def _create_geometries(self, APV_SystSettings: APV_SystSettings,
-                           debug_mode=False):
+    def _create_geometries(self, APV_SystSettings: APV_SystSettings):
         """create mounting structure (optional), pv modules"""
 
         GeometriesHandlerObj = GeometriesHandler(
-            self.SimSettings, APV_SystSettings, debug_mode)
+            self.SimSettings, APV_SystSettings, self.debug_mode)
         GeometriesHandlerObj._set_init_variables()
 
         # create PV module
         # default for standard:
-        module_text = None
         cellLevelModuleParams = None
+        module_text = None
 
         if APV_SystSettings.module_form == 'cell_level':
             cellLevelModuleParams = APV_SystSettings.cellLevelModuleParams
@@ -210,6 +209,9 @@ class BR_Wrapper:
                 APV_SystSettings,
                 APV_SystSettings.cellLevelModuleParams
             )
+
+        elif APV_SystSettings.module_form == 'none':
+            module_text = ""
 
         self.radObj.makeModule(
             name=APV_SystSettings.module_name,

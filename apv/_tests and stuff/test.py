@@ -5,9 +5,8 @@ import time
 import sys
 import importlib as imp
 from apv import br_wrapper as br
+from apv import settings
 from apv.utils import files_interface as fi
-from apv.settings import UserPaths as up
-from apv.settings import Simulation as s
 import apv.resources.locations as loc
 import pytictoc
 import os
@@ -26,8 +25,51 @@ import this
 from datetime import datetime
 
 # #
+import apv
 
 
+class test(apv.settings.apv_systems.Default):
+
+    sceneDict = {'tilt': 40,
+                 'pitch': 10,
+                 'hub_height': 4.5,
+                 'azimuth': 180,
+                 'nMods': 10,
+                 'nRows': 3,
+                 }
+
+
+test.sceneDict
+test.moduleDict
+# #
+
+sceneDict = {
+    'tilt': 20,
+    'pitch': 10,
+    'hub_height': 4.5,
+    'azimuth': 180,
+    'nMods': 10,
+    'nRows': 3,
+}
+
+moduleDict = {
+    'x': 0.998,
+    'y': 1.980,
+    'xgap': 0.005,
+    'ygap': 0.05,
+    'zgap': 0,
+    'numpanels': 2
+}
+
+# #
+test.sceneDict['azimuth']
+
+# #
+
+sceneDict['tilt'] = 10
+
+
+# #
 def get_hour_of_year(date_time_str: str) -> int:
     """converts str to hours_of_year
 
