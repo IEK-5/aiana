@@ -4,11 +4,6 @@ objects, create scene and run simulation with Bifacial_Radiance according
 to presets in settings.py
 
 # TODO
-- gencumsky mit einem Pfosten ("Sonnenuhr"), sollte verwaschen sein ->Leo
-- gencumsky plot color bar einheit
-- ground in rvu darstellen
-- heatmap auch als shadow depths (optional)
-
 
 - Gewächshaus reflektierend machen
 - bekommen die Module an der Glaswand mehr Licht ab?
@@ -22,9 +17,6 @@ import subprocess
 # from pvlib import *
 import numpy as np
 import pandas as pd
-import datetime as dt
-import time
-import json
 import os
 import pytictoc
 from pathlib import Path
@@ -35,7 +27,7 @@ from datetime import datetime
 from typing import Literal
 
 import apv
-import apv.settings.user_pathes as UserPaths  # TODO keine Klasse mehr
+import apv.settings.user_pathes as user_pathes
 from apv.utils.GeometriesHandler import GeometriesHandler
 from apv.settings.apv_systems import Default as APV_SystSettings
 from apv.utils import files_interface as fi
@@ -127,7 +119,7 @@ class BR_Wrapper:
         self.APV_SystSettings = apv.utils.settings_adjuster.adjust_settings(
             self.APV_SystSettings)
 
-        working_folder = UserPaths.bifacial_radiance_files_folder
+        working_folder = user_pathes.bifacial_radiance_files_folder
         # check working folder
         fi.make_dirs_if_not_there(working_folder)
 
@@ -258,23 +250,6 @@ class BR_Wrapper:
             # !xform object/customObjectName.rad
         )
 
-        '''
-            else:
-                begin = int(self.simSettings.start_time)
-                end = int(self.simSettings.end_time) + 1
-                for timeindex in np.arange(begin, end, 1):
-                    dni = self.met_data.dni[timeindex]
-                    dhi = self.met_data.dhi[timeindex]
-                    # solar position
-                    solpos = self.met_data.solpos.iloc[timeindex]
-                    sunalt = float(solpos.elevation)
-                    sunaz = float(solpos.azimuth)
-                    print(timeindex)
-                    self.oct_file_name = self.radObj.name \
-                        + '_{}'.format(timeindex)
-                    sky = self.radObj.gendaylit2manual(dni, dhi, sunalt, sunaz)
-                    self.radObj.makeOct(octname=self.oct_file_name)'''
-
         # make oct file
         self.radObj.makeOct(octname=self.oct_file_name)
 
@@ -308,7 +283,7 @@ class BR_Wrapper:
         for key in scd:
             scd[key] = str(scd[key]) + ' '
 
-        view_fp = UserPaths.bifacial_radiance_files_folder / Path(
+        view_fp = user_pathes.bifacial_radiance_files_folder / Path(
             'views/'+view_name+'.vp')
 
         if view_type == 'parallel':
@@ -395,9 +370,6 @@ class BR_Wrapper:
                               accuracy=self.SimSettings.ray_tracing_accuracy,
                               only_ground=self.SimSettings.only_ground_scan)
 
-        # TODO TypeError: can only concatenate tuple (not "int") to tuple
-        # sim_progress =100*(np.where(self.ygrid == y_start)+1)/len(self.ygrid)
-        # return f'Sim progress {sim_progress} %.'
         return f'y_start: {y_start} done.'
 
     def run_raytracing_simulation(self) -> pd.DataFrame:
@@ -406,7 +378,7 @@ class BR_Wrapper:
         """
 
         # clear temporary line scan results from bifacial_results_folder
-        temp_results: Path = UserPaths.bifacial_radiance_files_folder / Path(
+        temp_results: Path = user_pathes.bifacial_radiance_files_folder / Path(
             'results')
         fi.clear_folder_content(temp_results)
 
@@ -435,7 +407,7 @@ class BR_Wrapper:
     def merge_line_scans(self):
         """merge results to create one complete ground DataFrame
         """
-        temp_results: Path = UserPaths.bifacial_radiance_files_folder / Path(
+        temp_results: Path = user_pathes.bifacial_radiance_files_folder / Path(
             'results')
         df_ground_results: pd.DataFrame = fi.df_from_file_or_folder(
             temp_results, append_all_in_folder=True,
@@ -450,8 +422,8 @@ class BR_Wrapper:
         df_ground_results = df_ground_results.rename(
             columns={col_name: 'Wm2Ground'})
         # Path for saving final results
-        fi.make_dirs_if_not_there(UserPaths.results_folder)
-        f_result_path = os.path.join(UserPaths.results_folder,
+        fi.make_dirs_if_not_there(user_pathes.results_folder)
+        f_result_path = os.path.join(user_pathes.results_folder,
                                      self.csv_file_name)
         df_ground_results.to_csv(f_result_path)
         print(f'merged file saved in {f_result_path}\n')
@@ -496,7 +468,7 @@ class BR_Wrapper:
 
         if cm_unit == 'PAR':
             df = uc.irradiance_to_PAR(df=df)
-            f_result_path = os.path.join(UserPaths.results_folder,
+            f_result_path = os.path.join(user_pathes.results_folder,
                                          self.csv_file_name)
             df.to_csv(f_result_path)
             z = 'PARGround'
@@ -506,7 +478,7 @@ class BR_Wrapper:
         elif cm_unit == 'Shadow-Depth':
             df = uc.irradiance_to_shadowdepth(df=df,
                                               SimSettings=self.SimSettings)
-            f_result_path = os.path.join(UserPaths.results_folder,
+            f_result_path = os.path.join(user_pathes.results_folder,
                                          self.csv_file_name)
             df.to_csv(f_result_path)
             z = 'ShadowDepth'
