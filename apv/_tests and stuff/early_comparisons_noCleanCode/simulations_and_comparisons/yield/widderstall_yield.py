@@ -1,7 +1,7 @@
 # #
 import pvlib
-import apv.tools
-import apv.resources
+import apv.utils
+# import apv.resources
 import pandas as pd
 import numpy as np
 
@@ -9,10 +9,20 @@ import importlib as imp
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+
+import apv.settings.user_pathes as user_pathes
 # #
-pv_module = apv.tools.files_interface.df_from_file(
-    'raw-data/Sanyo240_moduleSpecs_guestimate.txt', delimiter='\t').T[0]
+
+from pathlib import Path
+input_folder = Path.cwd().parent.parent.parent.parent/'resources/pv_modules'
+input_folder
+# #
+pv_module: pd.Series = apv.utils.files_interface.df_from_file_or_folder(
+    input_folder/'Sanyo240_moduleSpecs_guestimate.txt',
+    delimiter='\t').T[0]
 pv_module  # a series
+
+# #
 # #
 
 df = apv.tools.files_interface.df_from_file(
