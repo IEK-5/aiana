@@ -41,8 +41,10 @@ if __name__ == '__main__':
 
     APV_SystSettings.round_up_field_dimensions = False
 
-    APV_SystSettings.scene_camera_dicts['top_down']['horizontal_view_angle'] = 50
-    APV_SystSettings.scene_camera_dicts['top_down']['vertical_view_angle'] = 40
+    APV_SystSettings.scene_camera_dicts[
+        'top_down']['horizontal_view_angle'] = 50
+    APV_SystSettings.scene_camera_dicts[
+        'top_down']['vertical_view_angle'] = 40
 
     for azimuth in [225]:
 

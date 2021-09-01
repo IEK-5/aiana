@@ -23,7 +23,7 @@ if __name__ == '__main__':
         36.7922, -119.7932, altitude=94, tz=-7, name='Fresno_CA')
     SimSettings.sim_date_time = '06-01_11h'  # whole day
     SimSettings.spatial_resolution = 0.01  # 0.01
-    #SimSettings.sky_gen_mode = 'gencumsky'
+    # SimSettings.sky_gen_mode = 'gencumsky'
     SimSettings.sim_name = 'checker_board_Perna'
 
     APV_SystSettings.ground_scan_margin_x = 0

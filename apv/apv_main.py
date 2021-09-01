@@ -24,9 +24,9 @@ if __name__ == '__main__':
     # #
     brObj.run_raytracing_simulation()
     # #
-    # plot existing data (simulation cell does not need to be repeated)
+    # also plots existing data (simulation does not need to be repeated)
     brObj.plot_ground_insolation()
-    # TODO why is there a darker line at the top?
+    # TODO why is there a darker line at the top? Edge of the ground?
     # #
     brObj.plot_ground_insolation(cm_unit='Shadow-Depth')
     # show result data frame

@@ -26,9 +26,9 @@ if __name__ == '__main__':
     # APV_SystSettings.mounting_structure_type = 'declined_tables'
     # APV_SystSettings.sceneDict['nRows'] = 3
 
-    #APV_SystSettings.sceneDict['nMods'] = 4
-    #APV_SystSettings.sceneDict['nRows'] = 4
-    #APV_SystSettings.sceneDict['pitch'] = 4
+    # APV_SystSettings.sceneDict['nMods'] = 4
+    # APV_SystSettings.sceneDict['nRows'] = 4
+    # APV_SystSettings.sceneDict['pitch'] = 4
     # APV_SystSettings.sceneDict['azimuth'] = 200
     # APV_SystSettings.moduleDict['y'] = 0.5
     APV_SystSettings.mounting_structure_type = 'none'
@@ -36,8 +36,10 @@ if __name__ == '__main__':
     # APV_SystSettings.glass_modules = True
     APV_SystSettings.round_up_field_dimensions = False
 
-    APV_SystSettings.scene_camera_dicts['top_down']['horizontal_view_angle'] = 45
-    APV_SystSettings.scene_camera_dicts['top_down']['vertical_view_angle'] = 40
+    APV_SystSettings.scene_camera_dicts[
+        'top_down']['horizontal_view_angle'] = 45
+    APV_SystSettings.scene_camera_dicts[
+        'top_down']['vertical_view_angle'] = 40
 
     APV_SystSettings.ground_scan_margin_x = 0  # -3
     APV_SystSettings.ground_scan_margin_y = 0  # -32
