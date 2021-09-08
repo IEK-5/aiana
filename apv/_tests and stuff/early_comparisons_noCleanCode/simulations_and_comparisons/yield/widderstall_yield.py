@@ -14,18 +14,31 @@ import apv.settings.user_pathes as user_pathes
 # #
 
 from pathlib import Path
-input_folder = Path.cwd().parent.parent.parent.parent/'resources/pv_modules'
-input_folder
+import os
+Path.cwd().splitext()
+
+# #
+a = Path('C:/Users/l.raumann/Documents/agri-PV')
+b = 'c:\\Users\\l.raumann\\Documents\\agri-PV\\py-repos\\agri-pv\\apv\\resources\\pv_modules\\Sanyo240_moduleSpecs_guestimate.txt'
+
+input_folder = str(Path.cwd()).split("\\apv\\")[0]+"\\apv\\resources\\pv_modules"
 # #
 pv_module: pd.Series = apv.utils.files_interface.df_from_file_or_folder(
-    input_folder/'Sanyo240_moduleSpecs_guestimate.txt',
+    input_folder+'\\Sanyo240_moduleSpecs_guestimate.txt',
     delimiter='\t').T[0]
 pv_module  # a series
 
 # #
+
+a = Path('ich werde ignoriert')
+a
+# #
+b = 's:\\Sanyo240_moduleSpecs_guestimate'
+
+os.path.join(a, b)
 # #
 
-df = apv.tools.files_interface.df_from_file(
+df = apv.utils.files_interface.df_from_file_or_folder(
     'raw-data/sanyo', skiprows=9, append_all_in_folder=True, delimiter='\t')
 
 # set unreasonable data to NaN

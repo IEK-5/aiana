@@ -16,16 +16,36 @@ import numpy as np
 from pvlib import *
 from bifacial_radiance import *
 import subprocess
-from apv.settings import Simulation
 import apv
 from pathlib import Path
 from types import SimpleNamespace
 import hjson
 import this
 from datetime import datetime
+from typing import Literal
+
+import apv.settings.user_pathes as user_pathes
+import re
+from apv.utils.GeometriesHandler import GeometriesHandler
 
 # #
-import apv
+
+gh = GeometriesHandler(SimSettings=apv.settings.simulation.Simulation(),
+                       APV_SystSettings=apv.settings.apv_systems.Default())
+
+
+gh.makeCustomMaterial('grass3', 'plastic', R=0.12, G=0.4, B=0.1)
+
+
+# #
+def foo(bar):
+    print(bar)
+
+
+dictT = {'a': foo}
+
+dictT['a']('printing test')
+# #
 
 
 class test(apv.settings.apv_systems.Default):

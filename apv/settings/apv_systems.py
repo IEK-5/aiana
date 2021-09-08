@@ -66,12 +66,12 @@ class Default:
         'none', 'declined_tables', 'framed_single_axes'] = 'framed_single_axes'
 
     scene_camera_dicts: dict = {
-        'total': {'cam_pos_x': -14,   # depth
-                  'cam_pos_y': -1.6,   # left / right
-                  'cam_pos_z': 8,     # height
-                  'view_direction_x': 1.581,
-                  'view_direction_y': 0,
-                  'view_direction_z': -0.519234,
+        'total': {'cam_pos_x': -20,   # depth
+                  'cam_pos_y': 0,   # left / right
+                  'cam_pos_z': 16,     # height
+                  'view_direction_x': 0,
+                  'view_direction_y': 1,
+                  'view_direction_z': -1,
                   'horizontal_view_angle': 120,  # [degree]
                   'vertical_view_angle': 90  # [degree]
                   },
@@ -80,7 +80,7 @@ class Default:
                         'cam_pos_z': 6.5,     # height
                         'view_direction_x': 1.581,
                         'view_direction_y': 0,
-                        'view_direction_z': -1.919234,
+                        'view_direction_z': -2,
                         'horizontal_view_angle': 120,  # [degree]
                         'vertical_view_angle': 90  # [degree]
                         },
@@ -104,6 +104,8 @@ class Default:
 
     round_up_field_dimensions: bool = True
 
+    extra_customObject_rad_text: str = None
+
 
 class APV_Syst_InclinedTables_Juelich(Default):
 
@@ -125,7 +127,8 @@ class APV_Syst_InclinedTables_Juelich(Default):
 
     mounting_structure_type: Default.mounting_structure_type = \
         'declined_tables'
-
+    add_glass_box = True
+    glass_box_to_APV_distance = 2  # [m]
     scene_camera_dicts = Default.scene_camera_dicts
     scene_camera_dicts['total'] = {'cam_pos_x': -21.5,   # depth
                                    'cam_pos_y': 6.9,   # left / right

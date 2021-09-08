@@ -27,6 +27,7 @@ from datetime import datetime
 from typing import Literal
 
 import apv
+from apv.settings import apv_systems
 import apv.settings.user_pathes as user_pathes
 from apv.utils.GeometriesHandler import GeometriesHandler
 from apv.settings.apv_systems import Default as APV_SystSettings
@@ -174,37 +175,38 @@ class BR_Wrapper:
     def _create_geometries(self, APV_SystSettings: APV_SystSettings):
         """create mounting structure (optional), pv modules"""
 
-        GeometriesHandlerObj = GeometriesHandler(
+        ghObj = GeometriesHandler(
             self.SimSettings, APV_SystSettings, self.debug_mode)
-        GeometriesHandlerObj._set_init_variables()
+        ghObj._set_init_variables()
+
+        ghModule = apv.utils.GeometriesHandler  # TODO replace with Obj
 
         # create PV module
-        # default for standard:
-        cellLevelModuleParams = None
-        module_text = None
 
         if APV_SystSettings.module_form == 'cell_level':
+            # then use bifacial radiance by passing cellLevelModuleParams
             cellLevelModuleParams = APV_SystSettings.cellLevelModuleParams
+        else:
+            cellLevelModuleParams = None
 
-        elif APV_SystSettings.module_form == 'cell_level_checker_board':
-            module_text = apv.utils.GeometriesHandler.checked_module(
+        module_text_dict = {
+            'std': None,  # rad text created by bifacial radiance
+            'cell_level': None,  # rad text created by bifacial radiance
+            'none': "",  # empty
+            'cell_level_checker_board': ghModule.checked_module,
+            'EW_fixed': ghModule.make_text_EW,
+            'cell_level_EW_fixed': ghModule.cell_level_EW_fixed,
+        }
+
+        if APV_SystSettings.module_form in ['std', 'cell_level', 'none']:
+            # pass dict value without calling
+            module_text = module_text_dict[APV_SystSettings.module_form]
+        else:
+            cellLevelModuleParams = None
+            # pass dict value being a ghObj method with calling
+            module_text = module_text_dict[APV_SystSettings.module_form](
                 APV_SystSettings
             )
-
-        elif APV_SystSettings.module_form == 'EW_fixed':
-            module_text = apv.utils.GeometriesHandler.make_text_EW(
-                APV_SystSettings
-            )
-
-        elif APV_SystSettings.module_form == 'cell_level_EW_fixed':
-            module_text = apv.utils.GeometriesHandler.cell_level_EW_fixed(
-                APV_SystSettings,
-                APV_SystSettings.cellLevelModuleParams
-            )
-
-        elif APV_SystSettings.module_form == 'none':
-            module_text = ""
-
         self.radObj.makeModule(
             name=APV_SystSettings.module_name,
             **APV_SystSettings.moduleDict,
@@ -212,8 +214,8 @@ class BR_Wrapper:
             text=module_text,
             glass=APV_SystSettings.glass_modules,
         )
-        # make scene
 
+        # make scene
         self.scene = self.radObj.makeScene(
             moduletype=APV_SystSettings.module_name,
             sceneDict=APV_SystSettings.sceneDict)
@@ -221,9 +223,12 @@ class BR_Wrapper:
         structure_type = APV_SystSettings.mounting_structure_type
         # create mounting structure as custom object:
         if structure_type == 'declined_tables':
-            rad_text = GeometriesHandlerObj.declined_tables_mount()
+            rad_text = ghObj.declined_tables_mount(
+                add_glass_box=APV_SystSettings.add_glass_box)
         elif structure_type == 'framed_single_axes':
-            rad_text = GeometriesHandlerObj.framed_single_axes_mount()
+            rad_text = ghObj.framed_single_axes_mount()
+        if APV_SystSettings.extra_customObject_rad_text is not None:
+            rad_text += APV_SystSettings.extra_customObject_rad_text
 
         if rad_text != '':
             rz = 180 - APV_SystSettings.sceneDict["azimuth"]
@@ -236,7 +241,7 @@ class BR_Wrapper:
             )
 
         # add ground scan area visualization to the radObj without rotation
-        ground_rad_text = GeometriesHandlerObj.groundscan_area()
+        ground_rad_text = ghObj.groundscan_area()
 
         self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
             radfile=self.scene.radfiles,
