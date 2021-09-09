@@ -14,6 +14,10 @@ Falls ja, nicht die Strings beider Reihen in Reihe schalten!
 
 
 
+#TODO - prüfen, ob bifacial_radiance pro Zeitpunkt oder integriert
+von -30 bis +30min
+    - kann man bei gencumsky direkt oder diffus an/aus schalten?
+
 '''
 # import needed packages
 import subprocess
@@ -192,16 +196,20 @@ class BR_Wrapper:
         radiance materials documentation:
         https://floyd.lbl.gov/radiance/refer/ray.html#Materials"""
 
-        # check for existence:
-        with open(rad_mat_file) as f:
-            data = f.readlines()
+        # read old file
+        with open(rad_mat_file, 'r') as f:
+            lines: list = f.readlines()
             f.close()
-        if any([mat_name in line for line in data]):
-            print(f'material {mat_name} already exists')
-            # TODO: better: delete 4 lines to "overwrite"
-            return
 
-        else:
+        # write new file
+        with open(rad_mat_file, 'w') as f:
+            print_string = 'Creating'
+            for i, line in enumerate(lines):
+                if mat_name in line:
+                    lines_sliced = lines[:i-1] + lines[i+4:]
+                    print_string = 'Overwriting'
+                    break
+
             # number of modifiers needed by Radiance
             mods = {'glass': 3, 'metal': 5, 'plastic': 5, 'trans': 7}
             # Create text for Radiance input:
@@ -212,12 +220,9 @@ class BR_Wrapper:
             if mods[mat_type] > 5:
                 text += f' {transmissivity} {transmitted_specularity}'
 
-            with open(rad_mat_file, 'a') as f:
-                f.write(text)
-                f.close()
-
-            print(f"""
-                  Created custom material {mat_name}.""")
+            print(f"{print_string} custom material {mat_name}.")
+            f.writelines(lines_sliced + [text])
+            f.close()
         return
 
     def _create_materials(self):

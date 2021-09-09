@@ -30,21 +30,46 @@ from apv.utils.GeometriesHandler import GeometriesHandler
 
 # #
 
-gh = GeometriesHandler(SimSettings=apv.settings.simulation.Simulation(),
-                       APV_SystSettings=apv.settings.apv_systems.Default())
+
+# #
+rad_mat_file: Path = user_pathes.bifacial_radiance_files_folder / Path(
+    'materials/ground2.rad')
+
+mat_name = 'grass'
+# check for existence:
+with open(rad_mat_file, 'r') as f:
+    lines: list = f.readlines()
+    f.close()
+
+with open(rad_mat_file, 'w') as f:
+    print_string = 'new'
+    for i, line in enumerate(lines):
+        if mat_name in line:
+            f.writelines(lines[:i-1] + lines[i+4:])
+            print_string = 'existing'
+            break
+    f.close()
+print(print_string)
 
 
-gh.makeCustomMaterial('grass3', 'plastic', R=0.12, G=0.4, B=0.1)
+#data.index('void plastic black\n')
+# #
+[mat_name in line for line in data]
+
+# #
+test = ['0', '1', '2', '3', '4']
+
+del_line_start = 1
+number_of_follow_lines_to_delete = 45
+del_line_to = del_line_start+number_of_follow_lines_to_delete
+
+data[:del_line_start] + data[del_line_to+1:]
 
 
 # #
-def foo(bar):
-    print(bar)
-
-
-dictT = {'a': foo}
-
-dictT['a']('printing test')
+if any([mat_name in line for line in data]):
+    print(f'material {mat_name} already exists')
+    # TODO: better: delete 4 lines to "overwrite"
 # #
 
 
