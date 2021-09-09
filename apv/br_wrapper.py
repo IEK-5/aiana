@@ -3,10 +3,13 @@
 objects, create scene and run simulation with Bifacial_Radiance according
 to presets in settings.py
 
-# TODO
+- Gewächshaus reflektierend machen -> done
+- bekommen die Module an der Glaswand mehr Licht ab? --> scheinbar nicht
+eher sogar dunkler, da diffuser antei geringer
+wobei wie gesagt diffuser schatten zu stark wirkt im vergleich
+zu was man in der Realität mit dem Auge beobachten kann.
 
-- Gewächshaus reflektierend machen
-- bekommen die Module an der Glaswand mehr Licht ab?
+
 Falls ja, nicht die Strings beider Reihen in Reihe schalten!
 
 
@@ -168,9 +171,61 @@ class BR_Wrapper:
         self.csv_file_name = self.oct_file_name + '.csv'
 
         # create mounting structure (optional) and pv modules
+        self._create_materials()
         self._create_geometries(APV_SystSettings=self.APV_SystSettings)
 
         self._set_up_AnalObj_and_groundscan()
+
+    @staticmethod
+    def makeCustomMaterial(
+        mat_name: str,
+        mat_type: Literal['glass', 'metal', 'plastic', 'trans'],
+        R: float = 0, G: float = 0, B: float = 0,
+        specularity: float = 0, roughness: float = 0,
+        transmissivity: float = 0, transmitted_specularity: float = 0,
+        rad_mat_file: Path = user_pathes.bifacial_radiance_files_folder / Path(
+            'materials/ground.rad')
+    ):
+        # TODO add diffusive glass to be used optional in
+        # checker board empty slots. ref: Miskin2019
+        """type trans = translucent plastic
+        radiance materials documentation:
+        https://floyd.lbl.gov/radiance/refer/ray.html#Materials"""
+
+        # check for existence:
+        with open(rad_mat_file) as f:
+            data = f.readlines()
+            f.close()
+        if any([mat_name in line for line in data]):
+            print(f'material {mat_name} already exists')
+            # TODO: better: delete 4 lines to "overwrite"
+            return
+
+        else:
+            # number of modifiers needed by Radiance
+            mods = {'glass': 3, 'metal': 5, 'plastic': 5, 'trans': 7}
+            # Create text for Radiance input:
+            text = (f'\n\nvoid {mat_type} {mat_name}\n0\n0'
+                    f'\n{mods[mat_type]} {R} {G} {B}')
+            if mods[mat_type] > 3:
+                text += f' {specularity} {roughness}'
+            if mods[mat_type] > 5:
+                text += f' {transmissivity} {transmitted_specularity}'
+
+            with open(rad_mat_file, 'a') as f:
+                f.write(text)
+                f.close()
+
+            print(f"""
+                  Created custom material {mat_name}.""")
+        return
+
+    def _create_materials(self):
+        self.makeCustomMaterial(mat_name='dark_glass', mat_type='glass',
+                                R=0.6, G=0.6, B=0.6)
+        self.makeCustomMaterial(mat_name='grass', mat_type='plastic',
+                                R=0.1, G=0.3, B=0.08,
+                                specularity=0.1, roughness=0.3)
 
     def _create_geometries(self, APV_SystSettings: APV_SystSettings):
         """create mounting structure (optional), pv modules"""

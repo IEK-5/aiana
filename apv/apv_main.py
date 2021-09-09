@@ -15,7 +15,7 @@ if __name__ == '__main__':
         APV_SystSettings=APV_SystSettings,
         weather_file=weather_file  # downloading automatically without this
     )
-    # #
+
     brObj.setup_br()
     # #
     brObj.view_scene(

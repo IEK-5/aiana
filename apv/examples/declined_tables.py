@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
     # ### often changed settings:  ####
     # SimSettings.sim_date_time = '06-15_12h'
-    # SimSettings.spatial_resolution = 1
+    SimSettings.spatial_resolution = 0.5
     # SimSettings.sky_gen_mode = 'gendaylit'
 
     SimSettings.sim_name = 'declined_tables_and_glassbox'
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     brObj = apv.br_wrapper.BR_Wrapper(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings,
-        # weather_file=weather_file  # downloading automatically without this,
+        weather_file=weather_file  # downloading automatically without this,
     )
     brObj.setup_br()
     # #

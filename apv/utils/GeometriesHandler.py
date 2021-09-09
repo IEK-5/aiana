@@ -266,50 +266,6 @@ class GeometriesHandler:
 
         return text
 
-    @staticmethod
-    def makeCustomMaterial(
-        mat_name: str,
-        mat_type: Literal['glass', 'metal', 'plastic', 'trans'],
-        R: float = 0, G: float = 0, B: float = 0,
-        specularity: float = 0, roughness: float = 0,
-        transmissivity: float = 0, transmitted_specularity: float = 0,
-        rad_mat_file: Path = user_pathes.bifacial_radiance_files_folder / Path(
-            'materials/ground.rad')
-    ):
-        # TODO add diffusive glass to be used optional in
-        # checker board empty slots. ref: Miskin2019
-        """type trans = translucent plastic
-        radiance materials documentation:
-        https://floyd.lbl.gov/radiance/refer/ray.html#Materials"""
-
-        # check for existence:
-        with open(rad_mat_file) as f:
-            data = f.readlines()
-            f.close()
-        if any([mat_name in line for line in data]):
-            print('material already exists!')
-            # TODO: better: delete 4 lines to "overwrite"
-            return
-
-        else:
-            # number of modifiers needed by Radiance
-            mods = {'glass': 3, 'metal': 5, 'plastic': 5, 'trans': 7}
-            # Create text for Radiance input:
-            text = (f'\nvoid {mat_type} {mat_name}\n0\n0'
-                    f'\n{mods[mat_type]} {R} {G} {B}')
-            if mods[mat_type] > 3:
-                text += f' {specularity} {roughness}'
-            if mods[mat_type] > 5:
-                text += f' {transmissivity} {transmitted_specularity}'
-
-            with open(rad_mat_file, 'a') as f:
-                f.write(text)
-                f.close()
-
-            print(f"""
-                  Created custom material {mat_name}.""")
-        return
-
 
 def checked_module(APV_SystSettings: APV_SystSettings) -> str:
     c = APV_SystSettings.cellLevelModuleParams
