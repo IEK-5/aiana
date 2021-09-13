@@ -261,7 +261,7 @@ class GeometriesHandler:
             t_y = (self.sw_modCorner_azi0_y + self.allRows_footprint_y
                    + self.APV_SystSettings.glass_box_to_APV_distance)
             t_x = self.allRows_footprint_x
-            text += (f'\n! genbox dark_glass glass_wall {t_x} 3 3'
+            text += (f'\n! genbox stock_glass glass_wall {t_x} 0.005 5'
                      f' | xform -t {self.sw_modCorner_azi0_x} {t_y} 0')
 
         return text

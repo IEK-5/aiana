@@ -88,11 +88,12 @@ class BR_Wrapper:
 
         self.ygrid: list[int] = []
         self.groundscan = dict()
+        self.frontscan = dict()
 
         self.df_ground_results = pd.DataFrame()
         self.csv_file_name = str()
 
-    def setup_br(self):
+    def setup_br(self, dni_singleValue=None, dhi_singleValue=None):
         """
         docstring noch veraltet
 
@@ -152,7 +153,20 @@ class BR_Wrapper:
                 self.SimSettings.sim_date_time)
             # if (self.simSettings.start_time == '') and (
             # self.simSettings.end_time == ''):
-            self.radObj.gendaylit(timeindex=timeindex)
+
+            # to be able to pass own dni/dhi values:
+
+            if dni_singleValue is None:
+                dni_singleValue = self.radObj.metdata.dni[timeindex]
+            if dhi_singleValue is None:
+                dhi_singleValue = self.radObj.metdata.dhi[timeindex]
+            solpos = self.radObj.metdata.solpos.iloc[timeindex]
+            sunalt = float(solpos.elevation)
+            sunaz = float(solpos.azimuth)-180.0
+            self.radObj.gendaylit2manual(
+                dni_singleValue, dhi_singleValue, sunalt, sunaz)
+
+            # self.radObj.gendaylit(timeindex=timeindex)
             self.oct_file_name = self.radObj.name \
                 + '_' + self.SimSettings.sim_date_time
 
@@ -226,8 +240,8 @@ class BR_Wrapper:
         return
 
     def _create_materials(self):
-        self.makeCustomMaterial(mat_name='dark_glass', mat_type='glass',
-                                R=0.6, G=0.6, B=0.6)
+        # self.makeCustomMaterial(mat_name='dark_glass', mat_type='glass',
+        #                        R=0.6, G=0.6, B=0.6)
         self.makeCustomMaterial(mat_name='grass', mat_type='plastic',
                                 R=0.1, G=0.3, B=0.08,
                                 specularity=0.1, roughness=0.3)
@@ -403,9 +417,10 @@ class BR_Wrapper:
               f'total: {sensorsy * len(self.ygrid)}')
 
         # start rough scan to define ground afterwards
-        groundscan, backscan = self.analObj.moduleAnalysis(scene=self.scene,
-                                                           sensorsy=sensorsy)
-
+        # groundscan, backscan = self.analObj.moduleAnalysis(scene=self.scene,
+        #                                                   sensorsy=sensorsy)
+        self.frontscan, groundscan = self.analObj.moduleAnalysis(
+            scene=self.scene, sensorsy=sensorsy)
         """Modifying the groundscan dictionary, except for 'ystart',
         which is set later by looping through ygrid.
 
@@ -427,11 +442,12 @@ class BR_Wrapper:
         temp_name = self.radObj.name + "_groundscan" \
             + '{:.3f}'.format(y_start)
 
-        backscan = groundscan_copy
+        # backscan = groundscan_copy
         self.analObj.analysis(self.oct_file_name+'.oct',
                               temp_name,
+                              self.frontscan,
                               groundscan_copy,
-                              backscan,
+                              # backscan,
                               accuracy=self.SimSettings.ray_tracing_accuracy,
                               only_ground=self.SimSettings.only_ground_scan)
 
@@ -564,6 +580,6 @@ class BR_Wrapper:
         fig.axes[1] = apv.utils.plots.add_north_arrow(
             fig.axes[1], self.APV_SystSettings.sceneDict['azimuth'])
 
-        apv.utils.files_interface.save_fig(fig, self.oct_file_name)
+        apv.utils.files_interface.save_fig(fig, self.oct_file_name+'_'+z)
 
 # #
