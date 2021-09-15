@@ -31,7 +31,7 @@ from tqdm.auto import trange
 import concurrent.futures
 import bifacial_radiance as br
 from datetime import datetime
-from typing import Literal
+from typing import Iterator, Literal
 
 import apv
 from apv.settings import apv_systems
@@ -83,7 +83,6 @@ class BR_Wrapper:
         self.radObj: br.RadianceObj = None
         self.scene: br.SceneObj = None
         self.oct_file_name: str = None
-        self.met_data: br.MetObj = None
         self.analObj: br.AnalysisObj = None
 
         self.ygrid: list[int] = []
@@ -93,7 +92,7 @@ class BR_Wrapper:
         self.df_ground_results = pd.DataFrame()
         self.csv_file_name = str()
 
-    def setup_br(self, dni_singleValue=None, dhi_singleValue=None):
+    def setup_br(self):
         """
         docstring noch veraltet
 
@@ -137,52 +136,7 @@ class BR_Wrapper:
             self.SimSettings.sim_name, path=str(working_folder))
         self.radObj.setGround(self.SimSettings.ground_albedo)
 
-        # read TMY or EPW data
-        if self.weather_file is None:
-            self.weather_file = self.radObj.getEPW(
-                lat=self.SimSettings.apv_location.latitude,
-                lon=self.SimSettings.apv_location.longitude)
-
-        self.met_data = self.radObj.readWeatherFile(
-            weatherFile=str(self.weather_file))
-
-        # Create Sky
-        # gendaylit using Perez models for direct and diffuse components
-        if self.SimSettings.sky_gen_mode == 'gendaylit':
-            timeindex = apv.utils.time.get_hour_of_year(
-                self.SimSettings.sim_date_time)
-            # if (self.simSettings.start_time == '') and (
-            # self.simSettings.end_time == ''):
-
-            # to be able to pass own dni/dhi values:
-
-            if dni_singleValue is None:
-                dni_singleValue = self.radObj.metdata.dni[timeindex]
-            if dhi_singleValue is None:
-                dhi_singleValue = self.radObj.metdata.dhi[timeindex]
-            solpos = self.radObj.metdata.solpos.iloc[timeindex]
-            sunalt = float(solpos.elevation)
-            sunaz = float(solpos.azimuth)-180.0
-            self.radObj.gendaylit2manual(
-                dni_singleValue, dhi_singleValue, sunalt, sunaz)
-
-            # self.radObj.gendaylit(timeindex=timeindex)
-            self.oct_file_name = self.radObj.name \
-                + '_' + self.SimSettings.sim_date_time
-
-        # gencumskyself.met_data
-        if self.SimSettings.sky_gen_mode == 'gencumsky':
-            # from (year,month,day,hour)
-            startdt = datetime.strptime(self.SimSettings.startdt, '%m-%d_%Hh')
-            # to (year,month,day,hour)
-            enddt = datetime.strptime(self.SimSettings.enddt, '%m-%d_%Hh')
-
-            self.radObj.genCumSky(epwfile=str(self.weather_file),
-                                  startdt=startdt,
-                                  enddt=enddt)
-
-            self.oct_file_name = self.radObj.name \
-                + '_' + 'Cumulative'
+        self._load_weather_data_and_create_sky()
 
         # set csv file name
         # (placed here to allow for access also without a simulation run)
@@ -193,6 +147,78 @@ class BR_Wrapper:
         self._create_geometries(APV_SystSettings=self.APV_SystSettings)
 
         self._set_up_AnalObj_and_groundscan()
+        return
+
+    def _load_weather_data_and_create_sky(
+            self, dni_singleValue=None, dhi_singleValue=None):
+
+        # we use bifacial_radiance to fill metdata for sun pos and alitude
+        # from epw data and optional replace irradiation data by satellite
+        # read TMY or EPW data
+        if self.weather_file is None:
+            """EPW Dos:
+    https://www.nrel.gov/docs/fy08osti/43156.pdf
+    https://bigladdersoftware.com/epx/docs/8-2/auxiliary-programs/epw-csv-format-inout.html
+    """
+            self.weather_file = self.radObj.getEPW(
+                lat=self.SimSettings.apv_location.latitude,
+                lon=self.SimSettings.apv_location.longitude)
+
+        self.radObj.metdata = self.radObj.readWeatherFile(
+            weatherFile=str(self.weather_file))
+
+        # optional replace irradiation data:
+        if self.SimSettings.irradiance_data_source == 'ADS_satellite':
+            df_irradiance = fi.df_from_file_or_folder(
+                user_pathes.bifacial_radiance_files_folder/Path(
+                    'satellite_weatherData/TMY_nearJuelichGermany.csv'),
+                # TODO make it automatic with mohds method
+
+                names=['ghi', 'dhi'], delimiter=' '
+            )
+            self.radObj.metdata.ghi = df_irradiance.ghi
+            self.radObj.metdata.dhi = df_irradiance.dhi
+            self.radObj.metdata.dni = df_irradiance.ghi - df_irradiance.dhi
+
+        # Create Sky
+        # gendaylit using Perez models for direct and diffuse components
+        if self.SimSettings.sky_gen_mode == 'gendaylit':
+            timeindex = apv.utils.time.get_hour_of_year(
+                self.SimSettings.sim_date_time)
+
+            # to be able to pass own dni/dhi values:
+            if dni_singleValue is None:
+                dni_singleValue = self.radObj.metdata.dni[timeindex]
+            if dhi_singleValue is None:
+                dhi_singleValue = self.radObj.metdata.dhi[timeindex]
+            solpos = self.radObj.metdata.solpos.iloc[timeindex]
+            sunalt = float(solpos.elevation)
+            sunaz = float(solpos.azimuth)-180.0
+            self.radObj.gendaylit2manual(
+                dni_singleValue, dhi_singleValue, sunalt, sunaz)
+
+            self.oct_file_name = self.radObj.name \
+                + '_' + self.SimSettings.sim_date_time
+
+        # gencumskyself.met_data
+        if self.SimSettings.sky_gen_mode == 'gencumsky':
+            # from (year,month,day,hour)
+            startdt = datetime.strptime(self.SimSettings.startdt, '%m-%d_%Hh')
+            # to (year,month,day,hour)
+            enddt = datetime.strptime(self.SimSettings.enddt, '%m-%d_%Hh')
+
+            if self.SimSettings.irradiance_data_source == 'EPW':
+                epwfile = str(self.weather_file)
+            elif self.SimSettings.irradiance_data_source == 'ADS_satellite':
+                epwfile = 'satellite_weatherData/TMY_nearJuelichGermany.csv'
+                # TODO make it automatic with mohds method
+
+            self.radObj.genCumSky(epwfile=epwfile,
+                                  startdt=startdt,
+                                  enddt=enddt)
+
+            self.oct_file_name = self.radObj.name \
+                + '_' + 'Cumulative'
 
     @staticmethod
     def makeCustomMaterial(
@@ -218,33 +244,39 @@ class BR_Wrapper:
         # write new file
         with open(rad_mat_file, 'w') as f:
             print_string = 'Creating'
+            lines_new = lines
             for i, line in enumerate(lines):
                 if mat_name in line:
-                    lines_sliced = lines[:i-1] + lines[i+4:]
                     print_string = 'Overwriting'
+                    # slice away existing material
+                    lines_new = lines[:i-1] + lines[i+4:]
                     break
-
             # number of modifiers needed by Radiance
             mods = {'glass': 3, 'metal': 5, 'plastic': 5, 'trans': 7}
             # Create text for Radiance input:
-            text = (f'\n\nvoid {mat_type} {mat_name}\n0\n0'
+            text = (f'\nvoid {mat_type} {mat_name}\n0\n0'
                     f'\n{mods[mat_type]} {R} {G} {B}')
             if mods[mat_type] > 3:
                 text += f' {specularity} {roughness}'
             if mods[mat_type] > 5:
                 text += f' {transmissivity} {transmitted_specularity}'
-
+            text += '\n'
             print(f"{print_string} custom material {mat_name}.")
-            f.writelines(lines_sliced + [text])
+            f.writelines(lines_new + [text])
             f.close()
         return
 
     def _create_materials(self):
         # self.makeCustomMaterial(mat_name='dark_glass', mat_type='glass',
         #                        R=0.6, G=0.6, B=0.6)
-        self.makeCustomMaterial(mat_name='grass', mat_type='plastic',
-                                R=0.1, G=0.3, B=0.08,
-                                specularity=0.1, roughness=0.3)
+        self.makeCustomMaterial(
+            mat_name='grass', mat_type='plastic',
+            R=0.1, G=0.3, B=0.08,
+            specularity=0.1,  # self.SimSettings.ground_albedo,  # TODO
+            # albedo hängt eigentlich auch von strahlungswinkel
+            # und diffusen/direktem licht anteil ab
+            # https://curry.eas.gatech.edu/Courses/6140/ency/Chapter9/Ency_Atmos/Reflectance_Albedo_Surface.pdf
+            roughness=0.3)
 
     def _create_geometries(self, APV_SystSettings: APV_SystSettings):
         """create mounting structure (optional), pv modules"""
@@ -419,7 +451,7 @@ class BR_Wrapper:
         # start rough scan to define ground afterwards
         # groundscan, backscan = self.analObj.moduleAnalysis(scene=self.scene,
         #                                                   sensorsy=sensorsy)
-        self.frontscan, groundscan = self.analObj.moduleAnalysis(
+        self.frontscan, self.backscan = self.analObj.moduleAnalysis(
             scene=self.scene, sensorsy=sensorsy)
         """Modifying the groundscan dictionary, except for 'ystart',
         which is set later by looping through ygrid.
@@ -429,27 +461,30 @@ class BR_Wrapper:
         It describes where the virtual ray tracing sensors are placed.
         The origin (x=0, y=0) of the PV facility is in its center.
         """
-        groundscan['xstart'] = self.geomObj.sw_corner_scan_x
-        groundscan['xinc'] = self.SimSettings.spatial_resolution
-        groundscan['zstart'] = 0.05
-        groundscan['zinc'] = 0
-        groundscan['yinc'] = 0
-        self.groundscan = groundscan
+        self.groundscan = self.frontscan
+
+        self.groundscan['xstart'] = self.geomObj.sw_corner_scan_x
+        self.groundscan['xinc'] = self.SimSettings.spatial_resolution
+        self.groundscan['zstart'] = 0.05
+        self.groundscan['zinc'] = 0
+        self.groundscan['yinc'] = 0
 
     def _run_line_scan(self, y_start):
-        groundscan_copy = self.groundscan.copy()
-        groundscan_copy['ystart'] = y_start
-        temp_name = self.radObj.name + "_groundscan" \
-            + '{:.3f}'.format(y_start)
 
-        # backscan = groundscan_copy
+        if self.SimSettings.scan_target == 'module':
+            self.groundscan = None
+        elif self.SimSettings.scan_target == 'ground':
+            self.groundscan['ystart'] = y_start
+
+        temp_name = (f'{self.radObj.name}_{self.SimSettings.scan_target}_'
+                     f'scan_{y_start:.3f}')
+
         self.analObj.analysis(self.oct_file_name+'.oct',
                               temp_name,
                               self.frontscan,
-                              groundscan_copy,
-                              # backscan,
-                              accuracy=self.SimSettings.ray_tracing_accuracy,
-                              only_ground=self.SimSettings.only_ground_scan)
+                              self.backscan,
+                              self.groundscan,
+                              accuracy=self.SimSettings.ray_tracing_accuracy)
 
         return f'y_start: {y_start} done.'
 
@@ -470,7 +505,9 @@ class BR_Wrapper:
         if self.SimSettings.use_multi_processing:
 
             with concurrent.futures.ProcessPoolExecutor() as executor:
-                results = executor.map(self._run_line_scan, self.ygrid)
+                results: Iterator = executor.map(
+                    self._run_line_scan, self.ygrid
+                )
 
                 for result in results:
                     print(result)
@@ -496,12 +533,6 @@ class BR_Wrapper:
 
         df_ground_results = df_ground_results.reset_index()
 
-        if self.SimSettings.only_ground_scan:
-            col_name = 'Wm2'
-        else:
-            col_name = 'Wm2Front'
-        df_ground_results = df_ground_results.rename(
-            columns={col_name: 'Wm2Ground'})
         # Path for saving final results
         fi.make_dirs_if_not_there(user_pathes.results_folder)
         f_result_path = os.path.join(user_pathes.results_folder,
@@ -566,7 +597,7 @@ class BR_Wrapper:
             colormap = 'viridis_r'
             z_label = 'Shadow-Depth [%]'
         else:
-            z = 'Wm2Ground'
+            z = 'Wm2'
             colormap = 'inferno'
             z_label = 'Irradiance on Ground [W m$^{-2}$]'
         fig = apv.utils.plots.plot_heatmap(

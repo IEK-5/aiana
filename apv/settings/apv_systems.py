@@ -161,4 +161,4 @@ class SimpleForCheckerBoard(Default):
                   }
 
     module_form: Default.module_form = 'cell_level_checker_board'
-    mounting_structure_type: Default.module_form = 'none'
+    mounting_structure_type: Default.mounting_structure_type = 'none'

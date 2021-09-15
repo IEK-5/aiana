@@ -23,7 +23,7 @@ def irradiance_to_PAR(df=None):
          groundscan (DataFrame): [description]
      """
 
-    df['PARGround'] = df['Wm2Ground'] * 4.6
+    df['PARGround'] = df['Wm2'] * 4.6
 
     return df
 
@@ -54,7 +54,7 @@ def irradiance_to_shadowdepth(df, SimSettings):
     if SimSettings.sky_gen_mode == 'gendaylit':
         timeindex = time.get_hour_of_year(SimSettings.sim_date_time)
         GHI = int(epw.loc[timeindex][0].split()[0])
-        df['ShadowDepth'] = 100 - ((df['Wm2Ground']/GHI)*100)
+        df['ShadowDepth'] = 100 - ((df['Wm2']/GHI)*100)
 
     else:
         cumulative_GHI = 0
@@ -63,5 +63,5 @@ def irradiance_to_shadowdepth(df, SimSettings):
         for timeindex in np.arange(stdt, enddt+1):
             GHI = int(epw.loc[timeindex][0].split()[0])
             cumulative_GHI += GHI
-        df['ShadowDepth'] = 100 - ((df['Wm2Ground']/cumulative_GHI)*100)
+        df['ShadowDepth'] = 100 - ((df['Wm2']/cumulative_GHI)*100)
     return df

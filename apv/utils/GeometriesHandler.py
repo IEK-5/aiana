@@ -165,7 +165,7 @@ class GeometriesHandler:
 
         s_beam = 0.15  # beam thickness
         d_beam = 0.5  # beam distance
-        s_post = 0.2  # post thickness
+        s_post = 0.25  # post thickness
         h_post = self.scn["hub_height"] + 0.2  # post height
 
         x_length = self.allRows_footprint_x + 4*s_post
@@ -193,7 +193,6 @@ class GeometriesHandler:
         return text
 
     def groundscan_area(self) -> str:
-        # TODO change material to a green ground with 0.25 albedo
         text = (
             f'! genbox grass field {self.x_field} {self.y_field} 0.00001'
             f' | xform -t {self.sw_corner_scan_x} {self.sw_corner_scan_y} 0'

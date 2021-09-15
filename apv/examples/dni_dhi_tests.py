@@ -6,7 +6,7 @@ if __name__ == '__main__':
     SimSettings = apv.settings.simulation.Simulation()
     SimSettings.sim_name = 'floating_all_1000dni'  # onlyDirectlight'
     SimSettings.spatial_resolution = 0.2
-    SimSettings.sim_date_time = '06-15_16h'
+    SimSettings.sim_date_time = '06-15_16h'  # + 1h
 
     APV_SystSettings = \
         apv.settings.apv_systems.Default()
@@ -21,7 +21,7 @@ if __name__ == '__main__':
         weather_file=weather_file  # downloading automatically without this
     )
 
-    brObj.setup_br(dni_singleValue=1000)  # 0.00001)
+    brObj.setup_br()
     # #
     brObj.view_scene(
         # view_name='top_down', view_type='parallel'
@@ -36,5 +36,19 @@ if __name__ == '__main__':
     brObj.plot_ground_insolation(cm_unit='Shadow-Depth')
     # show result data frame
     brObj.df_ground_results
+
+# #
+from apv.settings import user_pathes
+from apv.utils import files_interface
+from apv.utils.weather_data import WeatherData
+
+weatherObj = WeatherData()
+weatherObj.download_insolation_data(
+    SimSettings.sim_date_time, SimSettings.apv_location,
+    '2005-01-01/2021-01-01', '1hour')
+df_ads = files_interface.df_from_file_or_folder(
+    user_pathes.data_download_folder/(str(SimSettings.sim_date_time)+'.csv'),
+    skiprows=42)
+df_ads
 
 # #

@@ -27,10 +27,14 @@ from typing import Literal
 import apv.settings.user_pathes as user_pathes
 import re
 from apv.utils.GeometriesHandler import GeometriesHandler
-
+import apv.utils.files_interface as fi
 # #
-
-
+fi.df_from_file_or_folder(
+    user_pathes.bifacial_radiance_files_folder/Path(
+        'satellite_weatherData/TMY_nearJuelichGermany.csv'
+        # TODO make it automatic with mohds method
+    ), names=['ghi', 'dhi'], delimiter=' '
+)
 # #
 rad_mat_file: Path = user_pathes.bifacial_radiance_files_folder / Path(
     'materials/ground2.rad')
