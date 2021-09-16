@@ -19,8 +19,16 @@ if __name__ == '__main__':
     # SimSettings.only_ground_scan = False
     # use_multi_processing = False
     # SimSettings.add_mounting_structure = False
-    SimSettings.sim_date_time = '07-15_18h'
-    SimSettings.spatial_resolution = 0.1
+
+    ###############################################
+    # rise:
+    # set: 20
+    SimSettings.sim_date_time = '06-21_20h'
+    # sommer: tatsächliche zeit = angegebene +2h
+    # winter: tatsächliche zeit = angegebene +1h
+    ###############################################
+
+    SimSettings.spatial_resolution = 1
     # SimSettings.sky_gen_mode = 'gencumsky'
     # SimSettings.sim_name = 'declined_tables_and_glassbox'
     APV_SystSettings.moduleDict['xgap'] = 0.05
@@ -57,6 +65,10 @@ if __name__ == '__main__':
     )
     brObj.setup_br()
 
+    brObj.view_scene(
+        # view_name='top_down',
+        # view_type='parallel'
+    )
     # #
     imp.reload(apv.utils.GeometriesHandler)
     imp.reload(apv.br_wrapper)

@@ -1,9 +1,10 @@
+# #
 
+from apv.examples.checked_board import APV_SystSettings, SimSettings
 import datetime as dt
 from typing import Literal
 from pvlib import location
-
-# #
+import pytz
 
 
 class Simulation:
@@ -48,4 +49,17 @@ class Simulation:
 
     cm_unit: Literal['Irradiance', 'PAR', 'Shadow-Depth'] = 'Irradiance'
 
+# #
+# #
+
+
+# #
+SimSettings = Simulation()
+format = "%Y-%m-%d %H:%M:%S %Z%z"
+now_utc = dt.datetime.now(pytz.timezone('UTC'))
+print(now_utc.strftime(format))
+
+# Convert to apv location timezone
+now = now_utc.astimezone(pytz.timezone(SimSettings.apv_location.tz))
+print(now.strftime(format))
 # #
