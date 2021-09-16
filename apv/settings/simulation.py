@@ -5,6 +5,8 @@ from typing import Literal
 from pvlib import location
 import pytz
 
+# TODO test other location regarding 30min shift
+
 
 class Simulation:
     sim_name = 'APV_Floating'  # also used as first part of the .oct file name
@@ -43,18 +45,3 @@ class Simulation:
     enddt = '1-1_23h'
 
     cm_unit: Literal['Irradiance', 'PAR', 'Shadow-Depth'] = 'Irradiance'
-
-# #
-# #
-
-
-# #
-SimSettings = Simulation()
-format = "%Y-%m-%d %H:%M:%S %Z%z"
-now_utc = dt.datetime.now(pytz.timezone('UTC'))
-print(now_utc.strftime(format))
-
-# Convert to apv location timezone
-now = now_utc.astimezone(pytz.timezone(SimSettings.apv_location.tz))
-print(now.strftime(format))
-# #

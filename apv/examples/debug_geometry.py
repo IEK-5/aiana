@@ -21,9 +21,9 @@ if __name__ == '__main__':
     # SimSettings.add_mounting_structure = False
 
     ###############################################
-    # rise:
-    # set: 20
-    SimSettings.sim_date_time = '06-21_20h'
+    # rise: 4
+    # set: 19
+    SimSettings.sim_date_time = '06-21_4h'
     # sommer: tatsächliche zeit = angegebene +2h
     # winter: tatsächliche zeit = angegebene +1h
     ###############################################

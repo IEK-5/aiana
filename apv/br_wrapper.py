@@ -61,6 +61,14 @@ class BR_Wrapper:
 
         the ones above are calculated automatically on initialisation
         but the extra margin can be set automatically
+
+
+        #TODO
+        - methode um 16 years TMY als UTC runterladen so wie in
+        examples/dni_dhi_tests.py ganz unten
+
+
+
     """
 
     def __init__(
@@ -157,14 +165,13 @@ class BR_Wrapper:
         # we use bifacial_radiance to fill metdata for sun pos and alitude
         # from epw data and optional replace irradiation data by satellite
         # read TMY or EPW data
-        if self.weather_file is None:
-            """EPW Dos:
-    https://www.nrel.gov/docs/fy08osti/43156.pdf
-    https://bigladdersoftware.com/epx/docs/8-2/auxiliary-programs/epw-csv-format-inout.html
-    """
-            self.weather_file = self.radObj.getEPW(
-                lat=self.SimSettings.apv_location.latitude,
-                lon=self.SimSettings.apv_location.longitude)
+        """EPW Dos:
+        https://www.nrel.gov/docs/fy08osti/43156.pdf
+        https://bigladdersoftware.com/epx/docs/8-2/auxiliary-programs/epw-csv-format-inout.html
+        """
+        self.weather_file = self.weather_file or self.radObj.getEPW(
+            lat=self.SimSettings.apv_location.latitude,
+            lon=self.SimSettings.apv_location.longitude)
 
         self.radObj.metdata = self.radObj.readWeatherFile(
             weatherFile=str(self.weather_file))
