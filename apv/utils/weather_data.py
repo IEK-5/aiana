@@ -125,13 +125,12 @@ class WeatherData:
 
     def download_insolation_data(
             self,
-            file_name: str,
-            location: pvlib.location,
+            location: pvlib.location.Location,
             date_range: str,
             time_step: str,
             time_reference: Literal[
                 'true_solar_time', 'universal_time'] = 'true_solar_time'
-    ) -> None:
+    ) -> str:
         '''
     Downloads insolation data from the atmosphere data store (ADS),
     which is provided by the Copernicus Atmosphere Monitoring Service (CAMS):
@@ -142,35 +141,46 @@ class WeatherData:
 
     Args:
         file_name (str): name of the .csv file containing the downloaded data
-        location (pvlib.location): pvlib location object to pass coordinates
+        location (pvlib.location.Location): location object to pass coordinates
         date_range (str): start and end date str, e.g. '2015-01-01/2015-01-02'
         time_step (str): e.g. '15minute' or '1hour'
         time_reference ('true_solar_time' or 'universal_time'): true_solar_time
         consideres the timezone of the location argument.
+    Returns:
+        file_path (str): file path of the result file
 
     '''
+        file_name = ('ADS-data_' + date_range.replace('/', '_') +
+                     f'_lat-{location.latitude}'
+                     f'_lon-{location.longitude}')
 
-        c = cdsapi.Client(
-            url=self.credentials['ads_url'],
-            key=self.credentials['ads_key'])
-        c.retrieve(
-            'cams-solar-radiation-timeseries',
-            {
-                'sky_type': 'observed_cloud',
-                'location': {
-                    'latitude': location.latitude,
-                    'longitude': location.longitude,
+        file_path: Path = apv.settings.user_pathes.data_download_folder/Path(
+            file_name+'.csv')
+
+        if file_path.exists() is False:
+            print(f'Downloading Insolation data to {file_path}')
+
+            c = cdsapi.Client(
+                url=self.credentials['ads_url'],
+                key=self.credentials['ads_key'])
+            c.retrieve(
+                'cams-solar-radiation-timeseries',
+                {
+                    'sky_type': 'observed_cloud',
+                    'location': {
+                        'latitude': location.latitude,
+                        'longitude': location.longitude,
+                    },
+                    'altitude': str(location.altitude),
+                    'date': date_range,
+                    'time_step': time_step,
+                    'time_reference': time_reference,
+                    'format': 'csv',
                 },
-                'altitude': str(location.altitude),
-                'date': date_range,
-                'time_step': time_step,
-                'time_reference': time_reference,
-                'format': 'csv',
-            },
-            os.path.join(
-                apv.settings.user_pathes.data_download_folder,
-                file_name+'.csv')
-        )
+                file_path
+            )
+
+        return file_path
 
 
 def retrieve_nsrdb_data(

@@ -1,6 +1,5 @@
 # #
 
-from apv.examples.checked_board import APV_SystSettings, SimSettings
 import datetime as dt
 from typing import Literal
 from pvlib import location
@@ -24,12 +23,8 @@ class Simulation:
     scan_target: Literal['ground', 'module'] = 'ground'
 
     # time settings
-<<<<<<< HEAD
-    sim_date_time = '01-01_0h'  # used as second part of the .oct file name
-=======
     sim_date_time = '06-15_11h'  # used as second part of the .oct file name
     #  ^-- always local winter time !
->>>>>>> 0d0e2639bc691a306cbaf81fe1a5eb0fec598089
 
     # location
     apv_location = location.Location(

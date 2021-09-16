@@ -41,9 +41,6 @@ from pathlib import Path
 from tqdm.auto import trange
 import concurrent.futures
 import bifacial_radiance as br
-<< << << < HEAD
-== == == =
->>>>>> > 0d0e2639bc691a306cbaf81fe1a5eb0fec598089
 
 # #
 
