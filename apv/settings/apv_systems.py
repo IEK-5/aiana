@@ -60,7 +60,7 @@ class Default:
         # the second module is facing upwards-down, might be a problem later
         'cell_level_EW_fixed',
         'none'
-    ] = 'std'
+    ] = 'cell_level_checker_board'
 
     mounting_structure_type: Literal[
         'none', 'declined_tables', 'framed_single_axes'] = 'framed_single_axes'
@@ -95,6 +95,7 @@ class Default:
                      },
     }
     glass_modules: bool = False
+    add_groundScanArea_as_object_to_scene: bool = False
     # one-sided margins [m]
     ground_scan_margin_x: float = 8
     ground_scan_margin_y: float = 4

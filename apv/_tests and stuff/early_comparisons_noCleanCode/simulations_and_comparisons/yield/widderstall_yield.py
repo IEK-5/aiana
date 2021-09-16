@@ -9,11 +9,10 @@ import importlib as imp
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
+from pathlib import Path
 import apv.settings.user_pathes as user_pathes
 # #
 
-from pathlib import Path
 input_folder = Path.cwd().parent.parent.parent.parent/'resources/pv_modules'
 input_folder
 # #

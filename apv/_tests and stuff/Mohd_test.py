@@ -1,119 +1,113 @@
 # #
-from bifacial_radiance import RadianceObj, AnalysisObj
-import bifacial_radiance
-import os
-import bifacial_radiance
-import numpy as np
+from pandas.io.parsers import read_csv
+from apv.utils.files_interface import save_fig
+import pandas as pd
+import apv.settings.user_pathes as user_pathes
 from pathlib import Path
-import subprocess
+from datetime import datetime as dt
+import numpy as np
+import apv.utils.time as t
+from matplotlib import pyplot as plt
+from apv.utils.files_interface import save_fig
 
-testfolder = (
-    r'C:\Users\moham\Documents\bifacial_radiance-main\bifacial_radiance-main\bifacial_radiance\TEMP')
+# #
 
-print("Your simulation will be stored in %s" % testfolder)
+
+def weather_to_csv(file_name='2010-2020_tst'):
+    # Retrieve weather
+    # TODO change file name
+    path = user_pathes.bifacial_radiance_files_folder / Path(
+        'EPWs/', f'{file_name}.csv')
+    df = pd.read_csv(path, skiprows=43, header=None, sep=';', index_col=0,
+                     parse_dates=True)
+    column_names = ['TOA', ' Clear sky GHI', 'Clear sky BHI', 'Clear sky DHI',
+                    'Clear sky BNI', 'GHI', 'BHI', 'DHI', 'BNI', 'Reliability']
+    df.columns = column_names
+    indx = df.index
+
+    # define datetime index to resample
+    time_index = []
+    for i in np.arange(0, len(indx)):
+        row = indx[i]
+        x = dt.strptime(row[0:13], '%Y-%m-%dT%H')
+        time_index.append(x)
+
+    df['Datetime'] = pd.to_datetime(time_index)
+    df.set_index('Datetime', inplace=True)
+
+    # create average hour for each day per year
+    x = df['GHI'].groupby([df.index.month, df.index.day, df.index.hour]).mean()
+    y = df['DHI'].groupby([df.index.month, df.index.day, df.index.hour]).mean()
+    x = x.reset_index(drop=True)
+    y = y.reset_index(drop=True)
+
+    if len(x) == 8784 and len(y) == 8784:
+        a = t.get_hour_of_year('2-28_23h') + 1
+        rg = np.arange(a, a+24)
+
+        x.drop(index=rg, axis=0, inplace=True)
+        y.drop(index=rg, axis=0, inplace=True)
+
+    savedata = {'GHI': x, 'DHI': y}
+    pd.DataFrame(savedata)
+    csvfile = user_pathes.bifacial_radiance_files_folder / Path(
+        'EPWs/', f'own_TMY_{file_name}.csv')
+    savedata = pd.DataFrame(savedata)
+    savedata.to_csv(csvfile, index=False, header=False, sep=' ',
+                    columns=['GHI', 'DHI'])
+
+    return savedata
 
 
 # #
-demo = RadianceObj("E-W", path=testfolder)
-demo.setGround(0.62)
-epwfile = demo.getEPW(lat=37.5, lon=-77.6)
-metdata = demo.readWeatherFile('EPWs\\USA_VA_Richmond.Intl.AP.724010_TMY.epw')
-fullYear = True
-demo.gendaylit(4020)  # Noon, June 17th  . # Gencumsky could be used too.
-module_type = 'Prism Solar Bi60 landscape'
+weather_to_csv()
 # #
-
-x = 1.7
-y = 1
-z = 0.01
-Ny = 2
-ygap = 0.02
-offsetfromaxis = 0.01
-
-moduleDict = {
-    'x': x,
-    'y': y,
-    'xgap': 0.002,
-    'ygap': 0.05,
-    'zgap': 0,
-    'numpanels': Ny
-}
-
-sceneDict = {'tilt': 30, 'pitch': 5, 'clearance_height': 4.5,
-             'azimuth': 90, 'nMods': 5, 'nRows': 2, 'appendRadfile': True,
-             'originx': 0, 'originy': 0}
-
-
-def make_text_EW(name, moduleDict, sceneDict):
-    """creates needed text needed in makemodule() to create E-W. Azimuth angle
-    must be 90! and number of panels must be 2!
-
-    Args:
-        name ([str]): module_type
-
-    Returns:
-        text [str]: [text to rotate second panel to create E-W (270 - 90)]
-    """
-
-    name2 = str(name).strip().replace(' ', '_')
-    text = '! genbox black {} {} {} {} '.format(name2, x, y, z)
-    text += '| xform -t {} {} {} '.format(-x/2.0,
-                                          (-y*Ny/2.0)-(ygap*(Ny-1)/2.0),
-                                          offsetfromaxis)
-    rotation_angle = 2*(90 - sceneDict['tilt']) + 180
-    text += '-a {} -t 0 {} 0 -rx {}'.format(Ny, y+ygap, rotation_angle)
-
-    packagingfactor = 100.0
-    return text
-
+df = pd.read_csv(
+    r"C:\Users\moham\Documents\agri-PV\bifacial_radiance_files\EPWs\own_TMY_2010-2020_tst.csv",
+    sep=' ')
+df.columns = ['GHI', 'DHI']
+df2 = pd.read_csv(
+    r"C:\Users\moham\Documents\agri-PV\bifacial_radiance_files\EPWs\epw_temp.csv", sep=' ')
+df2.columns = ['GHI', 'DHI']
+df.tail(5)
 
 # #
-demo.makeModule(name=module_type, **moduleDict, text=make_text_EW2(module_type))
+file_name = '2010-2020_tst'
+fig, ax1 = plt.subplots(1, 1)
+ax1.set_xlabel('hour of year')
 
-sceneObj1 = demo.makeScene(module_type, sceneDict)
+ax1.set_ylabel('Wh m$^ {-2}$')
+ax1.set_title(f'Comparison of GHI between Own-TMY and EPW \n \
+              {file_name}')
 
-# #
-# sceneDict2 = {'tilt': 30, 'pitch': 5, 'clearance_height': 4.5, 'azimuth': 270,
-#               'nMods': 5, 'nRows': 2, 'appendRadfile': True,
-#               'originx': 0, 'originy': 0}
-# module_type2 = 'Longi'
-# demo.makeModule(name=module_type2, **moduleDict, text= make_text_EW(module_type))
-# sceneObj2 = demo.makeScene(module_type2, sceneDict2)
-
-# #
-octfile = demo.makeOct(demo.getfilelist())
-# #
-view_fp = os.path.join(testfolder, 'views', 'front.vp')
-with open(view_fp, 'w') as f:
-    f.write('rvu -vtv -vp '              # vp = view port
-            + '0 '                     # X (depth)
-            + '-7 '                    # Y (left / right)
-            + '6 '                       # Z (height)
-            + '-vd 0 6 -1 '   # vd = view direction
-            + '-vu 0 0 1 '               # vu = view "Up" ???
-            + '-vh 110 -vv 45 '          # vh/vv = horizontal/vertical display
-            + '-vo 0 -va 0 '             # vo/va: clipping plane before/after
-            + '-vs 0 -vl 0')             # vs/vl: horizontal/vertical
-subprocess.call(
-    ['rvu', '-vf', view_fp, '-e', '.01', 'E-W'+'.oct'])
+ax1.plot(df['GHI'])
+ax1.plot(df2['GHI'],  alpha=0.5)
+fig.legend(('Own-GHI', 'EPW-GHI'))
+save_fig(fig, f'GHI-{file_name}-comparison TMY', transparent=False)
 
 # #
-analysis = AnalysisObj(octfile=octfile, name='E-W')
+fig2, ax2 = plt.subplots(1, 1)
+ax2.set_xlabel('hour of year')
 
+ax2.set_ylabel('Wh m$^ {-2}$')
+ax2.set_title(f'Comparison of DHI between Own-TMY and EPW \n \
+              Own-TMY {file_name}')
+
+ax2.plot(df['DHI'])
+ax2.plot(df2['DHI'],  alpha=0.5)
+fig2.legend(('Own-DHI', 'EPW-DHI'))
+save_fig(fig2, f'DHI-{file_name}-comparison TMY', transparent=False)
 # #
-sensor = 20
-front, back = analysis.moduleAnalysis(scene=sceneObj1,
-                                      sensorsy=sensor)
+fig3, ax3 = plt.subplots(1, 1)
+ax3.set_xlabel('hour of year')
 
+ax3.set_ylabel('Wh m$^{-2}$')
+ax3.set_title(f'Comparison of DHI between Own-TMY and EPW \n \
+              Own-TMY {file_name}')
 
-# #
-results = analysis.analysis(octfile, name='E-W', frontscan=front,
-                            backscan=back)
-
-# #
-bifacial_radiance.load.read1Result('results\irr_{}.csv'.format(demo.basename))
-
-# #
-bifacial_radiance.load.read1Result('results\irr_{}2.csv'.format(demo.basename))
+ax3.scatter(df.index, df['DHI'], marker='v')
+ax3.scatter(df.index, df2['DHI'],  alpha=0.8, marker="_")
+fig3.legend(('Own-DHI', 'EPW-DHI'))
+save_fig(fig3, f'DHI-{file_name}-comparison TMY', transparent=False)
 
 # #

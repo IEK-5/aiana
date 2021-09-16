@@ -1,4 +1,7 @@
 # #
+from apv.utils import APV_evaluation
+
+
 if __name__ == '__main__':
     from pathlib import Path
     import apv
@@ -13,23 +16,31 @@ if __name__ == '__main__':
     brObj = apv.br_wrapper.BR_Wrapper(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings,
-        weather_file=weather_file  # downloading automatically without this
+        # weather_file=weather_file  # downloading automatically without this
     )
+    enrgyObj = apv.utils.APV_evaluation.Evaluate_APV(
+        SimSettings=SimSettings,
+        APV_SystSettings=APV_SystSettings
+    )
+
     # #
     brObj.setup_br()
+
     # #
     brObj.view_scene(
-        view_name='top_down', view_type='parallel'
+        view_name='total', view_type='perspective'
     )
     # #
     brObj.run_raytracing_simulation()
     # #
-    # also plots existing data (simulation does not need to be repeated)
     brObj.plot_ground_insolation()
     # TODO why is there a darker line at the top? Edge of the ground?
     # #
     brObj.plot_ground_insolation(cm_unit='Shadow-Depth')
+    # #
     # show result data frame
     brObj.df_ground_results
+    # #
+
 
 # #

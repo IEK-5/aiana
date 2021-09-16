@@ -15,7 +15,7 @@ class Simulation:
     # speed up options
 
     # Spatial resolution between sensors
-    spatial_resolution = 1  # 0.15  # [m]
+    spatial_resolution = 0.1  # 0.15  # [m]
     # ray tracing accuracy used in br.analysisObj.analysis()
     ray_tracing_accuracy = 'low'  # 'high' does not improve accuracy much but
     # sim time is increased by x3-x4
@@ -23,7 +23,7 @@ class Simulation:
     only_ground_scan = True  # if False the backscan will be implemented too
 
     # time settings
-    sim_date_time = '06-15_11h'  # used as second part of the .oct file name
+    sim_date_time = '01-01_0h'  # used as second part of the .oct file name
 
     # location
     apv_location = location.Location(
@@ -35,9 +35,9 @@ class Simulation:
 
     # needed for sky_gen_mode = 'gencumsky':
     # Insert start date of the year as [month,day,hour]
-    startdt = '6-1_0h'
+    startdt = '1-1_0h'
     # Insert end date of year as [month,day,hour]
-    enddt = '6-1_23h'
+    enddt = '1-1_23h'
 
     cm_unit: Literal['Irradiance', 'PAR', 'Shadow-Depth'] = 'Irradiance'
 
