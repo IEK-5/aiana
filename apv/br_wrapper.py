@@ -3,20 +3,31 @@
 objects, create scene and run simulation with Bifacial_Radiance according
 to presets in settings.py
 
-- Gewächshaus reflektierend machen -> done
-- bekommen die Module an der Glaswand mehr Licht ab? --> scheinbar nicht
-eher sogar dunkler, da diffuser antei geringer
-wobei wie gesagt diffuser schatten zu stark wirkt im vergleich
-zu was man in der Realität mit dem Auge beobachten kann.
+TODO
 
+- methode in br_wrapper einbinden, die 16 years TMY als UTC runteläd,
+wenn noch nicht existent, und die sich über location mit tz das
+2 spalten ghi dni file mit richtigen positionen erstellt
+bzw. dazu mohds methode aufruft.
+Zielpfad in data download. Wir geben dann Almed den pfad und das file
+manuell, damit er sich nicht registrieren muss bei copernicus website
+--> Leo
 
-Falls ja, nicht die Strings beider Reihen in Reihe schalten!
+- aus zeitangabe in settings eine pandas.timestamp machen und dann mittels
+dem pytz package in UTC umwandeln, um mittels pvlib den sonnenstand zu bekommen
+der als input für gendaylit2manual benötigt wird (ich traue br.radObj.metdata
+solpos über epw file nicht so ganz...)
+in dem Zusammenhang auch klären: was genau hat es mit dem 30 min shift auf sich
+(machen die das vielleicht um +-30 min um den angegebenen zeitpunkt eine stunde
+zu betrachten? aber warum sollte dann die sonnen position -30 gesetzt werden)?
 
+- wenn oben fertig: prüfen ob sonnenaufgangs und untergangszeiten passen
 
+- print nachricht ausgeben wenn man view_scene ausführt obwohl dni und dhi = 0
+(dann passiert nämlich nichts)
 
-#TODO - prüfen, ob bifacial_radiance pro Zeitpunkt oder integriert
-von -30 bis +30min
-    - kann man bei gencumsky direkt oder diffus an/aus schalten?
+- aufräumen, dokumentieren...
+
 
 '''
 # import needed packages
@@ -61,13 +72,6 @@ class BR_Wrapper:
 
         the ones above are calculated automatically on initialisation
         but the extra margin can be set automatically
-
-
-        #TODO
-        - methode um 16 years TMY als UTC runterladen so wie in
-        examples/dni_dhi_tests.py ganz unten
-
-
 
     """
 

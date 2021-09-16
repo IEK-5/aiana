@@ -44,8 +44,7 @@ from apv.utils.weather_data import WeatherData
 
 weatherObj = WeatherData()
 file_path = weatherObj.download_insolation_data(
-    SimSettings.apv_location, '2005-01-01/2021-01-01', '1hour',
-    time_reference='universal_time')
+    SimSettings.apv_location, '2005-01-01/2021-01-01', '1hour')
 df_ads = files_interface.df_from_file_or_folder(file_path, skiprows=42)
 df_ads
 

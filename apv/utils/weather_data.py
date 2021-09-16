@@ -127,9 +127,7 @@ class WeatherData:
             self,
             location: pvlib.location.Location,
             date_range: str,
-            time_step: str,
-            time_reference: Literal[
-                'true_solar_time', 'universal_time'] = 'true_solar_time'
+            time_step: str
     ) -> str:
         '''
     Downloads insolation data from the atmosphere data store (ADS),
@@ -144,8 +142,6 @@ class WeatherData:
         location (pvlib.location.Location): location object to pass coordinates
         date_range (str): start and end date str, e.g. '2015-01-01/2015-01-02'
         time_step (str): e.g. '15minute' or '1hour'
-        time_reference ('true_solar_time' or 'universal_time'): true_solar_time
-        consideres the timezone of the location argument.
     Returns:
         file_path (str): file path of the result file
 
@@ -174,7 +170,7 @@ class WeatherData:
                     'altitude': str(location.altitude),
                     'date': date_range,
                     'time_step': time_step,
-                    'time_reference': time_reference,
+                    'time_reference': 'universal_time',
                     'format': 'csv',
                 },
                 file_path
