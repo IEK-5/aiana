@@ -20,6 +20,17 @@ von -30 bis +30min
 
 '''
 # import needed packages
+from apv.utils import units_converter as uc
+from apv.utils import files_interface as fi
+from apv.settings.apv_systems import Default as APV_SystSettings
+from apv.utils.GeometriesHandler import GeometriesHandler
+import apv.settings.user_pathes as user_pathes
+from apv.settings import apv_systems
+import apv
+from typing import Iterator, Literal
+from datetime import datetime
+from typing import Literal
+from datetime import datetime as dt
 import subprocess
 # from pvlib import *
 import numpy as np
@@ -30,21 +41,10 @@ from pathlib import Path
 from tqdm.auto import trange
 import concurrent.futures
 import bifacial_radiance as br
-<<<<<<< HEAD
-from datetime import datetime as dt
-from typing import Literal
-=======
-from datetime import datetime
-from typing import Iterator, Literal
->>>>>>> 0d0e2639bc691a306cbaf81fe1a5eb0fec598089
+<< << << < HEAD
+== == == =
+>>>>>> > 0d0e2639bc691a306cbaf81fe1a5eb0fec598089
 
-import apv
-from apv.settings import apv_systems
-import apv.settings.user_pathes as user_pathes
-from apv.utils.GeometriesHandler import GeometriesHandler
-from apv.settings.apv_systems import Default as APV_SystSettings
-from apv.utils import files_interface as fi
-from apv.utils import units_converter as uc
 # #
 
 
@@ -352,24 +352,6 @@ class BR_Wrapper:
             )
 
         # add ground scan area visualization to the radObj without rotation
-<<<<<<< HEAD
-        if self.APV_SystSettings.add_groundScanArea_as_object_to_scene is True:
-
-            ground_rad_text = GeometriesHandlerObj.groundscan_area()
-
-            self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
-                radfile=self.scene.radfiles,
-                customObject=self.radObj.makeCustomObject(
-                    'scan_area', ground_rad_text),
-                text='!xform '  # with text = '' (default) it does not work!
-                # all scene objects are stored in
-                # bifacial_radiance_files/objects/... e.g.
-                # SUNFARMING_C_3.81425_rtr_10.00000_tilt_20.00000_10modsx3rows_...
-                # within this file different custom .rad files are
-                # concatenated by
-                # !xform object/customObjectName.rad
-            )
-=======
         ground_rad_text = ghObj.groundscan_area()
 
         self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
@@ -383,7 +365,6 @@ class BR_Wrapper:
             # within this file different custom .rad files are concatenated by
             # !xform object/customObjectName.rad
         )
->>>>>>> 0d0e2639bc691a306cbaf81fe1a5eb0fec598089
 
         # make oct file
         self.radObj.makeOct(octname=self.oct_file_name)
