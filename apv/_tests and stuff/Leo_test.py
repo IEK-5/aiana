@@ -1,4 +1,8 @@
 # #
+import pytz
+import datetime as dt
+import pandas
+from apv.settings import apv_systems
 import datetime
 import random
 import time
@@ -7,7 +11,6 @@ import importlib as imp
 from apv import br_wrapper as br
 from apv import settings
 from apv.utils import files_interface as fi
-import apv.resources.locations as loc
 import pytictoc
 import os
 import json
@@ -29,6 +32,40 @@ import re
 from apv.utils.GeometriesHandler import GeometriesHandler
 import apv.utils.files_interface as fi
 # #
+
+
+SimSettings = apv.settings.simulation.Simulation()
+pandas.DatetimeIndex =
+SimSettings.apv_location.get_solarposition()
+
+# #
+
+# #
+format = "%Y-%m-%d %H:%M:%S %Z%z"
+now_utc = dt.datetime.now(pytz.timezone('UTC'))
+print(now_utc.strftime(format))
+
+# Convert to apv location timezone
+now = now_utc.astimezone(pytz.timezone(SimSettings.apv_location.tz))
+print(now.strftime(format))
+# #
+
+# #
+
+
+solar_position = site_location.get_solarposition(times=times)
+# Use the get_total_irradiance function to transpose the GHI to POA
+POA_irradiance = irradiance.get_total_irradiance(
+    surface_tilt=tilt,
+    surface_azimuth=surface_azimuth,
+    dni=clearsky['dni'],
+    ghi=clearsky['ghi'],
+    dhi=clearsky['dhi'],
+    solar_zenith=solar_position['apparent_zenith'],
+    solar_azimuth=solar_position['azimuth']
+
+
+# #
 fi.df_from_file_or_folder(
     user_pathes.bifacial_radiance_files_folder/Path(
         'satellite_weatherData/TMY_nearJuelichGermany.csv'
@@ -36,36 +73,36 @@ fi.df_from_file_or_folder(
     ), names=['ghi', 'dhi'], delimiter=' '
 )
 # #
-rad_mat_file: Path = user_pathes.bifacial_radiance_files_folder / Path(
+rad_mat_file: Path=user_pathes.bifacial_radiance_files_folder / Path(
     'materials/ground2.rad')
 
-mat_name = 'grass'
+mat_name='grass'
 # check for existence:
 with open(rad_mat_file, 'r') as f:
-    lines: list = f.readlines()
+    lines: list=f.readlines()
     f.close()
 
 with open(rad_mat_file, 'w') as f:
-    print_string = 'new'
+    print_string='new'
     for i, line in enumerate(lines):
         if mat_name in line:
             f.writelines(lines[:i-1] + lines[i+4:])
-            print_string = 'existing'
+            print_string='existing'
             break
     f.close()
 print(print_string)
 
 
-#data.index('void plastic black\n')
+# data.index('void plastic black\n')
 # #
 [mat_name in line for line in data]
 
 # #
-test = ['0', '1', '2', '3', '4']
+test=['0', '1', '2', '3', '4']
 
-del_line_start = 1
-number_of_follow_lines_to_delete = 45
-del_line_to = del_line_start+number_of_follow_lines_to_delete
+del_line_start=1
+number_of_follow_lines_to_delete=45
+del_line_to=del_line_start+number_of_follow_lines_to_delete
 
 data[:del_line_start] + data[del_line_to+1:]
 
@@ -79,7 +116,7 @@ if any([mat_name in line for line in data]):
 
 class test(apv.settings.apv_systems.Default):
 
-    sceneDict = {'tilt': 40,
+    sceneDict={'tilt': 40,
                  'pitch': 10,
                  'hub_height': 4.5,
                  'azimuth': 180,
@@ -92,7 +129,7 @@ test.sceneDict
 test.moduleDict
 # #
 
-sceneDict = {
+sceneDict={
     'tilt': 20,
     'pitch': 10,
     'hub_height': 4.5,
@@ -101,7 +138,7 @@ sceneDict = {
     'nRows': 3,
 }
 
-moduleDict = {
+moduleDict={
     'x': 0.998,
     'y': 1.980,
     'xgap': 0.005,
@@ -115,7 +152,7 @@ test.sceneDict['azimuth']
 
 # #
 
-sceneDict['tilt'] = 10
+sceneDict['tilt']=10
 
 
 # #
@@ -129,12 +166,12 @@ def get_hour_of_year(date_time_str: str) -> int:
     Returns:
         int: hours_of_year
     """
-    date_time_obj = datetime.strptime(date_time_str, '%m-%d_%Hh')
+    date_time_obj=datetime.strptime(date_time_str, '%m-%d_%Hh')
 
-    date_time_str_ref = '01-01_00h'
-    date_time_obj_ref = datetime.strptime(date_time_str_ref, '%m-%d_%Hh')
+    date_time_str_ref='01-01_00h'
+    date_time_obj_ref=datetime.strptime(date_time_str_ref, '%m-%d_%Hh')
 
-    delta = date_time_obj - date_time_obj_ref
+    delta=date_time_obj - date_time_obj_ref
     return delta.days * 24 + date_time_obj.hour
 
 
@@ -148,26 +185,26 @@ imp.reload(apv)
 
 
 class Test():
-    x = 1
+    x=1
 
     def __init__(self):
-        self.y = 3
+        self.y=3
 
     def method(self):
         print(self.x)
         print(self.y)
 
-    @classmethod
+    @ classmethod
     def class_method(cls):
         print(cls.x)
 
-    @staticmethod
+    @ staticmethod
     def static_method(string='hi'):
         print(string)
 
 
-t = Test()
-t.x = 2
+t=Test()
+t.x=2
 
 print('method:')
 t.method()
@@ -178,7 +215,7 @@ t.static_method()
 
 
 print('x not changed')
-t = Test()
+t=Test()
 print('method:')
 t.method()
 print('class method:')
@@ -189,18 +226,18 @@ t.static_method('hi2')
 
 
 class Test():
-    x = 1
+    x=1
 
     def method(self):
         print(self.x)
 
-    @classmethod
+    @ classmethod
     def class_method(cls):
         print(cls.x)
 
 
-t = Test()
-t.x = 2
+t=Test()
+t.x=2
 print('method:')
 t.method()
 print('class method:')
@@ -210,21 +247,21 @@ t.class_method()
 
 
 class Test():
-    x = 1
+    x=1
 
     def __init__(self):
-        self.y = 1
+        self.y=1
 
     def method(self):
         print(self.x)
         # print(self.y)
 
 
-t = Test()
-t2 = Test()
-t2.x = 2
+t=Test()
+t2=Test()
+t2.x=2
 t.method()
-Test.x = 3
+Test.x=3
 t.method()
 t2.method()
 
@@ -243,36 +280,36 @@ for i in range(2):
 
 
 class Test():
-    x = 1
+    x=1
 
     def __init__(self):
-        self.y = 1
+        self.y=1
 
     def method(self):
         print(self.y)
         # print(self.y)
 
 
-t = Test()
-t2 = Test()
-t2.y = 2
+t=Test()
+t2=Test()
+t2.y=2
 t.method()
-Test.y = 3
+Test.y=3
 t.method()
 t2.method()
-t3 = Test()
+t3=Test()
 t3.method()
 # t2.method()
 # #
-x = br.setup_br(sky_gen_type='gendaylit', cellLevelModule=False, EPW=True)
+x=br.setup_br(sky_gen_type='gendaylit', cellLevelModule=False, EPW=True)
 # #
 print(x)
 
 # !!
 print(type(x[2]))
 # !!
-testfolder = up.root_folder
-View_scene = os.path.join(testfolder, 'views', 'overall.vp')
+testfolder=up.root_folder
+View_scene=os.path.join(testfolder, 'views', 'overall.vp')
 with open(View_scene, 'w') as f:
     f.write('rvu -vtv -vp '              # vp = view port
             + '-15 '                     # X (depth)
@@ -293,19 +330,19 @@ print(type(s.start_time))
 
 # #
 
-a = 'ab'
-s = '2+len(a)'
+a='ab'
+s='2+len(a)'
 eval(s)
 
 # #
-text = """{
+text="""{
     test: {
         foo: 2
         bar: 1
     }
 }"""
 
-data = hjson.loads(text)
+data=hjson.loads(text)
 
 
 # #
@@ -314,19 +351,19 @@ str(apv.settings.user_pathes.data_download_folder)
 # #
 
 # Parse JSON into an object with attributes corresponding to dict keys.
-x = json.loads(data, object_hook=lambda d: SimpleNamespace(**d))
+x=json.loads(data, object_hook=lambda d: SimpleNamespace(**d))
 
 # #
-d2 = dotdict(d)
+d2=dotdict(d)
 d2.test.foo
 # 'it works'
 # #
-mydict.nested = dotdict(nested_dict)
+mydict.nested=dotdict(nested_dict)
 mydict.nested.val
 # 'nested works too'
 
 # #
-root_folder = (Path().home().resolve() / 'Documents' /
+root_folder=(Path().home().resolve() / 'Documents' /
                'Python_Scripts' / 'parameter_study')
-p = root_folder / r'Trading\test'
+p=root_folder / r'Trading\test'
 str(p)

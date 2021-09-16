@@ -244,10 +244,11 @@ class GeometriesHandler:
 
         post_distance_x = self.singleRow_footprint_x / (post_count_x-1)
         # create lower posts
-        text = (f'! genbox {material} post {s_post} {s_post} {h_lower_post}'
-                f' | xform -t {self.sw_modCorner_azi0_x} {lower_post_start_y} 0 '
-                f'-a {post_count_x} -t {post_distance_x} 0 0 '
-                f'-a {scn["nRows"]} -t 0 {scn["pitch"]} 0 ')
+        text = (
+            f'! genbox {material} post {s_post} {s_post} {h_lower_post}'
+            f' | xform -t {self.sw_modCorner_azi0_x} {lower_post_start_y} 0 '
+            f'-a {post_count_x} -t {post_distance_x} 0 0 '
+            f'-a {scn["nRows"]} -t 0 {scn["pitch"]} 0 ')
 
         # create lower posts
         text += (
@@ -259,6 +260,9 @@ class GeometriesHandler:
         if add_glass_box:
             t_y = (self.sw_modCorner_azi0_y + self.allRows_footprint_y
                    + self.APV_SystSettings.glass_box_to_APV_distance)
+            # variable cannot be found because not in default()
+            # but in declined tables apv system settings
+
             t_x = self.allRows_footprint_x
             text += (f'\n! genbox stock_glass glass_wall {t_x} 0.005 5'
                      f' | xform -t {self.sw_modCorner_azi0_x} {t_y} 0')
