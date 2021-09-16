@@ -23,8 +23,8 @@ if __name__ == '__main__':
         36.7922, -119.7932, altitude=94, tz=-7, name='Fresno_CA')
     SimSettings.sim_date_time = '06-01_11h'  # whole day
     SimSettings.spatial_resolution = 0.01  # 0.01
-    # SimSettings.sky_gen_mode = 'gencumsky'
-    SimSettings.sim_name = 'checker_board_Perna'
+    SimSettings.sky_gen_mode = 'gencumsky'
+    SimSettings.sim_name = 'checker_board_Perna2'
 
     APV_SystSettings.ground_scan_margin_x = 0
     APV_SystSettings.ground_scan_margin_y = 0
@@ -33,6 +33,7 @@ if __name__ == '__main__':
 
     weather_file = apv.settings.user_pathes.bifacial_radiance_files_folder / \
         Path('EPWs/USA_CA_Fresno.Air.Terminal.723890_TMY3.epw')
+    # TODO load TMY mit ads für den standort wenn Mods methode drin
 
     brObj = apv.br_wrapper.BR_Wrapper(
         SimSettings=SimSettings,
@@ -46,7 +47,6 @@ if __name__ == '__main__':
     )
     # #
     brObj.run_raytracing_simulation()
-    # #
 
     # plot existing data (simulation cell does not need to be repeated)
     brObj.plot_ground_insolation()

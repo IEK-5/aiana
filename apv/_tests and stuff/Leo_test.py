@@ -16,16 +16,65 @@ import numpy as np
 from pvlib import *
 from bifacial_radiance import *
 import subprocess
-from apv.settings import Simulation
 import apv
 from pathlib import Path
 from types import SimpleNamespace
 import hjson
 import this
 from datetime import datetime
+from typing import Literal
+
+import apv.settings.user_pathes as user_pathes
+import re
+from apv.utils.GeometriesHandler import GeometriesHandler
+import apv.utils.files_interface as fi
+# #
+fi.df_from_file_or_folder(
+    user_pathes.bifacial_radiance_files_folder/Path(
+        'satellite_weatherData/TMY_nearJuelichGermany.csv'
+        # TODO make it automatic with mohds method
+    ), names=['ghi', 'dhi'], delimiter=' '
+)
+# #
+rad_mat_file: Path = user_pathes.bifacial_radiance_files_folder / Path(
+    'materials/ground2.rad')
+
+mat_name = 'grass'
+# check for existence:
+with open(rad_mat_file, 'r') as f:
+    lines: list = f.readlines()
+    f.close()
+
+with open(rad_mat_file, 'w') as f:
+    print_string = 'new'
+    for i, line in enumerate(lines):
+        if mat_name in line:
+            f.writelines(lines[:i-1] + lines[i+4:])
+            print_string = 'existing'
+            break
+    f.close()
+print(print_string)
+
+
+#data.index('void plastic black\n')
+# #
+[mat_name in line for line in data]
 
 # #
-import apv
+test = ['0', '1', '2', '3', '4']
+
+del_line_start = 1
+number_of_follow_lines_to_delete = 45
+del_line_to = del_line_start+number_of_follow_lines_to_delete
+
+data[:del_line_start] + data[del_line_to+1:]
+
+
+# #
+if any([mat_name in line for line in data]):
+    print(f'material {mat_name} already exists')
+    # TODO: better: delete 4 lines to "overwrite"
+# #
 
 
 class test(apv.settings.apv_systems.Default):

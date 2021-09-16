@@ -12,8 +12,13 @@
     """
 
 import numpy as np
+from typing import Literal
+import inspect
 import apv
 from apv.settings.apv_systems import Default as APV_SystSettings
+
+import apv.settings.user_pathes as user_pathes
+from pathlib import Path
 
 
 class GeometriesHandler:
@@ -61,8 +66,8 @@ class GeometriesHandler:
 
         # south west corners of all modules at
         # azimuth = 0, used as mounting structure anchor later:
-        self.sw_corner_azi0_x = float()
-        self.sw_corner_azi0_y = float()
+        self.sw_modCorner_azi0_x = float()
+        self.sw_modCorner_azi0_y = float()
 
         self._set_init_variables()
 
@@ -137,10 +142,10 @@ class GeometriesHandler:
         )
 
         # south west corners of the modules with azimuth = 0
-        self.sw_corner_azi0_x = (
+        self.sw_modCorner_azi0_x = (
             -self.allRows_footprint_x/2 + self.center_offset_azi0_x)
 
-        self.sw_corner_azi0_y = (
+        self.sw_modCorner_azi0_y = (
             -self.allRows_footprint_y/2 + self.center_offset_azi0_y)
 
         # south west corners of the ground scan area
@@ -160,14 +165,14 @@ class GeometriesHandler:
 
         s_beam = 0.15  # beam thickness
         d_beam = 0.5  # beam distance
-        s_post = 0.2  # post thickness
+        s_post = 0.25  # post thickness
         h_post = self.scn["hub_height"] + 0.2  # post height
 
         x_length = self.allRows_footprint_x + 4*s_post
         y_length = self.allRows_footprint_y-self.singleRow_footprint_y
 
-        x_start = self.sw_corner_azi0_x - 2*s_post
-        y_start = self.sw_corner_azi0_y + self.singleRow_footprint_y/2
+        x_start = self.sw_modCorner_azi0_x - 2*s_post
+        y_start = self.sw_modCorner_azi0_y + self.singleRow_footprint_y/2
 
         # create posts
         text = (f'! genbox {material} post {s_post} {s_post} {h_post}'
@@ -188,9 +193,8 @@ class GeometriesHandler:
         return text
 
     def groundscan_area(self) -> str:
-        # TODO change material to a green ground with 0.25 albedo
         text = (
-            f'! genbox white_EPDM field {self.x_field} {self.y_field} 0.00001'
+            f'! genbox grass field {self.x_field} {self.y_field} 0.00001'
             f' | xform -t {self.sw_corner_scan_x} {self.sw_corner_scan_y} 0'
         )
 
@@ -209,8 +213,9 @@ class GeometriesHandler:
 
         return text
 
-    def declined_tables_mount(self) -> str:
+    def declined_tables_mount(self, add_glass_box=False) -> str:
         """
+        tilted along y
         origin x: x-center of the "int((nMods+1)/2)"ths module
         origin y: nRow uneven: y-center of the center row
                 nRow even: y_center of the the row south to the system center
@@ -227,7 +232,7 @@ class GeometriesHandler:
         # #########
 
         # post starts in y:
-        lower_post_start_y = self.sw_corner_azi0_y + (
+        lower_post_start_y = self.sw_modCorner_azi0_y + (
             self.singleRow_footprint_y - inner_table_post_distance_y)/2
 
         higher_post_start_y = lower_post_start_y + inner_table_post_distance_y
@@ -240,16 +245,23 @@ class GeometriesHandler:
         post_distance_x = self.singleRow_footprint_x / (post_count_x-1)
         # create lower posts
         text = (f'! genbox {material} post {s_post} {s_post} {h_lower_post}'
-                f' | xform -t {self.sw_corner_azi0_x} {lower_post_start_y} 0 \
-                -a {post_count_x} -t {post_distance_x} 0 0 \
-                -a {scn["nRows"]} -t 0 {scn["pitch"]} 0 ')
+                f' | xform -t {self.sw_modCorner_azi0_x} {lower_post_start_y} 0 '
+                f'-a {post_count_x} -t {post_distance_x} 0 0 '
+                f'-a {scn["nRows"]} -t 0 {scn["pitch"]} 0 ')
 
         # create lower posts
         text += (
             f'\n! genbox {material} post {s_post} {s_post} {h_higher_post}'
-            f' | xform -t {self.sw_corner_azi0_x} {higher_post_start_y} 0 \
-            -a {post_count_x} -t {post_distance_x} 0 0 \
-            -a {scn["nRows"]} -t 0 {scn["pitch"]} 0 ')
+            f' | xform -t {self.sw_modCorner_azi0_x} {higher_post_start_y} 0 '
+            f'-a {post_count_x} -t {post_distance_x} 0 0 '
+            f'-a {scn["nRows"]} -t 0 {scn["pitch"]} 0 ')
+
+        if add_glass_box:
+            t_y = (self.sw_modCorner_azi0_y + self.allRows_footprint_y
+                   + self.APV_SystSettings.glass_box_to_APV_distance)
+            t_x = self.allRows_footprint_x
+            text += (f'\n! genbox stock_glass glass_wall {t_x} 0.005 5'
+                     f' | xform -t {self.sw_modCorner_azi0_x} {t_y} 0')
 
         return text
 
@@ -344,8 +356,7 @@ def make_text_EW(APV_SystSettings: APV_SystSettings) -> str:
     return text
 
 
-def cell_level_EW_fixed(APV_SystSettings: APV_SystSettings,
-                        cellLevelModuleParams) -> str:
+def cell_level_EW_fixed(APV_SystSettings: APV_SystSettings) -> str:
     """creates needed text needed in makemodule() to create cell-level E-W.
     Azimuth angle must be 90! and number of panels must be 2!
 
@@ -366,7 +377,7 @@ def cell_level_EW_fixed(APV_SystSettings: APV_SystSettings,
     offsetfromaxis = 0.01
     rotation_angle = 2*(90 - sc['tilt']) + 180
 
-    c = cellLevelModuleParams
+    c = APV_SystSettings.cellLevelModuleParams
     x = c['numcellsx']*c['xcell'] + (c['numcellsx']-1)*c['xcellgap']
     y = c['numcellsy']*c['ycell'] + (c['numcellsy']-1)*c['ycellgap']
     material = 'black'

@@ -3,13 +3,20 @@
 objects, create scene and run simulation with Bifacial_Radiance according
 to presets in settings.py
 
-# TODO
+- Gewächshaus reflektierend machen -> done
+- bekommen die Module an der Glaswand mehr Licht ab? --> scheinbar nicht
+eher sogar dunkler, da diffuser antei geringer
+wobei wie gesagt diffuser schatten zu stark wirkt im vergleich
+zu was man in der Realität mit dem Auge beobachten kann.
 
-- Gewächshaus reflektierend machen
-- bekommen die Module an der Glaswand mehr Licht ab?
+
 Falls ja, nicht die Strings beider Reihen in Reihe schalten!
 
 
+
+#TODO - prüfen, ob bifacial_radiance pro Zeitpunkt oder integriert
+von -30 bis +30min
+    - kann man bei gencumsky direkt oder diffus an/aus schalten?
 
 '''
 # import needed packages
@@ -23,10 +30,16 @@ from pathlib import Path
 from tqdm.auto import trange
 import concurrent.futures
 import bifacial_radiance as br
+<<<<<<< HEAD
 from datetime import datetime as dt
 from typing import Literal
+=======
+from datetime import datetime
+from typing import Iterator, Literal
+>>>>>>> 0d0e2639bc691a306cbaf81fe1a5eb0fec598089
 
 import apv
+from apv.settings import apv_systems
 import apv.settings.user_pathes as user_pathes
 from apv.utils.GeometriesHandler import GeometriesHandler
 from apv.settings.apv_systems import Default as APV_SystSettings
@@ -75,11 +88,11 @@ class BR_Wrapper:
         self.radObj: br.RadianceObj = None
         self.scene: br.SceneObj = None
         self.oct_file_name: str = None
-        self.met_data: br.MetObj = None
         self.analObj: br.AnalysisObj = None
 
         self.ygrid: list[int] = []
         self.groundscan = dict()
+        self.frontscan = dict()
 
         self.df_ground_results = pd.DataFrame()
         self.csv_file_name = str()
@@ -128,23 +141,67 @@ class BR_Wrapper:
             self.SimSettings.sim_name, path=str(working_folder))
         self.radObj.setGround(self.SimSettings.ground_albedo)
 
+        self._load_weather_data_and_create_sky()
+
+        # set csv file name
+        # (placed here to allow for access also without a simulation run)
+        self.csv_file_name = self.oct_file_name + '.csv'
+
+        # create mounting structure (optional) and pv modules
+        self._create_materials()
+        self._create_geometries(APV_SystSettings=self.APV_SystSettings)
+
+        self._set_up_AnalObj_and_groundscan()
+        return
+
+    def _load_weather_data_and_create_sky(
+            self, dni_singleValue=None, dhi_singleValue=None):
+
+        # we use bifacial_radiance to fill metdata for sun pos and alitude
+        # from epw data and optional replace irradiation data by satellite
         # read TMY or EPW data
         if self.weather_file is None:
+            """EPW Dos:
+    https://www.nrel.gov/docs/fy08osti/43156.pdf
+    https://bigladdersoftware.com/epx/docs/8-2/auxiliary-programs/epw-csv-format-inout.html
+    """
             self.weather_file = self.radObj.getEPW(
                 lat=self.SimSettings.apv_location.latitude,
                 lon=self.SimSettings.apv_location.longitude)
 
-        self.met_data = self.radObj.readWeatherFile(
+        self.radObj.metdata = self.radObj.readWeatherFile(
             weatherFile=str(self.weather_file))
+
+        # optional replace irradiation data:
+        if self.SimSettings.irradiance_data_source == 'ADS_satellite':
+            df_irradiance = fi.df_from_file_or_folder(
+                user_pathes.bifacial_radiance_files_folder/Path(
+                    'satellite_weatherData/TMY_nearJuelichGermany.csv'),
+                # TODO make it automatic with mohds method
+
+                names=['ghi', 'dhi'], delimiter=' '
+            )
+            self.radObj.metdata.ghi = df_irradiance.ghi
+            self.radObj.metdata.dhi = df_irradiance.dhi
+            self.radObj.metdata.dni = df_irradiance.ghi - df_irradiance.dhi
 
         # Create Sky
         # gendaylit using Perez models for direct and diffuse components
         if self.SimSettings.sky_gen_mode == 'gendaylit':
             timeindex = apv.utils.time.get_hour_of_year(
                 self.SimSettings.sim_date_time)
-            # if (self.simSettings.start_time == '') and (
-            # self.simSettings.end_time == ''):
-            self.radObj.gendaylit(timeindex=timeindex)
+
+            # to be able to pass own dni/dhi values:
+            if dni_singleValue is None:
+                dni_singleValue = self.radObj.metdata.dni[timeindex]
+            if dhi_singleValue is None:
+                dhi_singleValue = self.radObj.metdata.dhi[timeindex]
+            solpos = self.radObj.metdata.solpos.iloc[timeindex]
+            sunalt = float(solpos.elevation)
+            sunaz = float(solpos.azimuth)-180.0
+            self.radObj.gendaylit2manual(
+                dni_singleValue, dhi_singleValue, sunalt, sunaz)
+
             self.oct_file_name = self.radObj.name \
                 + '_' + self.SimSettings.sim_date_time
 
@@ -155,56 +212,112 @@ class BR_Wrapper:
             # to (year,month,day,hour)
             enddt = dt.strptime(self.SimSettings.enddt, '%m-%d_%Hh')
 
-            self.radObj.genCumSky(epwfile=str(self.weather_file),
+            if self.SimSettings.irradiance_data_source == 'EPW':
+                epwfile = str(self.weather_file)
+            elif self.SimSettings.irradiance_data_source == 'ADS_satellite':
+                epwfile = 'satellite_weatherData/TMY_nearJuelichGermany.csv'
+                # TODO make it automatic with mohds method
+
+            self.radObj.genCumSky(epwfile=epwfile,
                                   startdt=startdt,
                                   enddt=enddt)
 
             self.oct_file_name = self.radObj.name \
                 + '_' + 'Cumulative'
 
-        # set csv file name
-        # (placed here to allow for access also without a simulation run)
-        self.csv_file_name = self.oct_file_name + '.csv'
+    @staticmethod
+    def makeCustomMaterial(
+        mat_name: str,
+        mat_type: Literal['glass', 'metal', 'plastic', 'trans'],
+        R: float = 0, G: float = 0, B: float = 0,
+        specularity: float = 0, roughness: float = 0,
+        transmissivity: float = 0, transmitted_specularity: float = 0,
+        rad_mat_file: Path = user_pathes.bifacial_radiance_files_folder / Path(
+            'materials/ground.rad')
+    ):
+        # TODO add diffusive glass to be used optional in
+        # checker board empty slots. ref: Miskin2019
+        """type trans = translucent plastic
+        radiance materials documentation:
+        https://floyd.lbl.gov/radiance/refer/ray.html#Materials"""
 
-        # create mounting structure (optional) and pv modules
-        self._create_geometries(APV_SystSettings=self.APV_SystSettings)
+        # read old file
+        with open(rad_mat_file, 'r') as f:
+            lines: list = f.readlines()
+            f.close()
 
-        self._set_up_AnalObj_and_groundscan()
+        # write new file
+        with open(rad_mat_file, 'w') as f:
+            print_string = 'Creating'
+            lines_new = lines
+            for i, line in enumerate(lines):
+                if mat_name in line:
+                    print_string = 'Overwriting'
+                    # slice away existing material
+                    lines_new = lines[:i-1] + lines[i+4:]
+                    break
+            # number of modifiers needed by Radiance
+            mods = {'glass': 3, 'metal': 5, 'plastic': 5, 'trans': 7}
+            # Create text for Radiance input:
+            text = (f'\nvoid {mat_type} {mat_name}\n0\n0'
+                    f'\n{mods[mat_type]} {R} {G} {B}')
+            if mods[mat_type] > 3:
+                text += f' {specularity} {roughness}'
+            if mods[mat_type] > 5:
+                text += f' {transmissivity} {transmitted_specularity}'
+            text += '\n'
+            print(f"{print_string} custom material {mat_name}.")
+            f.writelines(lines_new + [text])
+            f.close()
+        return
+
+    def _create_materials(self):
+        # self.makeCustomMaterial(mat_name='dark_glass', mat_type='glass',
+        #                        R=0.6, G=0.6, B=0.6)
+        self.makeCustomMaterial(
+            mat_name='grass', mat_type='plastic',
+            R=0.1, G=0.3, B=0.08,
+            specularity=0.1,  # self.SimSettings.ground_albedo,  # TODO
+            # albedo hängt eigentlich auch von strahlungswinkel
+            # und diffusen/direktem licht anteil ab
+            # https://curry.eas.gatech.edu/Courses/6140/ency/Chapter9/Ency_Atmos/Reflectance_Albedo_Surface.pdf
+            roughness=0.3)
 
     def _create_geometries(self, APV_SystSettings: APV_SystSettings):
         """create mounting structure (optional), pv modules"""
 
-        GeometriesHandlerObj = GeometriesHandler(
+        ghObj = GeometriesHandler(
             self.SimSettings, APV_SystSettings, self.debug_mode)
-        GeometriesHandlerObj._set_init_variables()
+        ghObj._set_init_variables()
+
+        ghModule = apv.utils.GeometriesHandler  # TODO replace with Obj
 
         # create PV module
-        # default for standard:
-        cellLevelModuleParams = None
-        module_text = None
 
         if APV_SystSettings.module_form == 'cell_level':
+            # then use bifacial radiance by passing cellLevelModuleParams
             cellLevelModuleParams = APV_SystSettings.cellLevelModuleParams
+        else:
+            cellLevelModuleParams = None
 
-        elif APV_SystSettings.module_form == 'cell_level_checker_board':
-            module_text = apv.utils.GeometriesHandler.checked_module(
+        module_text_dict = {
+            'std': None,  # rad text created by bifacial radiance
+            'cell_level': None,  # rad text created by bifacial radiance
+            'none': "",  # empty
+            'cell_level_checker_board': ghModule.checked_module,
+            'EW_fixed': ghModule.make_text_EW,
+            'cell_level_EW_fixed': ghModule.cell_level_EW_fixed,
+        }
+
+        if APV_SystSettings.module_form in ['std', 'cell_level', 'none']:
+            # pass dict value without calling
+            module_text = module_text_dict[APV_SystSettings.module_form]
+        else:
+            cellLevelModuleParams = None
+            # pass dict value being a ghObj method with calling
+            module_text = module_text_dict[APV_SystSettings.module_form](
                 APV_SystSettings
             )
-
-        elif APV_SystSettings.module_form == 'EW_fixed':
-            module_text = apv.utils.GeometriesHandler.make_text_EW(
-                APV_SystSettings
-            )
-
-        elif APV_SystSettings.module_form == 'cell_level_EW_fixed':
-            module_text = apv.utils.GeometriesHandler.cell_level_EW_fixed(
-                APV_SystSettings,
-                APV_SystSettings.cellLevelModuleParams
-            )
-
-        elif APV_SystSettings.module_form == 'none':
-            module_text = ""
-
         self.radObj.makeModule(
             name=APV_SystSettings.module_name,
             **APV_SystSettings.moduleDict,
@@ -212,8 +325,8 @@ class BR_Wrapper:
             text=module_text,
             glass=APV_SystSettings.glass_modules,
         )
-        # make scene
 
+        # make scene
         self.scene = self.radObj.makeScene(
             moduletype=APV_SystSettings.module_name,
             sceneDict=APV_SystSettings.sceneDict)
@@ -221,9 +334,12 @@ class BR_Wrapper:
         structure_type = APV_SystSettings.mounting_structure_type
         # create mounting structure as custom object:
         if structure_type == 'declined_tables':
-            rad_text = GeometriesHandlerObj.declined_tables_mount()
+            rad_text = ghObj.declined_tables_mount(
+                add_glass_box=APV_SystSettings.add_glass_box)
         elif structure_type == 'framed_single_axes':
-            rad_text = GeometriesHandlerObj.framed_single_axes_mount()
+            rad_text = ghObj.framed_single_axes_mount()
+        if APV_SystSettings.extra_customObject_rad_text is not None:
+            rad_text += APV_SystSettings.extra_customObject_rad_text
 
         if rad_text != '':
             rz = 180 - APV_SystSettings.sceneDict["azimuth"]
@@ -236,6 +352,7 @@ class BR_Wrapper:
             )
 
         # add ground scan area visualization to the radObj without rotation
+<<<<<<< HEAD
         if self.APV_SystSettings.add_groundScanArea_as_object_to_scene is True:
 
             ground_rad_text = GeometriesHandlerObj.groundscan_area()
@@ -252,6 +369,21 @@ class BR_Wrapper:
                 # concatenated by
                 # !xform object/customObjectName.rad
             )
+=======
+        ground_rad_text = ghObj.groundscan_area()
+
+        self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
+            radfile=self.scene.radfiles,
+            customObject=self.radObj.makeCustomObject(
+                'scan_area', ground_rad_text),
+            text='!xform '  # with text = '' (default) it does not work!
+            # all scene objects are stored in
+            # bifacial_radiance_files/objects/... e.g.
+            # SUNFARMING_C_3.81425_rtr_10.00000_tilt_20.00000_10modsx3rows_...
+            # within this file different custom .rad files are concatenated by
+            # !xform object/customObjectName.rad
+        )
+>>>>>>> 0d0e2639bc691a306cbaf81fe1a5eb0fec598089
 
         # make oct file
         self.radObj.makeOct(octname=self.oct_file_name)
@@ -341,9 +473,10 @@ class BR_Wrapper:
               f'total: {sensorsy * len(self.ygrid)}')
 
         # start rough scan to define ground afterwards
-        groundscan, backscan = self.analObj.moduleAnalysis(scene=self.scene,
-                                                           sensorsy=sensorsy)
-
+        # groundscan, backscan = self.analObj.moduleAnalysis(scene=self.scene,
+        #                                                   sensorsy=sensorsy)
+        self.frontscan, self.backscan = self.analObj.moduleAnalysis(
+            scene=self.scene, sensorsy=sensorsy)
         """Modifying the groundscan dictionary, except for 'ystart',
         which is set later by looping through ygrid.
 
@@ -352,26 +485,30 @@ class BR_Wrapper:
         It describes where the virtual ray tracing sensors are placed.
         The origin (x=0, y=0) of the PV facility is in its center.
         """
-        groundscan['xstart'] = self.geomObj.sw_corner_scan_x
-        groundscan['xinc'] = self.SimSettings.spatial_resolution
-        groundscan['zstart'] = 0.05
-        groundscan['zinc'] = 0
-        groundscan['yinc'] = 0
-        self.groundscan = groundscan
+        self.groundscan = self.frontscan
+
+        self.groundscan['xstart'] = self.geomObj.sw_corner_scan_x
+        self.groundscan['xinc'] = self.SimSettings.spatial_resolution
+        self.groundscan['zstart'] = 0.05
+        self.groundscan['zinc'] = 0
+        self.groundscan['yinc'] = 0
 
     def _run_line_scan(self, y_start):
-        groundscan_copy = self.groundscan.copy()
-        groundscan_copy['ystart'] = y_start
-        temp_name = self.radObj.name + "_groundscan" \
-            + '{:.3f}'.format(y_start)
 
-        backscan = groundscan_copy
+        if self.SimSettings.scan_target == 'module':
+            self.groundscan = None
+        elif self.SimSettings.scan_target == 'ground':
+            self.groundscan['ystart'] = y_start
+
+        temp_name = (f'{self.radObj.name}_{self.SimSettings.scan_target}_'
+                     f'scan_{y_start:.3f}')
+
         self.analObj.analysis(self.oct_file_name+'.oct',
                               temp_name,
-                              groundscan_copy,
-                              backscan,
-                              accuracy=self.SimSettings.ray_tracing_accuracy,
-                              only_ground=self.SimSettings.only_ground_scan)
+                              self.frontscan,
+                              self.backscan,
+                              self.groundscan,
+                              accuracy=self.SimSettings.ray_tracing_accuracy)
 
         return f'y_start: {y_start} done.'
 
@@ -392,7 +529,9 @@ class BR_Wrapper:
         if self.SimSettings.use_multi_processing:
 
             with concurrent.futures.ProcessPoolExecutor() as executor:
-                results = executor.map(self._run_line_scan, self.ygrid)
+                results: Iterator = executor.map(
+                    self._run_line_scan, self.ygrid
+                )
 
                 for result in results:
                     print(result)
@@ -418,12 +557,6 @@ class BR_Wrapper:
 
         df_ground_results = df_ground_results.reset_index()
 
-        if self.SimSettings.only_ground_scan:
-            col_name = 'Wm2'
-        else:
-            col_name = 'Wm2Front'
-        df_ground_results = df_ground_results.rename(
-            columns={col_name: 'Wm2Ground'})
         # Path for saving final results
         fi.make_dirs_if_not_there(user_pathes.results_folder)
         f_result_path = os.path.join(user_pathes.results_folder,
@@ -488,7 +621,7 @@ class BR_Wrapper:
             colormap = 'viridis_r'
             z_label = 'Shadow-Depth [%]'
         else:
-            z = 'Wm2Ground'
+            z = 'Wm2'
             colormap = 'inferno'
             z_label = 'Irradiance on Ground [W m$^{-2}$]'
         fig = apv.utils.plots.plot_heatmap(
@@ -502,6 +635,6 @@ class BR_Wrapper:
         fig.axes[1] = apv.utils.plots.add_north_arrow(
             fig.axes[1], self.APV_SystSettings.sceneDict['azimuth'])
 
-        apv.utils.files_interface.save_fig(fig, self.oct_file_name)
+        apv.utils.files_interface.save_fig(fig, self.oct_file_name+'_'+z)
 
 # #
