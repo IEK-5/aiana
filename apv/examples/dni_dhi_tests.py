@@ -1,4 +1,10 @@
 # #
+import apv.utils.time as t
+from datetime import datetime as dt
+import numpy as np
+import pandas as pd
+
+# #
 if __name__ == '__main__':
     from pathlib import Path
     import apv
@@ -36,16 +42,3 @@ if __name__ == '__main__':
     brObj.plot_ground_insolation(cm_unit='Shadow-Depth')
     # show result data frame
     brObj.df_ground_results
-
-# #
-from apv.settings import user_pathes
-from apv.utils import files_interface
-from apv.utils.weather_data import WeatherData
-
-weatherObj = WeatherData()
-file_path = weatherObj.download_insolation_data(
-    SimSettings.apv_location, '2005-01-01/2021-01-01', '1hour')
-df_ads = files_interface.df_from_file_or_folder(file_path, skiprows=42)
-df_ads
-
-# #

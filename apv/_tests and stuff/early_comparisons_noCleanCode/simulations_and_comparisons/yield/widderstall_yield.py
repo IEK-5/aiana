@@ -1,6 +1,6 @@
 # #
 import pvlib
-import apv.utils
+import apv
 # import apv.resources
 import pandas as pd
 import numpy as np
@@ -11,22 +11,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 import apv.settings.user_pathes as user_pathes
+
+
 # #
 
-<<<<<<< HEAD
 input_folder = Path.cwd().parent.parent.parent.parent/'resources/pv_modules'
 input_folder
-=======
-from pathlib import Path
-import os
-Path.cwd().splitext()
-
-# #
-a = Path('C:/Users/l.raumann/Documents/agri-PV')
-b = 'c:\\Users\\l.raumann\\Documents\\agri-PV\\py-repos\\agri-pv\\apv\\resources\\pv_modules\\Sanyo240_moduleSpecs_guestimate.txt'
-
-input_folder = str(Path.cwd()).split("\\apv\\")[0]+"\\apv\\resources\\pv_modules"
->>>>>>> 0d0e2639bc691a306cbaf81fe1a5eb0fec598089
 # #
 pv_module: pd.Series = apv.utils.files_interface.df_from_file_or_folder(
     input_folder+'\\Sanyo240_moduleSpecs_guestimate.txt',
@@ -35,27 +25,22 @@ pv_module  # a series
 
 # #
 
-a = Path('ich werde ignoriert')
-a
-# #
-b = 's:\\Sanyo240_moduleSpecs_guestimate'
-
-os.path.join(a, b)
-# #
-
 df = apv.utils.files_interface.df_from_file_or_folder(
     'raw-data/sanyo', skiprows=9, append_all_in_folder=True, delimiter='\t')
 
+df
+# #
 # set unreasonable data to NaN
 df['Voc'] = np.where(df['POA'] < 0, np.nan, df['Voc'])
 df['Voc'] = np.where(df['Voc'] < 25, np.nan, df['Voc'])
 
 
 def sim_poa(df):
-    df = apv.tools.time.column_to_utc_index(df, 'Datum', 'Etc/GMT-1')
+    df = apv.utils.time.column_to_utc_index(df, 'Datum', 'Etc/GMT-1')
 
     # POA sim
-    site = apv.resources.locations.Widderstall
+    site = pvlib.location.Location(
+        48.533, 9.717, altitude=750, tz='Europe/Berlin')
 
     # Get solar azimuth and zenith to pass to the transposition function
     solar_position = site.get_solarposition(times=df.index)
@@ -75,7 +60,7 @@ def sim_poa(df):
     )
 
     df['POA_sim'] = df_POA_irradiance['poa_global']
-    apv.tools.files_interface.df_export(
+    apv.utils.files_interface.df_export(
         df, 'poa_widderstall', rel_path='processed-data')
 
     return df

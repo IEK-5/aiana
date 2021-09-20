@@ -1,5 +1,8 @@
 # #
 #import core as core_module
+from pvlib.modelchain import ModelChain
+from pvlib.location import Location
+from pvlib.pvsystem import PVSystem
 import importlib as imp
 import numpy as np
 import pandas as pd
@@ -17,7 +20,6 @@ import pvlib
 naive_times = pd.date_range(start='2015', end='2016', freq='1h')
 
 
-
 coordinates = [(40, -120, 'San Francisco', 10, 'Etc/GMT+8'),
                (52, 13, 'Berlin', 34, 'Etc/GMT-1'),
                (50.92, 6.36, 'Jülich', 83, 'Etc/GMT-1')]
@@ -29,9 +31,15 @@ sapm_inverters = pvlib.pvsystem.retrieve_sam('cecinverter')
 
 module = sandia_modules['Canadian_Solar_CS5P_220M___2009_']
 
+module.DTC
+
+# #
+
+
 inverter = sapm_inverters['ABB__MICRO_0_25_I_OUTD_US_208__208V_']
 
-temperature_model_parameters = pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS['sapm']['open_rack_glass_glass']
+temperature_model_parameters = pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS['sapm'][
+    'open_rack_glass_glass']
 
 
 temp_air = 20
@@ -74,12 +82,12 @@ for latitude, longitude, name, altitude, timezone in coordinates:
     dc = pvlib.pvsystem.sapm(effective_irradiance, tcell, module)
     # sapm = Sandia Array Performance Model
     ac = pvlib.inverter.sandia(dc['v_mp'], dc['p_mp'], inverter)
-    # inverter = Wechselrichter (Gleichstrom zu Wechselstrom) 
+    # inverter = Wechselrichter (Gleichstrom zu Wechselstrom)
     # ac = alternating current, dc = direct current ?
 
     # v_mp = voltage at p_mp, p_mp = max power
 
-    annual_energy = ac.sum() # [W * h]
+    annual_energy = ac.sum()  # [W * h]
     energies[name] = annual_energy
 energies = pd.Series(energies)
 print(energies.round(0))
@@ -87,9 +95,6 @@ print(energies.round(0))
 # #
 ################# object orientated #################
 
-from pvlib.pvsystem import PVSystem
-from pvlib.location import Location
-from pvlib.modelchain import ModelChain
 
 system = PVSystem(module_parameters=module,
                   inverter_parameters=inverter,

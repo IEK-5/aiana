@@ -12,6 +12,7 @@ from typing import Literal
 
 
 import apv
+import apv.settings.user_pathes as user_pathes
 
 # suppress InsecureRequestWarning when calling cdsapi retrieve function
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -23,6 +24,8 @@ class WeatherData:
 
     def __init__(self):
         self.credentials = self.load_API_credentials()
+
+    ### DOWNLOADS ##################
 
     def load_API_credentials(self) -> dict:
         """loads the credentials from file or prints a guide if file not found
@@ -119,8 +122,7 @@ class WeatherData:
                     'skin_temperature'  # temperature on the surface
                 ],
             },
-            os.path.join(
-                apv.settings.user_pathes.data_download_folder, file_name+'.nc')
+            os.path.join(user_pathes.data_download_folder, file_name+'.nc')
         )
 
     def download_insolation_data(
@@ -141,16 +143,18 @@ class WeatherData:
         file_name (str): name of the .csv file containing the downloaded data
         location (pvlib.location.Location): location object to pass coordinates
         date_range (str): start and end date str, e.g. '2015-01-01/2015-01-02'
-        time_step (str): e.g. '15minute' or '1hour'
+        time_step (str): minimum: '1minute',
+                         also possible: '15minute', '1hour', ...
     Returns:
         file_path (str): file path of the result file
 
     '''
-        file_name = ('ADS-data_' + date_range.replace('/', '_') +
+        file_name = ('ADS-data_' + date_range.replace('/', '_to_') +
                      f'_lat-{location.latitude}'
-                     f'_lon-{location.longitude}')
+                     f'_lon-{location.longitude}'
+                     f'_time_step-{time_step}')
 
-        file_path: Path = apv.settings.user_pathes.data_download_folder/Path(
+        file_path: Path = user_pathes.data_download_folder/Path(
             file_name+'.csv')
 
         if file_path.exists() is False:
@@ -178,12 +182,51 @@ class WeatherData:
 
         return file_path
 
+    # DATA PROCESSING
 
+    def satellite_irradiance_data_to_TMY(self, source_file_path):
+
+        file_name = 'TMY_'+str(source_file_path).split('\\')[-1]
+        tmy_file_path = user_pathes.bifacial_radiance_files_folder / Path(
+            f'satellite_weatherData/{file_name}')
+
+        if tmy_file_path.exists():
+            return apv.utils.files_interface.df_from_file_or_folder(
+                tmy_file_path, delimiter=' ', names=['ghi', 'dhi']
+            )
+
+        df: pd.DataFrame = pd.read_csv(source_file_path, skiprows=42, sep=';')
+        df[['obs_start', 'obs_end']] = \
+            df.iloc[:, 0].str.split('/', 1, expand=True)
+        df.set_index(
+            pd.to_datetime(df['obs_end'], utc=True),  # "right-labeled" as inBR
+            inplace=True
+        )
+
+        # filter out 29th Feb
+        mask = (df.index.is_leap_year) & (df.index.dayofyear == 60)
+        df = df[~mask]
+
+        # create average GHI and DHI for each hour per year
+        group_list = [df.index.month, df.index.day, df.index.hour]
+        x = df['GHI'].groupby(group_list).mean()
+        y = df['DHI'].groupby(group_list).mean()
+        x = x.reset_index(drop=True)
+        y = y.reset_index(drop=True)
+
+        tmy_data = pd.DataFrame({'ghi': x, 'dhi': y})
+        tmy_data.to_csv(tmy_file_path, index=False, header=False, sep=' ',
+                        columns=['ghi', 'dhi']  # to be sure about order
+                        )
+        return tmy_data
+
+
+"""
 def retrieve_nsrdb_data(
         lat, lon, year=2019, interval=15,
         attributes='ghi,dhi,dni,wind_speed,air_temperature,surface_albedo'
 ) -> pd.DataFrame:
-    """
+    \"""
     by Neel Patel
 
     Parameters
@@ -200,7 +243,7 @@ def retrieve_nsrdb_data(
     -------
     data : df containing requested weather attributes with UTC timestamps.
 
-    """
+    \"""
     api_key = '2yxdBVKdOXpp7q7VYLB0XRMdqlhxtCHxlqqd0wnI'
     # true will return leap day data if present, false will not
     leap_year = 'true'
@@ -231,4 +274,4 @@ def retrieve_nsrdb_data(
                                         freq=str(interval) + 'Min',
                                         periods=525600 / interval))
 
-    return data
+    return data """

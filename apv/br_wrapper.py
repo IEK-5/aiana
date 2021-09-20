@@ -35,6 +35,7 @@ from apv.utils import units_converter as uc
 from apv.utils import files_interface as fi
 from apv.settings.apv_systems import Default as APV_SystSettings
 from apv.utils.GeometriesHandler import GeometriesHandler
+from apv.utils.weather_data import WeatherData
 import apv.settings.user_pathes as user_pathes
 from apv.settings import apv_systems
 import apv
@@ -79,7 +80,7 @@ class BR_Wrapper:
             self,
             SimSettings=apv.settings.simulation.Simulation(),
             APV_SystSettings=apv.settings.apv_systems.Default(),
-            weather_file=None,
+            weather_file=None,  # to optionally skip epw download
             debug_mode=False
             # create_oct_file=True
     ):
@@ -89,8 +90,9 @@ class BR_Wrapper:
 
         self.geomObj = GeometriesHandler(
             SimSettings, APV_SystSettings, debug_mode)
+        self.weatherObj = WeatherData()
 
-        self.weather_file = weather_file
+        self.weather_file_br_epw = weather_file
         self.debug_mode = debug_mode
         # self.create_oct_file = create_oct_file
 
@@ -142,8 +144,10 @@ class BR_Wrapper:
             self.APV_SystSettings)
 
         working_folder = user_pathes.bifacial_radiance_files_folder
-        # check working folder
-        fi.make_dirs_if_not_there(working_folder)
+        # check folder existence
+        fi.make_dirs_if_not_there([working_folder,
+                                   user_pathes.data_download_folder,
+                                   user_pathes.results_folder])
 
         # create Bifacial_Radiance Object with ground
         self.radObj = br.RadianceObj(
@@ -173,24 +177,26 @@ class BR_Wrapper:
         https://www.nrel.gov/docs/fy08osti/43156.pdf
         https://bigladdersoftware.com/epx/docs/8-2/auxiliary-programs/epw-csv-format-inout.html
         """
-        self.weather_file = self.weather_file or self.radObj.getEPW(
-            lat=self.SimSettings.apv_location.latitude,
-            lon=self.SimSettings.apv_location.longitude)
+        self.weather_file_br_epw = \
+            self.weather_file_br_epw or self.radObj.getEPW(
+                lat=self.SimSettings.apv_location.latitude,
+                lon=self.SimSettings.apv_location.longitude)
 
         self.radObj.metdata = self.radObj.readWeatherFile(
-            weatherFile=str(self.weather_file))
+            weatherFile=str(self.weather_file_br_epw))
 
-        # optional replace irradiation data:
+        # optional replace irradiation data (and keep sol position):
         if self.SimSettings.irradiance_data_source == 'ADS_satellite':
-            df_irradiance = fi.df_from_file_or_folder(
-                user_pathes.bifacial_radiance_files_folder/Path(
-                    'satellite_weatherData/TMY_nearJuelichGermany.csv'),
-                # TODO make it automatic with mohds method
+            # download data for longest full year time span availible
+            download_file_path = self.weatherObj.download_insolation_data(
+                self.SimSettings.apv_location, '2005-01-01/2021-01-01', '1hour')
+            # make own TMY data
+            df_irradiance = self.weatherObj.satellite_irradiance_data_to_TMY(
+                download_file_path)
 
-                names=['ghi', 'dhi'], delimiter=' '
-            )
             self.radObj.metdata.ghi = df_irradiance.ghi
             self.radObj.metdata.dhi = df_irradiance.dhi
+            # for sky to untilted ground cos(tilt) = 1 and GHI = DNI + DHI ->
             self.radObj.metdata.dni = df_irradiance.ghi - df_irradiance.dhi
 
         # Create Sky
@@ -221,7 +227,7 @@ class BR_Wrapper:
             enddt = dt.strptime(self.SimSettings.enddt, '%m-%d_%Hh')
 
             if self.SimSettings.irradiance_data_source == 'EPW':
-                epwfile = str(self.weather_file)
+                epwfile = str(self.weather_file_br_epw)
             elif self.SimSettings.irradiance_data_source == 'ADS_satellite':
                 epwfile = 'satellite_weatherData/TMY_nearJuelichGermany.csv'
                 # TODO make it automatic with mohds method
@@ -547,7 +553,6 @@ class BR_Wrapper:
         df_ground_results = df_ground_results.reset_index()
 
         # Path for saving final results
-        fi.make_dirs_if_not_there(user_pathes.results_folder)
         f_result_path = os.path.join(user_pathes.results_folder,
                                      self.csv_file_name)
         df_ground_results.to_csv(f_result_path)

@@ -60,7 +60,7 @@ class Default:
         # the second module is facing upwards-down, might be a problem later
         'cell_level_EW_fixed',
         'none'
-    ] = 'cell_level_checker_board'
+    ] = 'std'
 
     mounting_structure_type: Literal[
         'none', 'declined_tables', 'framed_single_axes'] = 'framed_single_axes'

@@ -23,14 +23,16 @@ if __name__ == '__main__':
     ###############################################
     # rise: 4
     # set: 19
-    SimSettings.sim_date_time = '06-21_4h'
+    SimSettings.sim_date_time = '06-21_6h'
     # sommer: tatsächliche zeit = angegebene +2h
     # winter: tatsächliche zeit = angegebene +1h
     ###############################################
 
     SimSettings.spatial_resolution = 1
+    # SimSettings.irradiance_data_source = 'EPW'
+    print(SimSettings.irradiance_data_source)
     # SimSettings.sky_gen_mode = 'gencumsky'
-    # SimSettings.sim_name = 'declined_tables_and_glassbox'
+    SimSettings.sim_name = 'debug'
     APV_SystSettings.moduleDict['xgap'] = 0.05
     # APV_SystSettings.mounting_structure_type = 'declined_tables'
     # APV_SystSettings.sceneDict['nRows'] = 3

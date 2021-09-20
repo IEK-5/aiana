@@ -18,16 +18,11 @@ if __name__ == '__main__':
         APV_SystSettings=APV_SystSettings,
         # weather_file=weather_file  # downloading automatically without this
     )
-<<<<<<< HEAD
     enrgyObj = apv.utils.APV_evaluation.Evaluate_APV(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings
     )
 
-    # #
-=======
-
->>>>>>> 0d0e2639bc691a306cbaf81fe1a5eb0fec598089
     brObj.setup_br()
 
     # #
