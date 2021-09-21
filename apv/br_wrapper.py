@@ -371,19 +371,20 @@ class BR_Wrapper:
             )
 
         # add ground scan area visualization to the radObj without rotation
-        ground_rad_text = ghObj.groundscan_area()
+        if self.APV_SystSettings.add_groundScanArea_as_object_to_scene:
+            ground_rad_text = ghObj.groundscan_area()
 
-        self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
-            radfile=self.scene.radfiles,
-            customObject=self.radObj.makeCustomObject(
-                'scan_area', ground_rad_text),
-            text='!xform '  # with text = '' (default) it does not work!
-            # all scene objects are stored in
-            # bifacial_radiance_files/objects/... e.g.
-            # SUNFARMING_C_3.81425_rtr_10.00000_tilt_20.00000_10modsx3rows_...
-            # within this file different custom .rad files are concatenated by
-            # !xform object/customObjectName.rad
-        )
+            self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
+                radfile=self.scene.radfiles,
+                customObject=self.radObj.makeCustomObject(
+                    'scan_area', ground_rad_text),
+                text='!xform '  # with text = '' (default) it does not work!
+                # all scene objects are stored in
+                # bifacial_radiance_files/objects/... e.g.
+                # SUNFARMING_C_3.81425_rtr_10.00000_tilt_20.00000_10modsx3...
+                # within this file different custom .rad files are concatenated
+                # by !xform object/customObjectName.rad
+            )
 
         # make oct file
         self.radObj.makeOct(octname=self.oct_file_name)
