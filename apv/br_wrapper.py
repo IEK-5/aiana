@@ -3,13 +3,16 @@
 objects, create scene and run simulation with Bifacial_Radiance according
 to presets in settings.py
 
+
+
+
 TODO
 
 - methode in br_wrapper einbinden, die 16 years TMY als UTC runteläd,
 wenn noch nicht existent, und die sich über location mit tz das
 2 spalten ghi dni file mit richtigen positionen erstellt
 bzw. dazu mohds methode aufruft.
-Zielpfad in data download. Wir geben dann Almed den pfad und das file
+Zielpfad in data download. Wir geben dann Ahmed den pfad und das file
 manuell, damit er sich nicht registrieren muss bei copernicus website
 --> Leo
 
@@ -48,11 +51,14 @@ import subprocess
 import numpy as np
 import pandas as pd
 import os
+import sys
 import pytictoc
 from pathlib import Path
 from tqdm.auto import trange
 import concurrent.futures
 import bifacial_radiance as br
+import warnings
+
 
 # #
 
@@ -154,7 +160,7 @@ class BR_Wrapper:
             self.SimSettings.sim_name, path=str(working_folder))
         self.radObj.setGround(self.SimSettings.ground_albedo)
 
-        self._load_weather_data_and_create_sky()
+        self.load_weather_data_and_create_sky()
 
         # set csv file name
         # (placed here to allow for access also without a simulation run)
@@ -167,7 +173,7 @@ class BR_Wrapper:
         self._set_up_AnalObj_and_groundscan()
         return
 
-    def _load_weather_data_and_create_sky(
+    def load_weather_data_and_create_sky(
             self, dni_singleValue=None, dhi_singleValue=None):
 
         # we use bifacial_radiance to fill metdata for sun pos and alitude
@@ -202,8 +208,12 @@ class BR_Wrapper:
         # Create Sky
         # gendaylit using Perez models for direct and diffuse components
         if self.SimSettings.sky_gen_mode == 'gendaylit':
-            timeindex = apv.utils.time.get_hour_of_year(
-                self.SimSettings.sim_date_time)
+
+            sim_dt_utc = apv.utils.time.convert_settings_localtime_to_UTC(
+                self.SimSettings.sim_date_time,
+                self.SimSettings.apv_location.tz
+            )
+            timeindex = apv.utils.time.get_hour_of_year(sim_dt_utc)
 
             # to be able to pass own dni/dhi values:
             if dni_singleValue is None:
@@ -213,6 +223,13 @@ class BR_Wrapper:
             solpos = self.radObj.metdata.solpos.iloc[timeindex]
             sunalt = float(solpos.elevation)
             sunaz = float(solpos.azimuth)-180.0
+
+            if dni_singleValue == 0 and dhi_singleValue == 0:
+                sys.exit("""DNI and DHI are 0 within the last hour until the \
+                    time given in settings/simulation/sim_date_time.\
+                    \n--> Creating radiance files and view_scene() \
+                    is not possible without light. Please chose a day time.""")
+
             self.radObj.gendaylit2manual(
                 dni_singleValue, dhi_singleValue, sunalt, sunaz)
 
@@ -239,8 +256,8 @@ class BR_Wrapper:
             self.oct_file_name = self.radObj.name \
                 + '_' + 'Cumulative'
 
-    @staticmethod
     def makeCustomMaterial(
+        self,
         mat_name: str,
         mat_type: Literal['glass', 'metal', 'plastic', 'trans'],
         R: float = 0, G: float = 0, B: float = 0,
@@ -285,7 +302,8 @@ class BR_Wrapper:
                 text += f' {specularity} {roughness}'
             if mods[mat_type] > 5:
                 text += f' {transmissivity} {transmitted_specularity}'
-            print(f"{print_string} custom material {mat_name}.")
+            if self.debug_mode:
+                print(f"{print_string} custom material {mat_name}.")
             f.writelines(lines_new + [text])
             f.close()
         return
@@ -371,20 +389,20 @@ class BR_Wrapper:
             )
 
         # add ground scan area visualization to the radObj without rotation
-        if self.APV_SystSettings.add_groundScanArea_as_object_to_scene:
-            ground_rad_text = ghObj.groundscan_area()
+        # if self.APV_SystSettings.add_groundScanArea_as_object_to_scene:
+        ground_rad_text = ghObj.groundscan_area()
 
-            self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
-                radfile=self.scene.radfiles,
-                customObject=self.radObj.makeCustomObject(
-                    'scan_area', ground_rad_text),
-                text='!xform '  # with text = '' (default) it does not work!
-                # all scene objects are stored in
-                # bifacial_radiance_files/objects/... e.g.
-                # SUNFARMING_C_3.81425_rtr_10.00000_tilt_20.00000_10modsx3...
-                # within this file different custom .rad files are concatenated
-                # by !xform object/customObjectName.rad
-            )
+        self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
+            radfile=self.scene.radfiles,
+            customObject=self.radObj.makeCustomObject(
+                'scan_area', ground_rad_text),
+            text='!xform '  # with text = '' (default) it does not work!
+            # all scene objects are stored in
+            # bifacial_radiance_files/objects/... e.g.
+            # SUNFARMING_C_3.81425_rtr_10.00000_tilt_20.00000_10modsx3...
+            # within this file different custom .rad files are concatenated
+            # by !xform object/customObjectName.rad
+        )
 
         # make oct file
         self.radObj.makeOct(octname=self.oct_file_name)

@@ -40,6 +40,8 @@ lines_new[-1][-1:]
 SimSettings = apv.settings.simulation.Simulation()
 weatherObj = WeatherData()
 
+# #
+SimSettings.sim_date_time
 
 # #
 now_utc = dt.utcnow()
@@ -49,7 +51,8 @@ tz = pytz.timezone('Europe/Berlin')
 now_kl = now_utc.replace(tzinfo=pytz.utc).astimezone(tz)
 
 
-print(now_kl)
+print(type(now_kl))
+now_kl
 # #
 times = now_kl
 solar_position = SimSettings.apv_location.get_solarposition(

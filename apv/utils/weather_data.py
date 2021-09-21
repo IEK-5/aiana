@@ -10,7 +10,6 @@ import urllib3
 from pathlib import Path
 from typing import Literal
 
-
 import apv
 import apv.settings.user_pathes as user_pathes
 
@@ -44,24 +43,25 @@ class WeatherData:
                 credentials = yaml.safe_load(f)
             return credentials
         except FileNotFoundError:
-            print("""
+            print(
+                """\n\n
                 ##########################################################
                 Error: credential-file not found.
                 \n
-                To get insolation and climate data you need to register at
+                To get insolation data you need to register at
                 https://ads.atmosphere.copernicus.eu
-                and
-                https://cds.climate.copernicus.eu,
-                respectivly.
+                and to get climate data you need to register at
+                https://cds.climate.copernicus.eu.
                 After accepting conditions, you can see your UserIDs
                 and API Keys in your user profiles in the web pages,
                 which you need to enter into the API_credentials.txt file,
                 after copying it from the main folder of this repository
-                to your home directory of your PC.
+                to the home directory of your PC.
                 \n
                 ##########################################################
                 """
-                  )
+            )
+            os._exit(1)
 
     def download_wind_and_T_data(
             self,

@@ -15,18 +15,17 @@ if __name__ == '__main__':
         apv.settings.apv_systems.APV_Syst_InclinedTables_Juelich()
     # APV_SystSettings = apv.settings.apv_systems.SimpleForCheckerBoard()
     APV_SystSettings = apv.settings.apv_systems.Default()
-
+    APV_SystSettings.add_groundScanArea_as_object_to_scene = True
     # ### often changed settings:  ####
     # SimSettings.only_ground_scan = False
     # use_multi_processing = False
     # SimSettings.add_mounting_structure = False
 
     ###############################################
-    # rise: 4
-    # set: 19
-    SimSettings.sim_date_time = '06-21_6h'
-    # sommer: tatsächliche zeit = angegebene +2h
-    # winter: tatsächliche zeit = angegebene +1h
+    # 21. Juni
+    # rise: 5:20
+    # set: 21:52
+    SimSettings.sim_date_time = '06-21_7h'
     ###############################################
 
     SimSettings.spatial_resolution = 0.1
