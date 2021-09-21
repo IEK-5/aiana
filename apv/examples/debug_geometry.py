@@ -10,6 +10,7 @@ if __name__ == '__main__':
     imp.reload(apv.br_wrapper)
 
     SimSettings = apv.settings.simulation.Simulation()
+    # SimSettings.use_multi_processing = False
     APV_SystSettings =\
         apv.settings.apv_systems.APV_Syst_InclinedTables_Juelich()
     # APV_SystSettings = apv.settings.apv_systems.SimpleForCheckerBoard()
@@ -28,7 +29,7 @@ if __name__ == '__main__':
     # winter: tatsächliche zeit = angegebene +1h
     ###############################################
 
-    SimSettings.spatial_resolution = 1
+    SimSettings.spatial_resolution = 0.1
     # SimSettings.irradiance_data_source = 'EPW'
     print(SimSettings.irradiance_data_source)
     # SimSettings.sky_gen_mode = 'gencumsky'
@@ -66,7 +67,7 @@ if __name__ == '__main__':
         # debug_mode=True
     )
     brObj.setup_br()
-
+    # #
     brObj.view_scene(
         # view_name='top_down',
         # view_type='parallel'
@@ -91,7 +92,7 @@ if __name__ == '__main__':
         # view_name='top_down',
         # view_type='parallel'
     )
-    # #
+# #
 if __name__ == '__main__':
     brObj.run_raytracing_simulation()
     # #

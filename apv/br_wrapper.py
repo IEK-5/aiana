@@ -270,16 +270,21 @@ class BR_Wrapper:
                     # slice away existing material
                     lines_new = lines[:i-1] + lines[i+4:]
                     break
+            # check for extra new line at the end
+            if lines_new[-1][-1:] == '\n':
+                text = ''
+            else:
+                text = '\n'
             # number of modifiers needed by Radiance
             mods = {'glass': 3, 'metal': 5, 'plastic': 5, 'trans': 7}
-            # Create text for Radiance input:
-            text = (f'\nvoid {mat_type} {mat_name}\n0\n0'
-                    f'\n{mods[mat_type]} {R} {G} {B}')
+
+            # create text for Radiance input:
+            text += (f'\nvoid {mat_type} {mat_name}\n0\n0'
+                     f'\n{mods[mat_type]} {R} {G} {B}')
             if mods[mat_type] > 3:
                 text += f' {specularity} {roughness}'
             if mods[mat_type] > 5:
                 text += f' {transmissivity} {transmitted_specularity}'
-            text += '\n'
             print(f"{print_string} custom material {mat_name}.")
             f.writelines(lines_new + [text])
             f.close()

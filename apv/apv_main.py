@@ -29,7 +29,8 @@ if __name__ == '__main__':
     brObj.view_scene(
         view_name='total', view_type='perspective'
     )
-    # #
+# #
+if __name__ == '__main__':
     brObj.run_raytracing_simulation()
     # #
     brObj.plot_ground_insolation()
@@ -39,8 +40,3 @@ if __name__ == '__main__':
     # #
     # show result data frame
     brObj.df_ground_results
-    # #
-
-
-# #
-brObj.groundscan

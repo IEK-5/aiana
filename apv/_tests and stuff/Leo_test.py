@@ -32,6 +32,9 @@ from apv.utils.weather_data import WeatherData
 import pvlib
 # #
 
+lines_new = ['abc', 'a\t']
+lines_new[-1][-1:]
+
 # #
 
 SimSettings = apv.settings.simulation.Simulation()

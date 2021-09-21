@@ -25,7 +25,7 @@ class WeatherData:
     def __init__(self):
         self.credentials = self.load_API_credentials()
 
-    ### DOWNLOADS ##################
+    # ## DOWNLOADS ##################
 
     def load_API_credentials(self) -> dict:
         """loads the credentials from file or prints a guide if file not found
@@ -187,13 +187,17 @@ class WeatherData:
     def satellite_irradiance_data_to_TMY(self, source_file_path):
 
         file_name = 'TMY_'+str(source_file_path).split('\\')[-1]
-        tmy_file_path = user_pathes.bifacial_radiance_files_folder / Path(
-            f'satellite_weatherData/{file_name}')
+        tmy_folder_path = user_pathes.bifacial_radiance_files_folder / Path(
+            'satellite_weatherData')
+
+        tmy_file_path = tmy_folder_path/file_name
 
         if tmy_file_path.exists():
             return apv.utils.files_interface.df_from_file_or_folder(
                 tmy_file_path, delimiter=' ', names=['ghi', 'dhi']
             )
+        # else:
+        apv.utils.files_interface.make_dirs_if_not_there(tmy_folder_path)
 
         df: pd.DataFrame = pd.read_csv(source_file_path, skiprows=42, sep=';')
         df[['obs_start', 'obs_end']] = \
