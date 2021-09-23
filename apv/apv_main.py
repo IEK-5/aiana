@@ -15,7 +15,7 @@ if __name__ == '__main__':
         APV_SystSettings=APV_SystSettings,
         # weather_file=weather_file  # downloading automatically without this
     )
-    enrgyObj = apv.utils.APV_evaluation.Evaluate_APV(
+    evalObj = apv.utils.APV_evaluation.Evaluate_APV(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings
     )
@@ -37,3 +37,5 @@ if __name__ == '__main__':
     # #
     # show result data frame
     brObj.df_ground_results
+    # #
+    evalObj.evaluate_APV()

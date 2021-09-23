@@ -16,6 +16,10 @@ if __name__ == '__main__':
     # APV_SystSettings = apv.settings.apv_systems.SimpleForCheckerBoard()
     APV_SystSettings = apv.settings.apv_systems.Default()
     APV_SystSettings.add_groundScanArea_as_object_to_scene = True
+    evalObj = apv.utils.APV_evaluation.Evaluate_APV(
+        SimSettings=SimSettings,
+        APV_SystSettings=APV_SystSettings
+    )
     # ### often changed settings:  ####
     # SimSettings.only_ground_scan = False
     # use_multi_processing = False
@@ -25,13 +29,17 @@ if __name__ == '__main__':
     # 21. Juni
     # rise: 5:20
     # set: 21:52
-    SimSettings.sim_date_time = '06-21_7h'
+    # SimSettings.sky_gen_mode = 'gendaylit'
+    # SimSettings.sim_date_time = '6-21_11h'
     ###############################################
 
     SimSettings.spatial_resolution = 1
     # SimSettings.irradiance_data_source = 'EPW'
     print(SimSettings.irradiance_data_source)
-    # SimSettings.sky_gen_mode = 'gencumsky'
+    # Insert start end-date of the year as [month,day,hour]
+    SimSettings.sky_gen_mode = 'gencumsky'
+    SimSettings.startdt = '1-1_0h'
+    SimSettings.enddt = '1-31_23h'
     SimSettings.sim_name = 'debug'
     APV_SystSettings.moduleDict['xgap'] = 0.05
     # APV_SystSettings.mounting_structure_type = 'declined_tables'
@@ -65,7 +73,8 @@ if __name__ == '__main__':
         weather_file=weather_file,  # downloading automatically without this,
         debug_mode=True
     )
-    brObj.setup_br()
+    # brObj.setup_br()
+    evalObj.evaluate_APV()
     # #
     brObj.view_scene(
         # view_name='top_down',
@@ -95,8 +104,17 @@ if __name__ == '__main__':
 if __name__ == '__main__':
     brObj.run_raytracing_simulation()
     # #
-    # plot existing data (simulation cell does not need to be repeated)
     brObj.plot_ground_insolation()
     # #
     # show result data frame
     brObj.df_ground_results
+    # #
+    x = evalObj.evaluate_APV()
+    # #
+    print(x)
+    # #
+    print(f"### TOTAL ENERGY : {x.energy['p_mp']} Wh per module ###\n"
+          + f'### TOTAL ENERGY: {x.system_energy/1000} kWh per system')
+
+
+# #

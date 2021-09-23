@@ -5,6 +5,8 @@ to presets in settings.py
 
 
 TODO
+- aufräumen, dokumentieren... -->Mohd
+- gencumsky time input fixen ähnlich wie bei gendaylit  -->Leo (Mittwoch)
 
 - methode in br_wrapper einbinden, die 16 years TMY als UTC runteläd,
 wenn noch nicht existent, und die sich über location mit tz das
@@ -57,7 +59,6 @@ from pathlib import Path
 from tqdm.auto import trange
 import concurrent.futures
 import bifacial_radiance as br
-import warnings
 
 
 # #
@@ -194,7 +195,7 @@ class BR_Wrapper:
 
         # optional replace irradiation data (and keep sol position):
         if self.SimSettings.irradiance_data_source == 'ADS_satellite':
-            # download data for longest full year time span availible
+            # download data for longest full year time span available
             download_file_path = self.weatherObj.download_insolation_data(
                 self.SimSettings.apv_location, '2005-01-01/2021-01-01', '1hour')
             # make own TMY data
