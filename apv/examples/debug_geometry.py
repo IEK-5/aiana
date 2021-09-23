@@ -28,7 +28,7 @@ if __name__ == '__main__':
     SimSettings.sim_date_time = '06-21_7h'
     ###############################################
 
-    SimSettings.spatial_resolution = 0.1
+    SimSettings.spatial_resolution = 1
     # SimSettings.irradiance_data_source = 'EPW'
     print(SimSettings.irradiance_data_source)
     # SimSettings.sky_gen_mode = 'gencumsky'
@@ -63,7 +63,7 @@ if __name__ == '__main__':
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings,
         weather_file=weather_file,  # downloading automatically without this,
-        # debug_mode=True
+        debug_mode=True
     )
     brObj.setup_br()
     # #

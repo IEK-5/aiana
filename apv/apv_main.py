@@ -1,7 +1,4 @@
 # #
-from apv.utils import APV_evaluation
-
-
 if __name__ == '__main__':
     from pathlib import Path
     import apv

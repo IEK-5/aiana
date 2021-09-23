@@ -4,8 +4,6 @@ objects, create scene and run simulation with Bifacial_Radiance according
 to presets in settings.py
 
 
-
-
 TODO
 
 - methode in br_wrapper einbinden, die 16 years TMY als UTC runteläd,
@@ -39,6 +37,8 @@ from apv.utils import files_interface as fi
 from apv.settings.apv_systems import Default as APV_SystSettings
 from apv.utils.GeometriesHandler import GeometriesHandler
 from apv.utils.weather_data import WeatherData
+from apv.utils.time import SimDT
+
 import apv.settings.user_pathes as user_pathes
 from apv.settings import apv_systems
 import apv
@@ -97,7 +97,7 @@ class BR_Wrapper:
         self.geomObj = GeometriesHandler(
             SimSettings, APV_SystSettings, debug_mode)
         self.weatherObj = WeatherData()
-
+        self.simDT = SimDT(SimSettings)
         self.weather_file_br_epw = weather_file
         self.debug_mode = debug_mode
         # self.create_oct_file = create_oct_file
@@ -189,6 +189,7 @@ class BR_Wrapper:
                 lon=self.SimSettings.apv_location.longitude)
 
         self.radObj.metdata = self.radObj.readWeatherFile(
+            # TODO evt. abschaffen
             weatherFile=str(self.weather_file_br_epw))
 
         # optional replace irradiation data (and keep sol position):
@@ -197,7 +198,7 @@ class BR_Wrapper:
             download_file_path = self.weatherObj.download_insolation_data(
                 self.SimSettings.apv_location, '2005-01-01/2021-01-01', '1hour')
             # make own TMY data
-            df_irradiance = self.weatherObj.satellite_irradiance_data_to_TMY(
+            df_irradiance = self.weatherObj.satellite_insolation_data_to_TMY(
                 download_file_path)
 
             self.radObj.metdata.ghi = df_irradiance.ghi
@@ -208,27 +209,33 @@ class BR_Wrapper:
         # Create Sky
         # gendaylit using Perez models for direct and diffuse components
         if self.SimSettings.sky_gen_mode == 'gendaylit':
-
-            sim_dt_utc = apv.utils.time.convert_settings_localtime_to_UTC(
-                self.SimSettings.sim_date_time,
-                self.SimSettings.apv_location.tz
-            )
-            timeindex = apv.utils.time.get_hour_of_year(sim_dt_utc)
-
+            timeindex = self.simDT.hour_of_tmy
             # to be able to pass own dni/dhi values:
             if dni_singleValue is None:
                 dni_singleValue = self.radObj.metdata.dni[timeindex]
             if dhi_singleValue is None:
                 dhi_singleValue = self.radObj.metdata.dhi[timeindex]
-            solpos = self.radObj.metdata.solpos.iloc[timeindex]
+
+            # sunposition
+            solpos: pd.DataFrame = \
+                self.SimSettings.apv_location.get_solarposition(
+                    times=self.simDT.sim_dt_utc_pd-pd.Timedelta('30min'),
+                    # TODO alles centered labeled machen?
+                    temperature=12  # TODO use temperature from ERA5 data
+                )
+
+            if self.debug_mode:
+                print(f'epw: {self.radObj.metdata.solpos.iloc[timeindex]}'
+                      f'pvlib: {solpos}')
+
             sunalt = float(solpos.elevation)
             sunaz = float(solpos.azimuth)-180.0
 
             if dni_singleValue == 0 and dhi_singleValue == 0:
                 sys.exit("""DNI and DHI are 0 within the last hour until the \
                     time given in settings/simulation/sim_date_time.\
-                    \n--> Creating radiance files and view_scene() \
-                    is not possible without light. Please chose a day time.""")
+                    \n--> Creating radiance files and view_scene() is not \
+                    possible without light. Please choose a different time.""")
 
             self.radObj.gendaylit2manual(
                 dni_singleValue, dhi_singleValue, sunalt, sunaz)

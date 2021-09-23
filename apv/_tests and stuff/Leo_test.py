@@ -1,4 +1,5 @@
 # #
+from pandas.tseries.offsets import Minute
 import pytz
 import pandas
 from apv.settings import apv_systems
@@ -19,7 +20,7 @@ import apv
 from pathlib import Path
 from types import SimpleNamespace
 import hjson
-import this
+# import this
 from datetime import datetime as dt
 from typing import Literal
 
@@ -30,18 +31,18 @@ import apv.utils.files_interface as fi
 from apv.utils import files_interface
 from apv.utils.weather_data import WeatherData
 import pvlib
-# #
+from apv.utils.time import SimDT
 
-lines_new = ['abc', 'a\t']
-lines_new[-1][-1:]
-
-# #
 
 SimSettings = apv.settings.simulation.Simulation()
+simdt = SimDT(SimSettings)
 weatherObj = WeatherData()
 
 # #
-SimSettings.sim_date_time
+simdt.sim_dt_utc
+simdt.sim_dt_utc_pd-pd.Timedelta('30min')
+
+# #
 
 # #
 now_utc = dt.utcnow()
@@ -57,8 +58,9 @@ now_kl
 times = now_kl
 solar_position = SimSettings.apv_location.get_solarposition(
     times=times)
-solar_position
-
+type(solar_position)
+float(solar_position.zenith)
+solar_position.zenith[0]
 # #
 
 

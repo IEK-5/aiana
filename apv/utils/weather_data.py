@@ -149,7 +149,7 @@ class WeatherData:
         file_path (str): file path of the result file
 
     '''
-        file_name = ('ADS-data_' + date_range.replace('/', '_to_') +
+        file_name = ('insolation-data_' + date_range.replace('/', '_to_') +
                      f'_lat-{location.latitude}'
                      f'_lon-{location.longitude}'
                      f'_time_step-{time_step}')
@@ -183,8 +183,10 @@ class WeatherData:
         return file_path
 
     # DATA PROCESSING
+    def wind_and_T_data_to_TMY(self, source_file_path):
+        return
 
-    def satellite_irradiance_data_to_TMY(self, source_file_path):
+    def satellite_insolation_data_to_TMY(self, source_file_path):
 
         file_name = 'TMY_'+str(source_file_path).split('\\')[-1]
         tmy_folder_path = user_pathes.bifacial_radiance_files_folder / Path(
