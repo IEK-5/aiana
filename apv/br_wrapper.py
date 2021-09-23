@@ -7,6 +7,8 @@ to presets in settings.py
 
 
 TODO
+- aufräumen, dokumentieren... -->Mohd
+- gencumsky time input fixen ähnlich wie bei gendaylit  -->Leo (Mittwoch)
 
 - methode in br_wrapper einbinden, die 16 years TMY als UTC runteläd,
 wenn noch nicht existent, und die sich über location mit tz das
@@ -57,7 +59,6 @@ from pathlib import Path
 from tqdm.auto import trange
 import concurrent.futures
 import bifacial_radiance as br
-import warnings
 
 
 # #
@@ -193,7 +194,7 @@ class BR_Wrapper:
 
         # optional replace irradiation data (and keep sol position):
         if self.SimSettings.irradiance_data_source == 'ADS_satellite':
-            # download data for longest full year time span availible
+            # download data for longest full year time span available
             download_file_path = self.weatherObj.download_insolation_data(
                 self.SimSettings.apv_location, '2005-01-01/2021-01-01', '1hour')
             # make own TMY data
@@ -227,8 +228,8 @@ class BR_Wrapper:
             if dni_singleValue == 0 and dhi_singleValue == 0:
                 sys.exit("""DNI and DHI are 0 within the last hour until the \
                     time given in settings/simulation/sim_date_time.\
-                    \n--> Creating radiance files and view_scene() \
-                    is not possible without light. Please chose a day time.""")
+                   \n--> Creating radiance files and view_scene() is not \
+                    possible without light. Please choose a different time.""")
 
             self.radObj.gendaylit2manual(
                 dni_singleValue, dhi_singleValue, sunalt, sunaz)
