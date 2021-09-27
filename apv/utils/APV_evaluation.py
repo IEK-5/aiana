@@ -1,8 +1,11 @@
 ''' Uses PVlib to forecast energy yield according to system settings.
 '''
 # #
+from apv.settings.apv_systems import Default
+from apv.settings.simulation import Simulation
 import sys
 from apv.utils.weather_data import WeatherData
+from apv.utils.time import SimDT
 import apv
 from apv.resources import pv_modules
 import apv.utils
@@ -43,9 +46,11 @@ class Evaluate_APV:
         self.APV_SystSettings: apv.settings.apv_systems.Default = \
             APV_SystSettings
         self.weatherObj = WeatherData()
+        self.simDT = SimDT(SimSettings)
         self.debug_mode = debug_mode
         self.df_energy_results = {}
         self.csv_file_name = str()
+        self.tmydata = pd.DataFrame()
 
     def evaluate_APV(self):
         SimSettings = self.SimSettings
@@ -59,16 +64,11 @@ class Evaluate_APV:
         fi.make_dirs_if_not_there(eval_res_path)
         # View energy generated on specific date-time
         if SimSettings.sky_gen_mode == 'gendaylit':
-            # gendaylit sky not used, but energy for hour will be calculated
-            sim_dt_utc = apv.utils.time.convert_settings_localtime_to_UTC(
-                SimSettings.sim_date_time, SimSettings.apv_location.tz)
-            timeindex = apv.utils.time.get_hour_of_year(sim_dt_utc)
-            time = pd.date_range(start=sim_dt_utc, end=sim_dt_utc, freq='1h')
-            print(f'energy time: {time} / {timeindex}')
             energy = self.estimate_energy(
                 SimSettings=SimSettings,
-                APV_SystSettings=self.APV_SystSettings, time=time,
-                timeindex=timeindex,
+                APV_SystSettings=self.APV_SystSettings,
+                time=self.simDT.sim_dt_utc_pd,
+                timeindex=self.simDT.hour_of_tmy,
                 tmydata=self.tmydata)
             system_energy = energy['p_mp'] \
                 * self.APV_SystSettings.sceneDict['nMods'] \
@@ -79,22 +79,13 @@ class Evaluate_APV:
                 + f'### TOTAL ENERGY: {system_energy/1000:.2f} kWh per system')
         # Generate energy time-series data
         else:
-            # gencumsky not used, but cumulated hours energy is calculated
-            startdt = apv.utils.time.convert_settings_localtime_to_UTC(
-                SimSettings.startdt,
-                SimSettings.apv_location.tz)
-            enddt = apv.utils.time.convert_settings_localtime_to_UTC(
-                SimSettings.enddt,
-                SimSettings.apv_location.tz)
             self.csv_file_name = \
                 f'eval_energy_{SimSettings.startdt}_{SimSettings.enddt}.csv'
-            time = pd.date_range(start=startdt, end=enddt, freq='1h',
-                                 closed='right')
             columns = ('Wh/module', 'kWh System')
-            print(f'energy time range: {time}')
+            print(f'energy times range: {self.simDT.times}')
             self.df_energy_results = pd.DataFrame(columns=columns)
-            for t in time:
-                timeindex = apv.utils.time.get_hour_of_year(t)
+            for t in self.simDT.times:
+                timeindex = self.simDT.get_hour_of_tmy(t)
                 energy = self.estimate_energy(
                     SimSettings=SimSettings,
                     APV_SystSettings=self.APV_SystSettings,
@@ -112,7 +103,8 @@ class Evaluate_APV:
             total = self.df_energy_results['kWh System'].sum()
             print(f'### TOTAL ENERGY:{total:.2f} kWh per system')
 
-    def estimate_energy(self, SimSettings, APV_SystSettings, time, timeindex,
+    def estimate_energy(self, SimSettings: Simulation,
+                        APV_SystSettings: Default, time, timeindex,
                         tmydata):
 
         # read PV module specs
@@ -185,7 +177,7 @@ class Evaluate_APV:
 
         return total_energy
 
-    def get_weather_data(self, SimSettings):
+    def get_weather_data(self, SimSettings: Simulation):
 
         epw = UserPaths.bifacial_radiance_files_folder / Path('EPWs/')
         for file in os.listdir(epw):
@@ -194,17 +186,18 @@ class Evaluate_APV:
                                    'EPWs/', file)
         (self.tmydata, self.metadata) = pvlib.iotools.read_epw(
             epw, coerce_year=2001)
-        self.tmydata.index = self.tmydata.index+pd.Timedelta(hours=1)
+        # self.tmydata.index = self.tmydata.index+pd.Timedelta(hours=1)
 
         if SimSettings.irradiance_data_source == 'ADS_satellite':
             # download data for longest full year time span available
             download_file_path = self.weatherObj.download_insolation_data(
                 SimSettings.apv_location, '2005-01-01/2021-01-01', '1hour')
             # make own TMY data
-            df_irradiance = self.weatherObj.satellite_irradiance_data_to_TMY(
+            test = self.tmydata
+            df_irradiance = self.weatherObj.satellite_insolation_data_to_TMY(
                 download_file_path)
             self.tmydata.ghi = df_irradiance.ghi
             self.tmydata.dhi = df_irradiance.dhi
-            self.tmydata.dni = df_irradiance.ghi - df_irradiance.dh
+            self.tmydata.dni = df_irradiance.ghi - df_irradiance.dhi
 
 # #

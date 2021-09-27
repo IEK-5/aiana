@@ -15,18 +15,28 @@ class SimDT:
             SimSettings.sim_date_time,
             SimSettings.apv_location.tz
         )
-
         self.sim_dt_utc_pd: pd.Timestamp = pd.to_datetime(self.sim_dt_utc)
-
         self.hour_of_tmy: int = self.get_hour_of_tmy(self.sim_dt_utc)
+
+        self.startdt_utc: datetime = self.convert_settings_localtime_to_UTC(
+            SimSettings.startdt,
+            SimSettings.apv_location.tz
+        )
+        self.enddt_utc: datetime = self.convert_settings_localtime_to_UTC(
+            SimSettings.enddt,
+            SimSettings.apv_location.tz
+        )
+
+        self.times = pd.date_range(start=self.startdt_utc, end=self.enddt_utc,
+                                   freq='1h', closed='right')
 
     def convert_settings_localtime_to_UTC(
             self, date_time_str: str, tz: str) -> datetime:
         """converts str to hours_of_year
         we take year 2022 as year but dont use it at the moment (only use tmy)
 
-        carefull for later: when replacing 2022 with real year, leap_year has to
-        be considered for hour_of_year (if it is still used then)
+        carefull for later: when replacing 2022 with real year, leap_year has
+        to be considered for hour_of_year (if it is still used then)
 
         Args:
             date_time_str (str): format: 'month-day_hour'+'h',
@@ -113,13 +123,3 @@ def display_time(seconds, granularity=2):
                 name = name.rstrip('s')
             result.append("{} {}".format(value, name))
     return ', '.join(result[:granularity])
-
-
-# #
-if __name__ == '__main__':
-    import apv
-    SimSettings = apv.settings.simulation.Simulation()
-    SimSettings.sim_date_time = '01-01_0h'
-    sim_dt_utc = convert_settings_localtime_to_UTC(
-        SimSettings.sim_date_time, SimSettings.apv_location.tz)
-    print(get_hour_of_year(sim_dt_utc))

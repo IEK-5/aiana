@@ -15,10 +15,6 @@ if __name__ == '__main__':
         APV_SystSettings=APV_SystSettings,
         # weather_file=weather_file  # downloading automatically without this
     )
-    evalObj = apv.utils.APV_evaluation.Evaluate_APV(
-        SimSettings=SimSettings,
-        APV_SystSettings=APV_SystSettings
-    )
 
     brObj.setup_br()
 
@@ -37,5 +33,16 @@ if __name__ == '__main__':
     # #
     # show result data frame
     brObj.df_ground_results
-    # #
+# #
+import apv
+if __name__ == '__main__':
+    SimSettings = apv.settings.simulation.Simulation()
+    # SimSettings.irradiance_data_source = 'EPW'
+    APV_SystSettings = \
+        apv.settings.apv_systems.Default()
+
+    evalObj = apv.utils.APV_evaluation.Evaluate_APV(
+        SimSettings=SimSettings,
+        APV_SystSettings=APV_SystSettings
+    )
     evalObj.evaluate_APV()

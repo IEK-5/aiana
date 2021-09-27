@@ -10,38 +10,17 @@ if __name__ == '__main__':
     imp.reload(apv.br_wrapper)
 
     SimSettings = apv.settings.simulation.Simulation()
-    # SimSettings.use_multi_processing = False
-    APV_SystSettings =\
-        apv.settings.apv_systems.APV_Syst_InclinedTables_Juelich()
-    # APV_SystSettings = apv.settings.apv_systems.SimpleForCheckerBoard()
     APV_SystSettings = apv.settings.apv_systems.Default()
-    APV_SystSettings.add_groundScanArea_as_object_to_scene = True
     evalObj = apv.utils.APV_evaluation.Evaluate_APV(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings
     )
     # ### often changed settings:  ####
-    # SimSettings.only_ground_scan = False
-    # use_multi_processing = False
-    # SimSettings.add_mounting_structure = False
-
-    ###############################################
-    # 21. Juni
-    # rise: 5:20
-    # set: 21:52
-    # SimSettings.sky_gen_mode = 'gendaylit'
-    # SimSettings.sim_date_time = '6-21_11h'
-    ###############################################
-
     SimSettings.spatial_resolution = 1
-    # SimSettings.irradiance_data_source = 'EPW'
     print(SimSettings.irradiance_data_source)
     # Insert start end-date of the year as [month,day,hour]
-    SimSettings.sky_gen_mode = 'gencumsky'
-    SimSettings.startdt = '1-1_0h'
-    SimSettings.enddt = '1-31_23h'
-    SimSettings.sim_name = 'debug'
-    APV_SystSettings.moduleDict['xgap'] = 0.05
+    SimSettings.sky_gen_mode = 'gendaylit'
+    APV_SystSettings.moduleDict['xgap'] = 0.02
     # APV_SystSettings.mounting_structure_type = 'declined_tables'
     # APV_SystSettings.sceneDict['nRows'] = 3
 
@@ -53,53 +32,65 @@ if __name__ == '__main__':
     # APV_SystSettings.mounting_structure_type = 'none'
     # APV_SystSettings.module_form = 'none'
     # APV_SystSettings.glass_modules = True
-    APV_SystSettings.round_up_field_dimensions = False
+    # APV_SystSettings.round_up_field_dimensions = True
     APV_SystSettings.scene_camera_dicts[
         'top_down']['horizontal_view_angle'] = 55
     APV_SystSettings.scene_camera_dicts[
         'top_down']['vertical_view_angle'] = 50
 
-    APV_SystSettings.ground_scan_margin_x = 3  # -3
-    APV_SystSettings.ground_scan_margin_y = 8  # -32
-    APV_SystSettings.ground_scan_shift_x = 2  # -32
-    APV_SystSettings.ground_scan_shift_y = 4  # -32
+    APV_SystSettings.ground_scan_margin_x = 0  # 16  # -3
+    APV_SystSettings.ground_scan_margin_y = 0  # 4  # -32
+    APV_SystSettings.ground_scan_shift_x = 0  # -32
+    APV_SystSettings.ground_scan_shift_y = 0  # -32
 
+    # APV_SystSettings.module_form = 'cell_level_checker_board'
+    SimSettings.sim_name = (f'APV_Morschenich_{APV_SystSettings.module_form}'
+                            f'res_{SimSettings.spatial_resolution}')
     weather_file = apv.settings.user_pathes.bifacial_radiance_files_folder / \
         Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
+
+    #
+    imp.reload(apv.utils.GeometriesHandler)
+    imp.reload(apv.br_wrapper)
+    # SimSettings.use_multi_processing = False
+
+    APV_SystSettings.add_groundScanArea_as_object_to_scene = True
 
     brObj = apv.br_wrapper.BR_Wrapper(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings,
-        weather_file=weather_file,  # downloading automatically without this,
-        debug_mode=True
+        weather_file=weather_file,
     )
-    # brObj.setup_br()
-    evalObj.evaluate_APV()
-    # #
-    brObj.view_scene(
-        # view_name='top_down',
-        # view_type='parallel'
-    )
-    # #
-    imp.reload(apv.utils.GeometriesHandler)
-    imp.reload(apv.br_wrapper)
 
-    for azimuth in [225]:
+    brObj.run_raytracing_simulation()
+    # #
+
+    for hour in range(8, 21, 2):
         # for azimuth in range(180, 361, 30):
+        SimSettings.sim_date_time = f'06-15_{hour}h'
+        brObj = apv.br_wrapper.BR_Wrapper(
+            SimSettings=SimSettings,
+            APV_SystSettings=APV_SystSettings,
+            weather_file=weather_file,
+            # debug_mode=True
+        )
+        brObj.setup_br()
+        # brObj.view_scene(view_name='total')
+        brObj.run_raytracing_simulation()
+        brObj.plot_ground_insolation()
 
-        APV_SystSettings.sceneDict['azimuth'] = azimuth
-        brObj._create_geometries(
-            APV_SystSettings=APV_SystSettings
-        )
-        brObj.view_scene(
-            view_name='top_down',
-            view_type='parallel'
-        )
-    # #
-    brObj.view_scene(
-        # view_name='top_down',
-        # view_type='parallel'
-    )
+# #
+import apv
+APV_SystSettings = apv.settings.apv_systems.Default()
+APV_SystSettings.scene_camera_dicts['total']
+# #
+
+brObj.plot_ground_insolation()
+# #
+brObj.view_scene(
+    view_name='top_down',
+    view_type='parallel'
+)
 # #
 if __name__ == '__main__':
     brObj.run_raytracing_simulation()

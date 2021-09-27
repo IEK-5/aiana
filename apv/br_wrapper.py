@@ -5,32 +5,19 @@ to presets in settings.py
 
 
 TODO
+- gencumsky time input fixen ähnlich wie bei gendaylit  -->Leo
+- Plots für Bart
+
+
+- pvlib zeit checken --> Mohd
+-
+
+- shadow map prüfen --> Mohd
 - aufräumen, dokumentieren... -->Mohd
-- gencumsky time input fixen ähnlich wie bei gendaylit  -->Leo (Mittwoch)
 
-- methode in br_wrapper einbinden, die 16 years TMY als UTC runteläd,
-wenn noch nicht existent, und die sich über location mit tz das
-2 spalten ghi dni file mit richtigen positionen erstellt
-bzw. dazu mohds methode aufruft.
-Zielpfad in data download. Wir geben dann Ahmed den pfad und das file
-manuell, damit er sich nicht registrieren muss bei copernicus website
---> Leo
 
-- aus zeitangabe in settings eine pandas.timestamp machen und dann mittels
-dem pytz package in UTC umwandeln, um mittels pvlib den sonnenstand zu bekommen
-der als input für gendaylit2manual benötigt wird (ich traue br.radObj.metdata
-solpos über epw file nicht so ganz...)
-in dem Zusammenhang auch klären: was genau hat es mit dem 30 min shift auf sich
-(machen die das vielleicht um +-30 min um den angegebenen zeitpunkt eine stunde
-zu betrachten? aber warum sollte dann die sonnen position -30 gesetzt werden)?
-
-- wenn oben fertig: prüfen ob sonnenaufgangs und untergangszeiten passen
-
-- print nachricht ausgeben wenn man view_scene ausführt obwohl dni und dhi = 0
-(dann passiert nämlich nichts)
-
-- aufräumen, dokumentieren...
-
+nach Mohds Arbeit:
+- umstrukturieren? --> Leo
 
 '''
 # import needed packages
@@ -197,7 +184,8 @@ class BR_Wrapper:
         if self.SimSettings.irradiance_data_source == 'ADS_satellite':
             # download data for longest full year time span available
             download_file_path = self.weatherObj.download_insolation_data(
-                self.SimSettings.apv_location, '2005-01-01/2021-01-01', '1hour')
+                self.SimSettings.apv_location,
+                '2005-01-01/2021-01-01', '1hour')
             # make own TMY data
             df_irradiance = self.weatherObj.satellite_insolation_data_to_TMY(
                 download_file_path)
@@ -256,7 +244,10 @@ class BR_Wrapper:
             elif self.SimSettings.irradiance_data_source == 'ADS_satellite':
                 epwfile = 'satellite_weatherData/TMY_nearJuelichGermany.csv'
                 # TODO make it automatic with mohds method
+            """
 
+            https://www.radiance-online.org//learning/documentation/manual-pages/pdfs/gendaymtx.pdf
+            """
             self.radObj.genCumSky(epwfile=epwfile,
                                   startdt=startdt,
                                   enddt=enddt)
@@ -397,20 +388,20 @@ class BR_Wrapper:
             )
 
         # add ground scan area visualization to the radObj without rotation
-        # if self.APV_SystSettings.add_groundScanArea_as_object_to_scene:
-        ground_rad_text = ghObj.groundscan_area()
+        if self.APV_SystSettings.add_groundScanArea_as_object_to_scene:
+            ground_rad_text = ghObj.groundscan_area()
 
-        self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
-            radfile=self.scene.radfiles,
-            customObject=self.radObj.makeCustomObject(
-                'scan_area', ground_rad_text),
-            text='!xform '  # with text = '' (default) it does not work!
-            # all scene objects are stored in
-            # bifacial_radiance_files/objects/... e.g.
-            # SUNFARMING_C_3.81425_rtr_10.00000_tilt_20.00000_10modsx3...
-            # within this file different custom .rad files are concatenated
-            # by !xform object/customObjectName.rad
-        )
+            self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
+                radfile=self.scene.radfiles,
+                customObject=self.radObj.makeCustomObject(
+                    'scan_area', ground_rad_text),
+                text='!xform '  # with text = '' (default) it does not work!
+                # all scene objects are stored in
+                # bifacial_radiance_files/objects/... e.g.
+                # SUNFARMING_C_3.81425_rtr_10.00000_tilt_20.00000_10modsx3...
+                # within this file different custom .rad files are concatenated
+                # by !xform object/customObjectName.rad
+            )
 
         # make oct file
         self.radObj.makeOct(octname=self.oct_file_name)
@@ -614,7 +605,7 @@ class BR_Wrapper:
             cm_unit = self.SimSettings.cm_unit
 
         ticklabels_skip_count_number = int(
-            2/self.SimSettings.spatial_resolution)
+            4/self.SimSettings.spatial_resolution)
         if ticklabels_skip_count_number < 2:
             ticklabels_skip_count_number = "auto"
 

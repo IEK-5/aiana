@@ -72,9 +72,9 @@ def plot_heatmap(
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     # x,y tick labels format and rotation
-    xlabels = ['{:.2g}'.format(float(item.get_text()))
+    xlabels = ['{:.1f}'.format(float(item.get_text()))
                for item in ax.get_xticklabels()]
-    ylabels = ['{:.2g}'.format(float(item.get_text()))
+    ylabels = ['{:.1f}'.format(float(item.get_text()))
                for item in ax.get_yticklabels()]
     ax.set_xticklabels(xlabels, rotation=0)
     ax.set_yticklabels(ylabels, rotation=0)
