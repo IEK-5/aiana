@@ -32,6 +32,10 @@ class Evaluate_APV:
 
     """
     # TODO ADD Bifacial factor
+    # NOTE 1: The temperature and wind speed are taken from EPW data that has
+    # time index in local time. A -1 was added as a quick fix for the case in
+    # Germany. This should be amended by either change EPW time index to UTC or
+    # use Temperature and wind speed from other data source like CDS.
 
     def __init__(
             self,
@@ -155,7 +159,7 @@ class Evaluate_APV:
         # Solar position with 30 minuts shift since time is right-labeled
         sol_pos = SimSettings.apv_location.get_solarposition(
             time-pd.Timedelta('30min'),
-            temperature=tmydata.temp_air.iloc[timeindex])
+            temperature=tmydata.temp_air.iloc[timeindex-1])  # SEE NOTE 1 above
 
         # DNI Extraterrestrial from Day_of_year
         dni_extra = pvlib.irradiance.get_extra_radiation(time)
@@ -196,8 +200,8 @@ class Evaluate_APV:
             .TEMPERATURE_MODEL_PARAMETERS['sapm']['open_rack_glass_glass']
         tcell = pvlib.temperature.sapm_cell(
             total_irr['poa_global'],
-            temp_air=tmydata.temp_air.iloc[timeindex],
-            wind_speed=tmydata.wind_speed.iloc[timeindex],
+            temp_air=tmydata.temp_air.iloc[timeindex-1],  # SEE NOTE 1 above
+            wind_speed=tmydata.wind_speed.iloc[timeindex-1],  # See NOTE 1
             **temperature_model_parameters)
 
         # Effective Irradiation on array

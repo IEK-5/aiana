@@ -31,7 +31,7 @@ if __name__ == '__main__':
     ###############################################
 
     SimSettings.spatial_resolution = 1
-    SimSettings.irradiance_data_source = 'EPW'
+    SimSettings.irradiance_data_source = 'ADS_satellite'
     print(SimSettings.irradiance_data_source)
     # Insert start end-date of the year as [month,day,hour]
     # SimSettings.sky_gen_mode = 'gencumsky'
@@ -70,6 +70,7 @@ if __name__ == '__main__':
         weather_file=weather_file,  # downloading automatically without this,
         debug_mode=True
     )
+
     evalObj = apv.utils.APV_evaluation.Evaluate_APV(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings

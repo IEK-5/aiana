@@ -226,6 +226,29 @@ class WeatherData:
                         )
         return tmy_data
 
+    def typical_day_of_month(self, SimSettings):
+        """ Meant to extract irradiation data in form of represtative 3 days of
+        each month: first day is when GHI is minimum, second is when GHI
+        maximum, and third is the average GHI of each hour of that month.
+
+        Args:
+            SimSettings ([type]): Extract which source of data used in
+            simulation
+        """
+
+        # read weather file
+
+        # create min DataFrame
+
+        # create max DataFrame
+
+        # create average Dataframe
+        # group_list = [df.index.month, df.index.day, df.index.hour]
+        # x = df['GHI'].groupby(group_list).mean()
+        # y = df['DHI'].groupby(group_list).mean()
+        # save files
+        pass
+
 
 """
 def retrieve_nsrdb_data(

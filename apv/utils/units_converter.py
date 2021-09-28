@@ -54,15 +54,17 @@ def irradiance_to_shadowdepth(df, SimSettings):
 
     if SimSettings.sky_gen_mode == 'gendaylit':
         sim_time = simDT.convert_settings_localtime_to_UTC(
-            SimSettings.sim_date_time)
+            SimSettings.sim_date_time, SimSettings.apv_location.tz)
         timeindex = simDT.get_hour_of_tmy(sim_time)
         GHI = int(epw.loc[timeindex][0].split()[0])
         df['ShadowDepth'] = 100 - ((df['Wm2']/GHI)*100)
 
     else:
         cumulative_GHI = 0
-        strt = simDT.convert_settings_localtime_to_UTC(SimSettings.startdt)
-        endt = simDT.convert_settings_localtime_to_UTC(SimSettings.enddt)
+        strt = simDT.convert_settings_localtime_to_UTC(
+            SimSettings.startdt, SimSettings.apv_location.tz)
+        endt = simDT.convert_settings_localtime_to_UTC(
+            SimSettings.enddt, SimSettings.apv_location.tz)
         stdt = simDT.get_hour_of_tmy(strt)
         enddt = simDT.get_hour_of_tmy(endt)
         for timeindex in np.arange(stdt, enddt+1):
