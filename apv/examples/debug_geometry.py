@@ -16,10 +16,7 @@ if __name__ == '__main__':
     # APV_SystSettings = apv.settings.apv_systems.SimpleForCheckerBoard()
     APV_SystSettings = apv.settings.apv_systems.Default()
     APV_SystSettings.add_groundScanArea_as_object_to_scene = True
-    evalObj = apv.utils.APV_evaluation.Evaluate_APV(
-        SimSettings=SimSettings,
-        APV_SystSettings=APV_SystSettings
-    )
+
     # ### often changed settings:  ####
     # SimSettings.only_ground_scan = False
     # use_multi_processing = False
@@ -29,17 +26,17 @@ if __name__ == '__main__':
     # 21. Juni
     # rise: 5:20
     # set: 21:52
-    # SimSettings.sky_gen_mode = 'gendaylit'
-    # SimSettings.sim_date_time = '6-21_11h'
+    SimSettings.sky_gen_mode = 'gendaylit'
+    SimSettings.sim_date_time = '6-21_11h'
     ###############################################
 
     SimSettings.spatial_resolution = 1
-    # SimSettings.irradiance_data_source = 'EPW'
+    SimSettings.irradiance_data_source = 'EPW'
     print(SimSettings.irradiance_data_source)
     # Insert start end-date of the year as [month,day,hour]
-    SimSettings.sky_gen_mode = 'gencumsky'
-    SimSettings.startdt = '1-1_0h'
-    SimSettings.enddt = '1-31_23h'
+    # SimSettings.sky_gen_mode = 'gencumsky'
+    # SimSettings.startdt = '1-1_0h'
+    # SimSettings.enddt = '1-31_23h'
     SimSettings.sim_name = 'debug'
     APV_SystSettings.moduleDict['xgap'] = 0.05
     # APV_SystSettings.mounting_structure_type = 'declined_tables'
@@ -51,7 +48,7 @@ if __name__ == '__main__':
     # APV_SystSettings.sceneDict['azimuth'] = 200
     # APV_SystSettings.moduleDict['y'] = 0.5
     # APV_SystSettings.mounting_structure_type = 'none'
-    # APV_SystSettings.module_form = 'none'
+    APV_SystSettings.module_form = 'std'
     # APV_SystSettings.glass_modules = True
     APV_SystSettings.round_up_field_dimensions = False
     APV_SystSettings.scene_camera_dicts[
@@ -73,8 +70,12 @@ if __name__ == '__main__':
         weather_file=weather_file,  # downloading automatically without this,
         debug_mode=True
     )
+    evalObj = apv.utils.APV_evaluation.Evaluate_APV(
+        SimSettings=SimSettings,
+        APV_SystSettings=APV_SystSettings
+    )
     # brObj.setup_br()
-    evalObj.evaluate_APV()
+    evalObj.evaluate_APV(SimSettings=SimSettings)
     # #
     brObj.view_scene(
         # view_name='top_down',

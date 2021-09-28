@@ -32,9 +32,6 @@ class Evaluate_APV:
 
     """
     # TODO ADD Bifacial factor
-    # TODO ADD E\W configuration in own function
-
-    # TODO Check results with ADS weather file
 
     def __init__(
             self,
@@ -46,14 +43,14 @@ class Evaluate_APV:
         self.APV_SystSettings: apv.settings.apv_systems.Default = \
             APV_SystSettings
         self.weatherObj = WeatherData()
-        self.simDT = SimDT(SimSettings)
+        self.simDT = SimDT(self.SimSettings)
         self.debug_mode = debug_mode
         self.df_energy_results = {}
         self.csv_file_name = str()
         self.tmydata = pd.DataFrame()
 
-    def evaluate_APV(self):
-        SimSettings = self.SimSettings
+    def evaluate_APV(self, SimSettings):
+
         # Adjust settings
         self.APV_SystSettings = apv.utils.settings_adjuster.adjust_settings(
             self.APV_SystSettings)
@@ -64,33 +61,74 @@ class Evaluate_APV:
         fi.make_dirs_if_not_there(eval_res_path)
         # View energy generated on specific date-time
         if SimSettings.sky_gen_mode == 'gendaylit':
-            energy = self.estimate_energy(
-                SimSettings=SimSettings,
-                APV_SystSettings=self.APV_SystSettings,
-                time=self.simDT.sim_dt_utc_pd,
-                timeindex=self.simDT.hour_of_tmy,
-                tmydata=self.tmydata)
-            system_energy = energy['p_mp'] \
-                * self.APV_SystSettings.sceneDict['nMods'] \
-                * self.APV_SystSettings.sceneDict['nRows'] \
-                * self.APV_SystSettings.moduleDict['numpanels']
+            if self.APV_SystSettings.module_form == 'EW_fixed' or \
+               self.APV_SystSettings.module_form == 'cell_level_EW_fixed':
+                energy = self.estimate_energy(
+                    SimSettings=SimSettings,
+                    APV_SystSettings=self.APV_SystSettings,
+                    time=self.simDT.sim_dt_utc_pd,
+                    timeindex=self.simDT.hour_of_tmy,
+                    tmydata=self.tmydata,
+                    irrad_data=self.irrad_data,
+                    sur_azimuth_manual=90)
+                energy += self.estimate_energy(
+                    SimSettings=SimSettings,
+                    APV_SystSettings=self.APV_SystSettings,
+                    time=self.simDT.sim_dt_utc_pd,
+                    timeindex=self.simDT.hour_of_tmy,
+                    tmydata=self.tmydata,
+                    irrad_data=self.irrad_data,
+                    sur_azimuth_manual=270)
+                system_energy = energy['p_mp'] \
+                    * self.APV_SystSettings.sceneDict['nMods'] \
+                    * self.APV_SystSettings.sceneDict['nRows']
+            else:
+                energy = self.estimate_energy(
+                    SimSettings=SimSettings,
+                    APV_SystSettings=self.APV_SystSettings,
+                    time=self.simDT.sim_dt_utc_pd,
+                    timeindex=self.simDT.hour_of_tmy,
+                    tmydata=self.tmydata,
+                    irrad_data=self.irrad_data)
+                system_energy = energy['p_mp'] \
+                    * self.APV_SystSettings.sceneDict['nMods'] \
+                    * self.APV_SystSettings.sceneDict['nRows'] \
+                    * self.APV_SystSettings.moduleDict['numpanels']
             print(
                 f"### TOTAL ENERGY : {energy['p_mp']:.2f} Wh per module ###\n"
                 + f'### TOTAL ENERGY: {system_energy/1000:.2f} kWh per system')
         # Generate energy time-series data
         else:
-            self.csv_file_name = \
-                f'eval_energy_{SimSettings.startdt}_{SimSettings.enddt}.csv'
+            self.csv_file_name = f'eval_energy_{SimSettings.startdt} \
+                 _{SimSettings.enddt}_{self.APV_SystSettings.module_form}.csv'
             columns = ('Wh/module', 'kWh System')
-            print(f'energy times range: {self.simDT.times}')
+            # print(f'energy times range: {self.simDT.times}')
             self.df_energy_results = pd.DataFrame(columns=columns)
             for t in self.simDT.times:
                 timeindex = self.simDT.get_hour_of_tmy(t)
+                if self.APV_SystSettings.module_form == 'cell_level_EW_fixed'\
+                        or self.APV_SystSettings.module_form == 'EW_fixed':
+                    energy = self.estimate_energy(
+                        SimSettings=SimSettings,
+                        APV_SystSettings=self.APV_SystSettings,
+                        time=t, timeindex=timeindex, tmydata=self.tmydata,
+                        irrad_data=self.irrad_data, sur_azimuth_manual=90)
+                    energy += self.estimate_energy(
+                        SimSettings=SimSettings,
+                        APV_SystSettings=self.APV_SystSettings,
+                        time=t, timeindex=timeindex, tmydata=self.tmydata,
+                        irrad_data=self.irrad_data, sur_azimuth_manual=270)
+                    system_energy = energy['p_mp'] \
+                        * self.APV_SystSettings.sceneDict['nMods'] \
+                        * self.APV_SystSettings.sceneDict['nRows'] \
+                        / 1000
+            else:
                 energy = self.estimate_energy(
                     SimSettings=SimSettings,
                     APV_SystSettings=self.APV_SystSettings,
                     time=t,
-                    timeindex=timeindex, tmydata=self.tmydata)
+                    timeindex=timeindex, tmydata=self.tmydata,
+                    irrad_data=self.irrad_data)
                 system_energy = energy['p_mp'] \
                     * self.APV_SystSettings.sceneDict['nMods'] \
                     * self.APV_SystSettings.sceneDict['nRows'] \
@@ -103,21 +141,21 @@ class Evaluate_APV:
             total = self.df_energy_results['kWh System'].sum()
             print(f'### TOTAL ENERGY:{total:.2f} kWh per system')
 
-    def estimate_energy(self, SimSettings: Simulation,
-                        APV_SystSettings: Default, time, timeindex,
-                        tmydata):
+    def estimate_energy(self, SimSettings, APV_SystSettings, time, timeindex,
+                        tmydata, irrad_data, sur_azimuth_manual=None):
 
+        sDict = self.APV_SystSettings.sceneDict
         # read PV module specs
         input_folder = Path.cwd().parent
         input_folder = os.path.abspath(os.path.join(os.path.dirname(
             pv_modules.__file__), 'Sanyo240_moduleSpecs_guestimate.txt'))
         pv_module: pd.Series = pd.read_csv(input_folder, delimiter='\t').T[0]
+        surface_azimuth = sur_azimuth_manual or sDict['azimuth']
 
-        sDict = APV_SystSettings.sceneDict
-
-        # Solar position
+        # Solar position with 30 minuts shift since time is right-labeled
         sol_pos = SimSettings.apv_location.get_solarposition(
-            time, temperature=tmydata.temp_air.iloc[timeindex])
+            time-pd.Timedelta('30min'),
+            temperature=tmydata.temp_air.iloc[timeindex])
 
         # DNI Extraterrestrial from Day_of_year
         dni_extra = pvlib.irradiance.get_extra_radiation(time)
@@ -136,21 +174,24 @@ class Evaluate_APV:
 
         # Angle of Incidence
         aoi = pvlib.irradiance.aoi(
-            surface_tilt=sDict['tilt'], surface_azimuth=sDict['azimuth'],
+            surface_tilt=sDict['tilt'], surface_azimuth=surface_azimuth,
             solar_zenith=sol_pos['apparent_zenith'],
             solar_azimuth=sol_pos['azimuth']
         )
         # Plane of Array (POA) Irradiation
         total_irr = pvlib.irradiance.get_total_irradiance(
             surface_tilt=sDict['tilt'],
-            surface_azimuth=sDict['azimuth'],
+            surface_azimuth=surface_azimuth,
             solar_zenith=sol_pos['apparent_zenith'],
             solar_azimuth=sol_pos['azimuth'],
-            dni=tmydata.dni.iloc[timeindex], ghi=tmydata.ghi.iloc[timeindex],
-            dhi=tmydata.dhi.iloc[timeindex], dni_extra=dni_extra,
+            dni=irrad_data.dni.iloc[timeindex],
+            ghi=irrad_data.ghi.iloc[timeindex],
+            dhi=irrad_data.dhi.iloc[timeindex], dni_extra=dni_extra,
             model='isotropic')
 
-        # PV cell temperature
+        print(total_irr)
+
+        # PV cell temperature TODO make glass-glass only if bifacial
         temperature_model_parameters = pvlib.temperature\
             .TEMPERATURE_MODEL_PARAMETERS['sapm']['open_rack_glass_glass']
         tcell = pvlib.temperature.sapm_cell(
@@ -177,8 +218,8 @@ class Evaluate_APV:
 
         return total_energy
 
-    def get_weather_data(self, SimSettings: Simulation):
-
+    def get_weather_data(self, SimSettings):
+        # get EPW to use Temperature and wind speed
         epw = UserPaths.bifacial_radiance_files_folder / Path('EPWs/')
         for file in os.listdir(epw):
             if file.endswith(".epw"):
@@ -186,18 +227,34 @@ class Evaluate_APV:
                                    'EPWs/', file)
         (self.tmydata, self.metadata) = pvlib.iotools.read_epw(
             epw, coerce_year=2001)
-        # self.tmydata.index = self.tmydata.index+pd.Timedelta(hours=1)
+        # TODO reset to UTC
+        # NOTE: In PVLib > 0.6.1 the new epw.read_epw() function reads in time
+        # with a default - 1 hour offset.  This is not reflected in our
+        # existing workflow, and must be investigated further.
+        self.tmydata.index = self.tmydata.index+pd.Timedelta(hours=1)
 
+        # get EPW.csv to use GHI and DHI
+        epw_csv = UserPaths.bifacial_radiance_files_folder / Path('EPWs/')
+        for file in os.listdir(epw_csv):
+            if file.endswith(".csv"):
+                epw_csv = os.path.join(
+                    UserPaths.bifacial_radiance_files_folder, 'EPWs/', file)
+        self.irrad_data = pd.read_csv(
+            epw_csv, sep=' ')
+        self.irrad_data.columns = ['ghi', 'dhi']
+        self.irrad_data['dni'] = self.irrad_data.ghi - self.irrad_data.dhi
+        print(self.irrad_data.head(10))
+        # Overwrite irradiation data only with ADS data
         if SimSettings.irradiance_data_source == 'ADS_satellite':
             # download data for longest full year time span available
             download_file_path = self.weatherObj.download_insolation_data(
-                SimSettings.apv_location, '2005-01-01/2021-01-01', '1hour')
-            # make own TMY data
-            test = self.tmydata
-            df_irradiance = self.weatherObj.satellite_insolation_data_to_TMY(
+                self.SimSettings.apv_location,
+                '2005-01-01/2021-01-01', '1hour')
+            # make/read own TMY data
+            ADS_irradiance = self.weatherObj.satellite_insolation_data_to_TMY(
                 download_file_path)
-            self.tmydata.ghi = df_irradiance.ghi
-            self.tmydata.dhi = df_irradiance.dhi
-            self.tmydata.dni = df_irradiance.ghi - df_irradiance.dhi
+            self.irrad_data['ghi'] = ADS_irradiance.ghi
+            self.irrad_data['dhi'] = ADS_irradiance.dhi
+            self.irrad_data['dni'] = ADS_irradiance.ghi - ADS_irradiance.dhi
 
 # #

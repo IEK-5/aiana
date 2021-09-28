@@ -3,7 +3,7 @@
        """
 from numpy.core.fromnumeric import std
 from apv.settings import simulation
-from apv.utils import time
+from apv.utils.time import SimDT
 from apv.utils import files_interface
 from apv.settings.simulation import Simulation
 from pathlib import Path
@@ -47,19 +47,24 @@ def irradiance_to_shadowdepth(df, SimSettings):
        Args:
            df ([type], optional): [description]. Defaults to None.
        """
+    simDT = SimDT(SimSettings)
     path = user_pathes.bifacial_radiance_files_folder / Path(
         'EPWs' + '/epw_temp.csv')
     epw = files_interface.df_from_file_or_folder(path, header=None)
 
     if SimSettings.sky_gen_mode == 'gendaylit':
-        timeindex = time.get_hour_of_year(SimSettings.sim_date_time)
+        sim_time = simDT.convert_settings_localtime_to_UTC(
+            SimSettings.sim_date_time)
+        timeindex = simDT.get_hour_of_tmy(sim_time)
         GHI = int(epw.loc[timeindex][0].split()[0])
         df['ShadowDepth'] = 100 - ((df['Wm2']/GHI)*100)
 
     else:
         cumulative_GHI = 0
-        stdt = time.get_hour_of_year(SimSettings.startdt)
-        enddt = time.get_hour_of_year(SimSettings.enddt)
+        strt = simDT.convert_settings_localtime_to_UTC(SimSettings.startdt)
+        endt = simDT.convert_settings_localtime_to_UTC(SimSettings.enddt)
+        stdt = simDT.get_hour_of_tmy(strt)
+        enddt = simDT.get_hour_of_tmy(endt)
         for timeindex in np.arange(stdt, enddt+1):
             GHI = int(epw.loc[timeindex][0].split()[0])
             cumulative_GHI += GHI
