@@ -9,9 +9,10 @@ import yaml
 import urllib3
 from pathlib import Path
 from typing import Literal
-
+import numpy as np
 import apv
 import apv.settings.user_pathes as user_pathes
+from pvlib import location
 
 # suppress InsecureRequestWarning when calling cdsapi retrieve function
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -242,6 +243,58 @@ class WeatherData:
                         )
         return tmy_data """
 
+    def typical_day_of_month(self):
+        """Extract from TMY irradiation data 3 typical representative days
+        of each month: day 1 is when daily GHI itegral is minimum, day 2 is
+        when daily GHI integral is maximum, and day 3 is the day that is most
+        close to the daily average GHI of the month.
+
+        Returns:
+            [df_all]: [DataFrame with values and indexes of the 3 days of
+            each month]
+        """
+        # TODO make integrated in satellite_insolation_data_to_TMY
+        # read weather file and define indexes to group by
+        apv_location = location.Location(
+            50.86351, 6.52946, altitude=123, tz='Europe/Berlin',
+            name='Morchenich')
+        source_file_path = self.download_insolation_data(
+            apv_location, '2005-01-01/2021-01-01', '1hour')
+        df: pd.DataFrame = pd.read_csv(source_file_path, skiprows=42, sep=';')
+        df[['obs_start', 'obs_end']] = \
+            df.iloc[:, 0].str.split('/', 1, expand=True)
+        df.set_index(
+            pd.to_datetime(df['obs_end'], utc=True),  # "right-labeled" as inBR
+            inplace=True
+        )
+        df['Month'] = df.index.month
+        df['Day'] = df.index.day
+        df['Hour'] = df.index.hour
+        df['Minute'] = df.index.minute
+
+        # create TMY from ADS yearly data
+        df_tmy = pd.pivot_table(df,
+                                index=['Month', 'Day', 'Hour'],
+                                values=['GHI', 'DHI'], aggfunc=np.mean)
+
+        # create daily sum to identify max, min, and avg
+        df_day_sums = pd.pivot_table(
+            df,
+            index=['Month', 'Day'],
+            values=['GHI'],
+            aggfunc='sum')
+        # identify value where sum is max, min, or avg
+        df_all = pd.pivot_table(
+            df_day_sums, index='Month',
+            values=['GHI'], aggfunc=['min', 'mean', 'max'])
+        # give index where max, min, and avg idenitified
+        for month in range(1, 13):
+            df_all.loc[month, 'day_min'] = np.argmin(df_day_sums.loc[month])+1
+            df_all.loc[month, 'day_max'] = np.argmax(df_day_sums.loc[month])+1
+            df_all.loc[month, 'day_nearest_to_mean'] = np.argmin(
+                abs(df_day_sums.loc[month]-df_all.loc[month, 'mean']))+1
+        return df_tmy, df_all
+
 
 """
 def retrieve_nsrdb_data(
@@ -297,3 +350,5 @@ def retrieve_nsrdb_data(
                                         periods=525600 / interval))
 
     return data """
+
+# #
