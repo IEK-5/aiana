@@ -1,11 +1,14 @@
 # #
 """apv main"""
 
+from apv.settings import apv_systems
+
+
 if __name__ == '__main__':
     from pathlib import Path
     import importlib as imp
     import apv
-    imp.reload(apv.utils.GeometriesHandler)
+    imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.settings.apv_systems)
     imp.reload(apv.br_wrapper)
 
@@ -28,7 +31,7 @@ if __name__ == '__main__':
     # rise: 5:20
     # set: 21:52
     SimSettings.sky_gen_mode = 'gendaylit'
-    SimSettings.sim_date_time = '6-21_11h'
+    SimSettings.sim_date_time = '6-21_8h'
     ###############################################
 
     SimSettings.spatial_resolution = 0.1
@@ -62,6 +65,13 @@ if __name__ == '__main__':
     APV_SystSettings.ground_scan_shift_x = 2  # -32
     APV_SystSettings.ground_scan_shift_y = 4  # -32
 
+    y_reduction = (-APV_SystSettings.sceneDict['pitch']/2
+                   - APV_SystSettings.moduleDict['y'])
+    APV_SystSettings.ground_scan_margin_x = 0  # -3
+    APV_SystSettings.ground_scan_margin_y = y_reduction  # -32
+    APV_SystSettings.ground_scan_shift_x = 0  # -32
+    APV_SystSettings.ground_scan_shift_y = 0  # -32
+
     weather_file = apv.settings.user_pathes.bifacial_radiance_files_folder / \
         Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
 
@@ -72,7 +82,7 @@ if __name__ == '__main__':
         debug_mode=False
     )
 
-    evalObj = apv.utils.APV_evaluation.Evaluate_APV(
+    evalObj = apv.classes.APV_evaluation.APV_Evaluation(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings
     )
@@ -81,11 +91,11 @@ if __name__ == '__main__':
     # evalObj.evaluate_APV(SimSettings=SimSettings)
     # #
     brObj.view_scene(
-        # view_name='top_down',
-        # view_type='parallel'
+        view_name='top_down',
+        view_type='parallel'
     )
     # #
-    imp.reload(apv.utils.GeometriesHandler)
+    imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.br_wrapper)
 
     for azimuth in [225]:

@@ -1,10 +1,10 @@
 # #
-from apv.utils.time import SimDT
+from apv.classes.sim_datetime import SimDT
 import pvlib
-from apv.utils.weather_data import WeatherData
+from apv.classes.weather_data import WeatherData
 from apv.utils import files_interface
 import apv.utils.files_interface as fi
-from apv.utils.GeometriesHandler import GeometriesHandler
+from apv.classes.geometries_handler import GeometriesHandler
 import re
 import apv.settings.user_pathes as user_pathes
 from typing import Literal
@@ -81,8 +81,14 @@ df['Hour'] = df.index.hour
 df['Minute'] = df.index.minute
 df
 # #
+df_mean_hours_per_month = pd.pivot_table(
+    df,
+    index=['Month', 'Hour'],
+    values=['GHI', 'DHI'],
+    aggfunc='mean')
+df_mean_hours_per_month.query('GHI > 0')
 
-
+df_mean_hours_per_month.plot()
 # #
 df_day_sums = pd.pivot_table(
     df,

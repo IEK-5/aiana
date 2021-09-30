@@ -4,8 +4,8 @@
 from apv.settings.apv_systems import Default
 from apv.settings.simulation import Simulation
 import sys
-from apv.utils.weather_data import WeatherData
-from apv.utils.time import SimDT
+from apv.classes.weather_data import WeatherData
+from apv.classes.sim_datetime import SimDT
 import apv
 from apv.resources import pv_modules
 import apv.utils
@@ -21,7 +21,7 @@ import numpy as np
 
 
 # #
-class Evaluate_APV:
+class APV_Evaluation:
     """
     Attributes:
         simSettings (apv.settings.simulation.Simulation):
@@ -46,7 +46,7 @@ class Evaluate_APV:
         self.SimSettings: apv.settings.simulation.Simulation = SimSettings
         self.APV_SystSettings: apv.settings.apv_systems.Default = \
             APV_SystSettings
-        self.weatherObj = WeatherData()
+        self.weatherObj = WeatherData(self.SimSettings)
         self.simDT = SimDT(self.SimSettings)
         self.debug_mode = debug_mode
         self.df_energy_results = {}

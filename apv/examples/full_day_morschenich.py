@@ -5,13 +5,13 @@ if __name__ == '__main__':
     from pathlib import Path
     import importlib as imp
     import apv
-    imp.reload(apv.utils.GeometriesHandler)
+    imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.settings.apv_systems)
     imp.reload(apv.br_wrapper)
 
     SimSettings = apv.settings.simulation.Simulation()
     APV_SystSettings = apv.settings.apv_systems.Default()
-    evalObj = apv.utils.APV_evaluation.Evaluate_APV(
+    evalObj = apv.classes.APV_evaluation.APV_Evaluation(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings
     )
@@ -50,7 +50,7 @@ if __name__ == '__main__':
         Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
 
     #
-    imp.reload(apv.utils.GeometriesHandler)
+    imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.br_wrapper)
     # SimSettings.use_multi_processing = False
 

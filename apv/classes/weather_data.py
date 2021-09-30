@@ -13,6 +13,9 @@ import numpy as np
 import apv
 import apv.settings.user_pathes as user_pathes
 from pvlib import location
+from apv.settings.simulation import Simulation
+from apv.classes.sim_datetime import SimDT
+
 
 # suppress InsecureRequestWarning when calling cdsapi retrieve function
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -22,8 +25,43 @@ class WeatherData:
     """credentials (dict): output of .load_credentials()
     """
 
-    def __init__(self):
+    def __init__(self, SimSettings: Simulation):
+        self.SimSettings = SimSettings
+
         self.credentials = self.load_API_credentials()
+        self.ghi = float()
+        self.dhi = float()
+        self.dni = float()
+        self.sunalt = float()
+        self.sunaz = float()
+
+        # download data for longest full year time span available
+        download_file_path = self.download_insolation_data(
+            self.SimSettings.apv_location,
+            '2005-01-01/2021-01-01',
+            self.SimSettings.time_step)
+
+        # make average year TMY data
+        self.df_irradiance = self.satellite_insolation_data_to_TMY(
+            download_file_path)
+
+    def set_dhi_dni_ghi_and_sunpos_to_simDT(self, simDT: SimDT):
+
+        self.ghi = self.df_irradiance.ghi[simDT.hour_of_tmy]
+        self.dhi = self.df_irradiance.dhi[simDT.hour_of_tmy]
+        # for sky to untilted ground cos(tilt) = 1 and GHI = DNI + DHI ->
+        self.dni = self.ghi - self.dhi
+
+        # sun position
+        solpos: pd.DataFrame = \
+            self.SimSettings.apv_location.get_solarposition(
+                times=simDT.sim_dt_utc_pd-pd.Timedelta('30min'),
+                # TODO alles centered labeled machen?
+                temperature=12  # TODO use temperature from ERA5 data
+            )
+
+        self.sunalt = float(solpos.elevation)
+        self.sunaz = float(solpos.azimuth)-180.0
 
     # ## DOWNLOADS ##################
 
@@ -216,21 +254,7 @@ class WeatherData:
         mask = (df.index.is_leap_year) & (df.index.dayofyear == 60)
         df = df[~mask]
 
-        # split time stamp for pivot
-
-        df['Month'] = df.index.month
-        df['Day'] = df.index.day
-        df['Hour'] = df.index.hour
-        df['Minute'] = df.index.minute
-
-        df_tmy = pd.pivot_table(
-            df,
-            index=['Month', 'Day', 'Hour'],
-            columns=['GHI', 'DHI'])
-
-        return df_tmy
-
-        """ # create average GHI and DHI for each hour per year
+        # create average GHI and DHI for each hour per year
         group_list = [df.index.month, df.index.day, df.index.hour]
         x = df['GHI'].groupby(group_list).mean()
         y = df['DHI'].groupby(group_list).mean()
@@ -241,7 +265,20 @@ class WeatherData:
         tmy_data.to_csv(tmy_file_path, index=False, header=False, sep=' ',
                         columns=['ghi', 'dhi']  # to be sure about order
                         )
-        return tmy_data """
+        return tmy_data
+        # split time stamp for pivot
+
+        df['Month'] = df.index.month
+        df['Day'] = df.index.day
+        df['Hour'] = df.index.hour
+        df['Minute'] = df.index.minute
+
+        df_tmy = pd.pivot_table(
+            df,
+            index=['Month', 'Day', 'Hour'],
+            values=['GHI', 'DHI'])
+
+        return df_tmy
 
     def typical_day_of_month(self):
         """Extract from TMY irradiation data 3 typical representative days
@@ -272,6 +309,14 @@ class WeatherData:
         df['Hour'] = df.index.hour
         df['Minute'] = df.index.minute
 
+        df_mean_hours_per_month = pd.pivot_table(
+            df,
+            index=['Month', 'Hour'],
+            values=['GHI', 'DHI'],
+            aggfunc='mean')
+
+        return df_mean_hours_per_month
+
         # create TMY from ADS yearly data
         df_tmy = pd.pivot_table(df,
                                 index=['Month', 'Day', 'Hour'],
@@ -293,6 +338,7 @@ class WeatherData:
             df_all.loc[month, 'day_max'] = np.argmax(df_day_sums.loc[month])+1
             df_all.loc[month, 'day_nearest_to_mean'] = np.argmin(
                 abs(df_day_sums.loc[month]-df_all.loc[month, 'mean']))+1
+
         return df_tmy, df_all
 
 

@@ -3,7 +3,7 @@
        """
 from numpy.core.fromnumeric import std
 from apv.settings import simulation
-from apv.utils.time import SimDT
+from apv.classes.sim_datetime import SimDT
 from apv.utils import files_interface
 from apv.settings.simulation import Simulation
 from pathlib import Path

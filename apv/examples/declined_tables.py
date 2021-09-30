@@ -5,7 +5,7 @@ if __name__ == '__main__':
     from pathlib import Path
     import importlib as imp
     import apv
-    imp.reload(apv.utils.GeometriesHandler)
+    imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.settings.apv_systems)
 
     SimSettings = apv.settings.simulation.Simulation()

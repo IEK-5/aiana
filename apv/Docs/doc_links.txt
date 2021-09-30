@@ -1,0 +1,7 @@
+EPW Docs:
+        https://www.nrel.gov/docs/fy08osti/43156.pdf
+        https://bigladdersoftware.com/epx/docs/8-2/auxiliary-programs/epw-csv-format-inout.html
+
+
+gendaymtx:
+https: // www.radiance-online.org//learning/documentation/manual-pages/pdfs/gendaymtx.pdf

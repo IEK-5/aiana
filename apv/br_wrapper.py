@@ -23,10 +23,11 @@ nach Mohds Arbeit:
 # import needed packages
 from apv.utils import units_converter as uc
 from apv.utils import files_interface as fi
+from apv.settings.simulation import Simulation
 from apv.settings.apv_systems import Default as APV_SystSettings
-from apv.utils.GeometriesHandler import GeometriesHandler
-from apv.utils.weather_data import WeatherData
-from apv.utils.time import SimDT
+from apv.classes.geometries_handler import GeometriesHandler
+from apv.classes.weather_data import WeatherData
+from apv.classes.sim_datetime import SimDT
 
 import apv.settings.user_pathes as user_pathes
 from apv.settings import apv_systems
@@ -72,21 +73,20 @@ class BR_Wrapper:
 
     def __init__(
             self,
-            SimSettings=apv.settings.simulation.Simulation(),
-            APV_SystSettings=apv.settings.apv_systems.Default(),
-            weather_file=None,  # to optionally skip epw download
+            SimSettings: Simulation,
+            APV_SystSettings: APV_SystSettings,
+            # weather_file=None,  # to optionally skip epw download
             debug_mode=False
             # create_oct_file=True
     ):
-        self.SimSettings: apv.settings.simulation.Simulation = SimSettings
-        self.APV_SystSettings: apv.settings.apv_systems.Default = \
-            APV_SystSettings
+        self.SimSettings = SimSettings
+        self.APV_SystSettings = APV_SystSettings
 
         self.geomObj = GeometriesHandler(
             SimSettings, APV_SystSettings, debug_mode)
-        self.weatherObj = WeatherData()
         self.simDT = SimDT(SimSettings)
-        self.weather_file_br_epw = weather_file
+        self.weatherData = WeatherData(SimSettings)
+        # self.weather_file_br_epw = weather_file
         self.debug_mode = debug_mode
         # self.create_oct_file = create_oct_file
 
@@ -102,7 +102,7 @@ class BR_Wrapper:
         self.df_ground_results = pd.DataFrame()
         self.csv_file_name = str()
 
-    def setup_br(self):
+    def setup_br(self, dni_singleValue=None, dhi_singleValue=None):
         """
         docstring noch veraltet
 
@@ -148,7 +148,8 @@ class BR_Wrapper:
             self.SimSettings.sim_name, path=str(working_folder))
         self.radObj.setGround(self.SimSettings.ground_albedo)
 
-        self.load_weather_data_and_create_sky()
+        self.create_sky(
+            dni_singleValue=dni_singleValue, dhi_singleValue=dhi_singleValue)
 
         # set csv file name
         # (placed here to allow for access also without a simulation run)
@@ -161,79 +162,38 @@ class BR_Wrapper:
         self._set_up_AnalObj_and_groundscan()
         return
 
-    def load_weather_data_and_create_sky(
-            self, dni_singleValue=None, dhi_singleValue=None):
-
-        # we use bifacial_radiance to fill metdata for sun pos and alitude
-        # from epw data and optional replace irradiation data by satellite
-        # read TMY or EPW data
-        """EPW Dos:
-        https://www.nrel.gov/docs/fy08osti/43156.pdf
-        https://bigladdersoftware.com/epx/docs/8-2/auxiliary-programs/epw-csv-format-inout.html
+    def create_sky(self, dni_singleValue=None, dhi_singleValue=None):
         """
-        self.weather_file_br_epw = \
-            self.weather_file_br_epw or self.radObj.getEPW(
-                lat=self.SimSettings.apv_location.latitude,
-                lon=self.SimSettings.apv_location.longitude)
-        # NOTE time in epw is in local time (all year winter time)
-        self.radObj.metdata = self.radObj.readWeatherFile(
-            # TODO evt. abschaffen
-            weatherFile=str(self.weather_file_br_epw))
+        """
 
-        # optional replace irradiation data (and keep sol position):
-        if self.SimSettings.irradiance_data_source == 'ADS_satellite':
-            # download data for longest full year time span available
-            download_file_path = self.weatherObj.download_insolation_data(
-                self.SimSettings.apv_location,
-                '2005-01-01/2021-01-01', '1hour')
-            print(download_file_path)
+        # if self.SimSettings.sky_gen_mode == 'gendaylit':
+        self.weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(self.simDT)
+        # to be able to pass own dni/dhi values:
+        if dni_singleValue is None:
+            dni_singleValue = self.weatherData.dni
+        if dhi_singleValue is None:
+            dhi_singleValue = self.weatherData.dhi
 
-            # make average year TMY data
-            df_irradiance = self.weatherObj.satellite_insolation_data_to_TMY(
-                download_file_path)
+        if dni_singleValue == 0 and dhi_singleValue == 0:
+            sys.exit("""DNI and DHI are 0 within the last hour until the \
+                time given in settings/simulation/sim_date_time.\
+                \n--> Creating radiance files and view_scene() is not \
+                possible without light. Please choose a different time.""")
 
-            self.radObj.metdata.ghi = df_irradiance.ghi
-            self.radObj.metdata.dhi = df_irradiance.dhi
-            # for sky to untilted ground cos(tilt) = 1 and GHI = DNI + DHI ->
-            self.radObj.metdata.dni = df_irradiance.ghi - df_irradiance.dhi
+        if self.weatherData.sunalt < 0:
+            sys.exit("""Cannot handle negative sun alitudes.\
+                \n--> Creating radiance files and view_scene() is not \
+                possible without light. Please choose a different time.""")
 
-        # Create Sky
         # gendaylit using Perez models for direct and diffuse components
-        if self.SimSettings.sky_gen_mode == 'gendaylit':
-            timeindex = self.simDT.hour_of_tmy
-            # to be able to pass own dni/dhi values:
-            if dni_singleValue is None:
-                dni_singleValue = self.radObj.metdata.dni[timeindex]
-            if dhi_singleValue is None:
-                dhi_singleValue = self.radObj.metdata.dhi[timeindex]
+        self.radObj.gendaylit2manual(
+            dni_singleValue, dhi_singleValue,
+            self.weatherData.sunalt, self.weatherData.sunalt)
 
-            # sunposition
-            solpos: pd.DataFrame = \
-                self.SimSettings.apv_location.get_solarposition(
-                    times=self.simDT.sim_dt_utc_pd-pd.Timedelta('30min'),
-                    # TODO alles centered labeled machen?
-                    temperature=12  # TODO use temperature from ERA5 data
-                )
+        self.oct_file_name = self.radObj.name \
+            + '_' + self.SimSettings.sim_date_time
 
-            if self.debug_mode:
-                print(f'epw: {self.radObj.metdata.solpos.iloc[timeindex]}'
-                      f'pvlib: {solpos}')
-
-            sunalt = float(solpos.elevation)
-            sunaz = float(solpos.azimuth)-180.0
-
-            if dni_singleValue == 0 and dhi_singleValue == 0:
-                sys.exit("""DNI and DHI are 0 within the last hour until the \
-                    time given in settings/simulation/sim_date_time.\
-                    \n--> Creating radiance files and view_scene() is not \
-                    possible without light. Please choose a different time.""")
-
-            self.radObj.gendaylit2manual(
-                dni_singleValue, dhi_singleValue, sunalt, sunaz)
-
-            self.oct_file_name = self.radObj.name \
-                + '_' + self.SimSettings.sim_date_time
-
+        """
         # gencumskyself.met_data
         if self.SimSettings.sky_gen_mode == 'gencumsky':
             # from (year,month,day,hour)
@@ -246,16 +206,14 @@ class BR_Wrapper:
             elif self.SimSettings.irradiance_data_source == 'ADS_satellite':
                 epwfile = 'satellite_weatherData/TMY_nearJuelichGermany.csv'
                 # TODO make it automatic with mohds method
-            """
 
-            https://www.radiance-online.org//learning/documentation/manual-pages/pdfs/gendaymtx.pdf
-            """
             self.radObj.genCumSky(epwfile=epwfile,
                                   startdt=startdt,
                                   enddt=enddt)
 
             self.oct_file_name = self.radObj.name \
                 + '_' + 'Cumulative'
+        """
 
     def makeCustomMaterial(
         self,
@@ -328,7 +286,7 @@ class BR_Wrapper:
             self.SimSettings, APV_SystSettings, self.debug_mode)
         ghObj._set_init_variables()
 
-        ghModule = apv.utils.GeometriesHandler  # TODO replace with Obj
+        ghModule = apv.classes.geometries_handler  # TODO replace with Obj
 
         # create PV module
 

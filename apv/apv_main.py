@@ -4,16 +4,11 @@ if __name__ == '__main__':
     import apv
 
     SimSettings = apv.settings.simulation.Simulation()
-    APV_SystSettings = \
-        apv.settings.apv_systems.Default()
-
-    weather_file = apv.settings.user_pathes.bifacial_radiance_files_folder / \
-        Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
+    APV_SystSettings = apv.settings.apv_systems.Default()
 
     brObj = apv.br_wrapper.BR_Wrapper(
         SimSettings=SimSettings,
-        APV_SystSettings=APV_SystSettings,
-        # weather_file=weather_file  # downloading automatically without this
+        APV_SystSettings=APV_SystSettings
     )
 
     brObj.setup_br()
@@ -27,21 +22,14 @@ if __name__ == '__main__':
     brObj.run_raytracing_simulation()
     # #
     brObj.plot_ground_insolation()
-    # TODO why is there a darker line at the top? Edge of the ground?
     # #
     brObj.plot_ground_insolation(cm_unit='Shadow-Depth')
     # #
     # show result data frame
     brObj.df_ground_results
 # #
-import apv
 if __name__ == '__main__':
-    SimSettings = apv.settings.simulation.Simulation()
-    # SimSettings.irradiance_data_source = 'EPW'
-    APV_SystSettings = \
-        apv.settings.apv_systems.Default()
-
-    evalObj = apv.utils.APV_evaluation.Evaluate_APV(
+    evalObj = apv.classes.APV_evaluation.APV_Evaluation(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings
     )
