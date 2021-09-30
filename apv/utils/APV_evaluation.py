@@ -60,9 +60,6 @@ class Evaluate_APV:
             self.APV_SystSettings)
         # read EPW data from bifacial radiance files
         self.get_weather_data(SimSettings)
-        # Create results folder
-        eval_res_path = UserPaths.results_folder / Path('Evaluation/')
-        fi.make_dirs_if_not_there(eval_res_path)
         # View energy generated on specific date-time
         if SimSettings.sky_gen_mode == 'gendaylit':
             if self.APV_SystSettings.module_form == 'EW_fixed' or \
@@ -103,6 +100,9 @@ class Evaluate_APV:
                 + f'### TOTAL ENERGY: {system_energy/1000:.2f} kWh per system')
         # Generate energy time-series data
         else:
+            # Create results folder
+            eval_res_path = UserPaths.results_folder / Path('Evaluation/')
+            fi.make_dirs_if_not_there(eval_res_path)
             self.csv_file_name = f'eval_energy_{SimSettings.startdt} \
                  _{SimSettings.enddt}_{self.APV_SystSettings.module_form}.csv'
             columns = ('Wh/module', 'kWh System')

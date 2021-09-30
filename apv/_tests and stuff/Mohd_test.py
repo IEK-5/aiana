@@ -9,105 +9,107 @@ import numpy as np
 import apv.utils.time as t
 from matplotlib import pyplot as plt
 from apv.utils.files_interface import save_fig
+import apv
+from apv.utils.weather_data import WeatherData
+SimSettings = apv.settings.simulation.Simulation()
+weatherObj = WeatherData()
 
 # #
+df_tmy, df_all = weatherObj.typical_day_of_month()
+# #
+df_tmy.head(10)
+# #
+# NOT NEEDED JUST NOW TO TEST
 
+ADS_data = r"C:\Users\moham\Documents\agri-PV\data_downloads\insolation-data_2005-01-01_to_2021-01-01_lat-50.86351_lon-6.52946_time_step-1hour.csv"
 
-def weather_to_csv(file_name='2010-2020_tst'):
-    # Retrieve weather
-    # TODO change file name
-    path = user_pathes.bifacial_radiance_files_folder / Path(
-        'EPWs/', f'{file_name}.csv')
-    df = pd.read_csv(path, skiprows=43, header=None, sep=';', index_col=0,
-                     parse_dates=True)
-    column_names = ['TOA', ' Clear sky GHI', 'Clear sky BHI', 'Clear sky DHI',
-                    'Clear sky BNI', 'GHI', 'BHI', 'DHI', 'BNI', 'Reliability']
-    df.columns = column_names
-    indx = df.index
+df: pd.DataFrame = pd.read_csv(ADS_data, skiprows=42, sep=';')
+df[['obs_start', 'obs_end']] = \
+    df.iloc[:, 0].str.split('/', 1, expand=True)
+df.set_index(
+    pd.to_datetime(df['obs_end'], utc=True),  # "right-labeled" as inBR
+    inplace=True
+)
+# #
+df
+# #
+# filter out 29th Feb
+mask = (df.index.is_leap_year) & (df.index.dayofyear == 60)
+df = df[~mask]
+df['Month'] = df.index.month
+df['Day'] = df.index.day
+df['Hour'] = df.index.hour
+df['Minute'] = df.index.minute
 
-    # define datetime index to resample
-    time_index = []
-    for i in np.arange(0, len(indx)):
-        row = indx[i]
-        x = dt.strptime(row[0:13], '%Y-%m-%dT%H')
-        time_index.append(x)
-
-    df['Datetime'] = pd.to_datetime(time_index)
-    df.set_index('Datetime', inplace=True)
-
-    # create average hour for each day per year
-    x = df['GHI'].groupby([df.index.month, df.index.day, df.index.hour]).mean()
-    y = df['DHI'].groupby([df.index.month, df.index.day, df.index.hour]).mean()
-    x = x.reset_index(drop=True)
-    y = y.reset_index(drop=True)
-
-    if len(x) == 8784 and len(y) == 8784:
-        a = t.get_hour_of_year('2-28_23h') + 1
-        rg = np.arange(a, a+24)
-
-        x.drop(index=rg, axis=0, inplace=True)
-        y.drop(index=rg, axis=0, inplace=True)
-
-    savedata = {'GHI': x, 'DHI': y}
-    pd.DataFrame(savedata)
-    csvfile = user_pathes.bifacial_radiance_files_folder / Path(
-        'EPWs/', f'own_TMY_{file_name}.csv')
-    savedata = pd.DataFrame(savedata)
-    savedata.to_csv(csvfile, index=False, header=False, sep=' ',
-                    columns=['GHI', 'DHI'])
-
-    return savedata
-
+df
+# #
+# Create TMY from 2005-2021 data
+df_tmy = pd.pivot_table(df,
+                        index=['Month', 'Day', 'Hour'],
+                        values=['GHI', 'DHI'], aggfunc=np.mean)
+# #
+print(df_tmy)
+df_tmy['GHI'].loc[1, 1, 1]
 
 # #
-weather_to_csv()
+df_day_sums = pd.pivot_table(
+    df,
+    index=['Month', 'Day'],
+    values=['GHI'],
+    aggfunc='sum')
+
+df_day_sums
 # #
-df = pd.read_csv(
-    r"C:\Users\moham\Documents\agri-PV\bifacial_radiance_files\EPWs\own_TMY_2010-2020_tst.csv",
-    sep=' ')
-df.columns = ['GHI', 'DHI']
-df2 = pd.read_csv(
-    r"C:\Users\moham\Documents\agri-PV\bifacial_radiance_files\EPWs\epw_temp.csv", sep=' ')
-df2.columns = ['GHI', 'DHI']
-df.tail(5)
+# per month: 'mean' of GHI-daily-sums
+# needed to get the day with GHI closest to the result
+
+df_all = pd.pivot_table(
+    df_day_sums, index='Month',
+    values=['GHI'], aggfunc=['min', 'mean', 'max'])
+
+df_all
+# #
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+ax.plot(df_all)
+ax.set_xlabel('Month')
+ax.set_ylabel('Daily integral of global horizontal irradiation in [Wh m$^{-2}$]')
+ax.legend(['Minimum', 'Mean', 'Maximum'], loc='upper right')
+apv.utils.files_interface.save_fig(fig, 'daily integral_min_mean_max')
 
 # #
-file_name = '2010-2020_tst'
-fig, ax1 = plt.subplots(1, 1)
-ax1.set_xlabel('hour of year')
+for month in range(1, 13):
+    df_all.loc[month, 'day_min'] = np.argmin(df_day_sums.loc[month])+1
+    df_all.loc[month, 'day_max'] = np.argmax(df_day_sums.loc[month])+1
+    df_all.loc[month, 'day_nearest_to_mean'] = np.argmin(
+        abs(df_day_sums.loc[month]-df_all.loc[month, 'mean']))+1
 
-ax1.set_ylabel('Wh m$^ {-2}$')
-ax1.set_title(f'Comparison of GHI between Own-TMY and EPW \n \
-              {file_name}')
-
-ax1.plot(df['GHI'])
-ax1.plot(df2['GHI'],  alpha=0.5)
-fig.legend(('Own-GHI', 'EPW-GHI'))
-save_fig(fig, f'GHI-{file_name}-comparison TMY', transparent=False)
+df_all
+# #
 
 # #
-fig2, ax2 = plt.subplots(1, 1)
-ax2.set_xlabel('hour of year')
-
-ax2.set_ylabel('Wh m$^ {-2}$')
-ax2.set_title(f'Comparison of DHI between Own-TMY and EPW \n \
-              Own-TMY {file_name}')
-
-ax2.plot(df['DHI'])
-ax2.plot(df2['DHI'],  alpha=0.5)
-fig2.legend(('Own-DHI', 'EPW-DHI'))
-save_fig(fig2, f'DHI-{file_name}-comparison TMY', transparent=False)
+################################################
+number_of_hours = 0
+for month in range(1, 13):
+    days = (int(df_all['day_min'].loc[month]),
+            int(df_all['day_max'].loc[month]),
+            int(df_all['day_nearest_to_mean'].loc[month]))
+    for day in days:
+        for hour in range(0, 24, 2):
+            sim_date_time = f'{month}-{day}_{hour}h'
+            if df_tmy['GHI'].loc[month, day, hour] > 50:
+                number_of_hours += 1
+print(number_of_hours)
 # #
-fig3, ax3 = plt.subplots(1, 1)
-ax3.set_xlabel('hour of year')
 
-ax3.set_ylabel('Wh m$^{-2}$')
-ax3.set_title(f'Comparison of DHI between Own-TMY and EPW \n \
-              Own-TMY {file_name}')
-
-ax3.scatter(df.index, df['DHI'], marker='v')
-ax3.scatter(df.index, df2['DHI'],  alpha=0.8, marker="_")
-fig3.legend(('Own-DHI', 'EPW-DHI'))
-save_fig(fig3, f'DHI-{file_name}-comparison TMY', transparent=False)
-
+number_of_hours = 0
+for month in range(4, 12):
+    day = (int(df_all['day_nearest_to_mean'].loc[month]))
+    for hour in range(0, 24, 2):
+        sim_date_time = f'{month}-{day}_{hour}h'
+        if df_tmy['GHI'].loc[month, day, hour] > 70:
+            number_of_hours += 1
+print(number_of_hours)
+# #
+weatherObj.typical_day_of_month()
 # #

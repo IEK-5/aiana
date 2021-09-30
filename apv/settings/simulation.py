@@ -3,7 +3,8 @@
 sim_date_time = 12h will at the moment result in irradiation data
 11-12h and sol position 11:30 !
 (bifacial radiance uses righ-labled timestamps and does it this way)
-epw right-labled: https://search.r-project.org/CRAN/refmans/eplusr/html/Epw.html
+epw right-labled:
+https://search.r-project.org/CRAN/refmans/eplusr/html/Epw.html
 br.MetObj: def __init__(self, tmydata, metadata, label='right')
 
 MetObj init can also handle label='center' but then ads satellite data needs to

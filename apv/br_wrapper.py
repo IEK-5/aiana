@@ -175,7 +175,7 @@ class BR_Wrapper:
             self.weather_file_br_epw or self.radObj.getEPW(
                 lat=self.SimSettings.apv_location.latitude,
                 lon=self.SimSettings.apv_location.longitude)
-
+        # NOTE time in epw is in local time (all year winter time)
         self.radObj.metdata = self.radObj.readWeatherFile(
             # TODO evt. abschaffen
             weatherFile=str(self.weather_file_br_epw))
@@ -186,7 +186,9 @@ class BR_Wrapper:
             download_file_path = self.weatherObj.download_insolation_data(
                 self.SimSettings.apv_location,
                 '2005-01-01/2021-01-01', '1hour')
-            # make own TMY data
+            print(download_file_path)
+
+            # make average year TMY data
             df_irradiance = self.weatherObj.satellite_insolation_data_to_TMY(
                 download_file_path)
 

@@ -10,13 +10,14 @@ if __name__ == '__main__':
     imp.reload(apv.br_wrapper)
 
     SimSettings = apv.settings.simulation.Simulation()
-    # SimSettings.use_multi_processing = False
-    APV_SystSettings =\
-        apv.settings.apv_systems.APV_Syst_InclinedTables_Juelich()
+    SimSettings.use_multi_processing = True
+    # APV_SystSettings =\
+    #     apv.settings.apv_systems.APV_Syst_InclinedTables_Juelich()
     # APV_SystSettings = apv.settings.apv_systems.SimpleForCheckerBoard()
     APV_SystSettings = apv.settings.apv_systems.Default()
     APV_SystSettings.add_groundScanArea_as_object_to_scene = True
-
+    SimSettings.scan_target = 'ground'
+    SimSettings.ray_tracing_accuracy = 'low'
     # ### often changed settings:  ####
     # SimSettings.only_ground_scan = False
     # use_multi_processing = False
@@ -30,7 +31,7 @@ if __name__ == '__main__':
     SimSettings.sim_date_time = '6-21_11h'
     ###############################################
 
-    SimSettings.spatial_resolution = 1
+    SimSettings.spatial_resolution = 0.1
     SimSettings.irradiance_data_source = 'ADS_satellite'
     print(SimSettings.irradiance_data_source)
     # Insert start end-date of the year as [month,day,hour]
@@ -67,16 +68,17 @@ if __name__ == '__main__':
     brObj = apv.br_wrapper.BR_Wrapper(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings,
-        weather_file=weather_file,  # downloading automatically without this,
-        debug_mode=True
+        # weather_file=weather_file,  # downloading automatically without this,
+        debug_mode=False
     )
 
     evalObj = apv.utils.APV_evaluation.Evaluate_APV(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings
     )
-    # brObj.setup_br()
-    evalObj.evaluate_APV(SimSettings=SimSettings)
+
+    brObj.setup_br()
+    # evalObj.evaluate_APV(SimSettings=SimSettings)
     # #
     brObj.view_scene(
         # view_name='top_down',
