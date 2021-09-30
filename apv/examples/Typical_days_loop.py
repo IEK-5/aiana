@@ -19,8 +19,6 @@ if __name__ == '__main__':
 
     # ### settings:  ####
     SimSettings.spatial_resolution = 1  # 0.1
-    SimSettings.sky_gen_mode = 'gendaylit'
-    SimSettings.irradiance_data_source = 'ADS_satellite'
     APV_SystSettings.module_form = 'std'
     # To reduce sim time
     y_reduction = (-APV_SystSettings.sceneDict['pitch']/2
@@ -29,8 +27,6 @@ if __name__ == '__main__':
     APV_SystSettings.ground_scan_margin_y = y_reduction
     APV_SystSettings.ground_scan_shift_x = 0
     APV_SystSettings.ground_scan_shift_y = 0
-    # weather_file = apv.settings.user_pathes.bifacial_radiance_files_folder / \
-    #    Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
 
     # Alternative 1 to filter without exit
     weatherData = WeatherData(SimSettings)
