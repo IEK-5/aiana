@@ -194,10 +194,12 @@ class WeatherData:
 
         tmy_file_path = tmy_folder_path/file_name
 
+        """
         if tmy_file_path.exists():
             return apv.utils.files_interface.df_from_file_or_folder(
                 tmy_file_path, delimiter=' ', names=['ghi', 'dhi']
             )
+        """
         # else:
         apv.utils.files_interface.make_dirs_if_not_there(tmy_folder_path)
 
@@ -213,7 +215,21 @@ class WeatherData:
         mask = (df.index.is_leap_year) & (df.index.dayofyear == 60)
         df = df[~mask]
 
-        # create average GHI and DHI for each hour per year
+        # split time stamp for pivot
+
+        df['Month'] = df.index.month
+        df['Day'] = df.index.day
+        df['Hour'] = df.index.hour
+        df['Minute'] = df.index.minute
+
+        df_tmy = pd.pivot_table(
+            df,
+            index=['Month', 'Day', 'Hour'],
+            columns=['GHI', 'DHI'])
+
+        return df_tmy
+
+        """ # create average GHI and DHI for each hour per year
         group_list = [df.index.month, df.index.day, df.index.hour]
         x = df['GHI'].groupby(group_list).mean()
         y = df['DHI'].groupby(group_list).mean()
@@ -224,7 +240,7 @@ class WeatherData:
         tmy_data.to_csv(tmy_file_path, index=False, header=False, sep=' ',
                         columns=['ghi', 'dhi']  # to be sure about order
                         )
-        return tmy_data
+        return tmy_data """
 
 
 """

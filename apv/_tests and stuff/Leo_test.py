@@ -32,8 +32,6 @@ import pytz
 from pandas.tseries.offsets import Minute
 import honeybee_radiance_command as hrc
 
-hrc.
-
 
 # #
 # import this
@@ -43,10 +41,92 @@ SimSettings = apv.settings.simulation.Simulation()
 simdt = SimDT(SimSettings)
 weatherObj = WeatherData()
 
-# #
-simdt.sim_dt_utc
-simdt.sim_dt_utc_pd-pd.Timedelta('30min')
+download_file_path = weatherObj.download_insolation_data(
+    SimSettings.apv_location,
+    '2005-01-01/2021-01-01', '1hour')
+source_file_path = download_file_path
 
+file_name = 'TMY_'+str(source_file_path).split('\\')[-1]
+tmy_folder_path = user_pathes.bifacial_radiance_files_folder / Path(
+    'satellite_weatherData')
+
+tmy_file_path = tmy_folder_path/file_name
+
+"""
+if tmy_file_path.exists():
+    return apv.utils.files_interface.df_from_file_or_folder(
+        tmy_file_path, delimiter=' ', names=['ghi', 'dhi']
+    )
+"""
+# else:
+apv.utils.files_interface.make_dirs_if_not_there(tmy_folder_path)
+
+df: pd.DataFrame = pd.read_csv(source_file_path, skiprows=42, sep=';')
+df[['obs_start', 'obs_end']] = \
+    df.iloc[:, 0].str.split('/', 1, expand=True)
+df.set_index(
+    pd.to_datetime(df['obs_end'], utc=True),  # "right-labeled" as inBR
+    inplace=True
+)
+
+# filter out 29th Feb
+mask = (df.index.is_leap_year) & (df.index.dayofyear == 60)
+df = df[~mask]
+
+# split time stamp for pivot
+
+df['Month'] = df.index.month
+df['Day'] = df.index.day
+df['Hour'] = df.index.hour
+df['Minute'] = df.index.minute
+df
+# #
+
+
+# #
+df_day_sums = pd.pivot_table(
+    df,
+    index=['Month', 'Day'],
+    values=['GHI'],
+    aggfunc='sum')
+df_day_sums
+# #
+# per month: 'mean' of GHI-daily-sums
+# needed to get the day with GHI closest to the result
+
+df_all = pd.pivot_table(
+    df_day_sums, index='Month',
+    values=['GHI'], aggfunc=['min', 'mean', 'max'])
+
+for month in range(1, 13):
+    df_all.loc[month, 'day_min'] = np.argmin(df_day_sums.loc[month])+1
+    df_all.loc[month, 'day_max'] = np.argmax(df_day_sums.loc[month])+1
+    df_all.loc[month, 'day_nearest_to_mean'] = np.argmin(
+        abs(df_day_sums.loc[month]-df_all.loc[month, 'mean']))+1
+
+df_all
+
+# #
+df_all.plot()
+
+
+# #
+
+df_tmy[df_tmy['DHI'] > 40]
+
+
+# #
+str(simdt.sim_dt_utc)
+
+# #
+
+"""
+-
+- sun position time
+"""
+
+sun_loc_time_str = str(simdt.sim_dt_utc_pd-pd.Timedelta('30min'))
+sun_loc_time_str
 # #
 
 # #

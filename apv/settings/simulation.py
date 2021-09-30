@@ -41,8 +41,13 @@ class Simulation:
         name='Morchenich')
 
     # time settings (as local time of the timezone defined in apv_location.tz)
-    # currently only as TMY (without a specific year)
+    # currently only as typical meterological year (TMY) = mean over 2005-2020
     sim_date_time = '06-15_11h'  # used as second part of the .oct file name
+    time_step = '30minute'  # also possible: '15minute', '1hour'
+    # if irradiance_data_source == 'ADS_satellite': dhi and dni values are
+    # averaged from sim_date_time-time_step until sim_date_time+time_step
+    # (center labeled)
+    # and sunposition for gendaylit is also at the sim_date_time
 
     irradiance_data_source: Literal['EPW', 'ADS_satellite'] = 'ADS_satellite'
 
