@@ -5,7 +5,6 @@ if __name__ == '__main__':
 
     SimSettings = apv.settings.simulation.Simulation()
     APV_SystSettings = apv.settings.apv_systems.Default()
-
     brObj = apv.br_wrapper.BR_Wrapper(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings

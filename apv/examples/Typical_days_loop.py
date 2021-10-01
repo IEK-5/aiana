@@ -1,5 +1,5 @@
 # #
-"""apv main"""
+""""""
 
 if __name__ == '__main__':
     from pathlib import Path
@@ -28,21 +28,35 @@ if __name__ == '__main__':
     APV_SystSettings.ground_scan_shift_x = 0
     APV_SystSettings.ground_scan_shift_y = 0
 
+    # APV_SystSettings.sceneDict['nMods'] *= 3
+    # APV_SystSettings.n_post_x = 4
+    APV_SystSettings.n_sets_x = 3
+
     # Alternative 1 to filter without exit
     weatherData = WeatherData(SimSettings)
     df_mean_hours_per_month = weatherData.typical_day_of_month()
-    months = [4]  # range(1, 13)
-    hours = range(0, 24, 1)
+    months = [6]  # range(1, 13)
+    hours = [7]  # range(0, 24, 1)
+
+    brObj = apv.br_wrapper.BR_Wrapper(
+        SimSettings=SimSettings,
+        APV_SystSettings=APV_SystSettings
+    )
+    # #
+    brObj.setup_br()
+    brObj.view_scene()
 # #
 if __name__ == '__main__':
     for month in months:
         day = 15  # (int(df_all['day_nearest_to_mean'].loc[month]))
         for hour in hours:
             SimSettings.sim_date_time = f'{month}-{day}_{hour}h'
-            weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(SimDT(SimSettings))
+            simDT = SimDT(SimSettings)
+            weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(simDT)
+            hour_utc = simDT.sim_dt_utc.hour
 
-            ghi = df_mean_hours_per_month['GHI'].loc[month, hour]
-            dhi = df_mean_hours_per_month['DHI'].loc[month, hour]
+            ghi = df_mean_hours_per_month['GHI'].loc[month, hour_utc]
+            dhi = df_mean_hours_per_month['DHI'].loc[month, hour_utc]
             dni = ghi-dhi  # (as ground has tilt 0)
             # print(f'GHI: {ghi}, sunalt: {weatherData.sunalt}.')
             if weatherData.sunalt < 0:
@@ -64,8 +78,9 @@ if __name__ == '__main__':
                     APV_SystSettings=APV_SystSettings
                 )
                 brObj.setup_br(dni_singleValue=dni, dhi_singleValue=dhi)
-                brObj.run_raytracing_simulation()
-                brObj.plot_ground_insolation()
+                brObj.view_scene()
+                # brObj.run_raytracing_simulation()
+                # brObj.plot_ground_insolation()
 
     # #
     evalObj.evaluate_APV()

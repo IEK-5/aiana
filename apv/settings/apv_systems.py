@@ -65,6 +65,11 @@ class Default:
     mounting_structure_type: Literal[
         'none', 'declined_tables', 'framed_single_axes'] = 'framed_single_axes'
 
+    s_post: float = 0.25  # post thickness
+    n_post_x: int = 2  # number of posts
+    module_set_distance_x: float = 4*s_post
+    n_sets_x: int = 3
+
     scene_camera_dicts: dict = {
         'total': {'cam_pos_x': -14,   # depth
                   'cam_pos_y': -1.6,   # left / right

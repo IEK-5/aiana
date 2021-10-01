@@ -165,28 +165,31 @@ class GeometriesHandler:
 
         s_beam = 0.15  # beam thickness
         d_beam = 0.5  # beam distance
-        s_post = 0.25  # post thickness
+        s_post = self.APV_SystSettings.s_post  # post thickness
+        n_post_x = self.APV_SystSettings.n_post_x
+
         h_post = self.scn["hub_height"] + 0.2  # post height
 
         x_length = self.allRows_footprint_x + 4*s_post
+        clone_distance_x = x_length/(n_post_x-1)
         y_length = self.allRows_footprint_y-self.singleRow_footprint_y
 
         x_start = self.sw_modCorner_azi0_x - 2*s_post
         y_start = self.sw_modCorner_azi0_y + self.singleRow_footprint_y/2
 
         # create posts
-        text = (f'! genbox {material} post {s_post} {s_post} {h_post}'
-                f' | xform  -t {x_start} {y_start} 0 \
-                -a 2 -t {x_length} 0 0 \
+        text = (f'!genbox {material} post {s_post} {s_post} {h_post}'
+                f' | xform -t {x_start} {y_start} 0 \
+                -a {n_post_x} -t {clone_distance_x} 0 0 \
                 -a {self.scn["nRows"]} -t 0 {self.scn["pitch"]} 0 '
                 )
         # create horizontal beams in y direction
-        text += (f'\n! genbox {material} post {s_beam} {y_length} {s_beam} \
-            | xform  -t {x_start} {y_start} {h_post - s_beam - 0.4} \
-            -a 2 -t {x_length} 0 0 -a 2 -t 0 0 {-d_beam} ')
+        text += (f'\n!genbox {material} post {s_beam} {y_length} {s_beam} \
+            | xform -t {x_start} {y_start} {h_post - s_beam - 0.4} \
+            -a {n_post_x} -t {clone_distance_x} 0 0 -a 2 -t 0 0 {-d_beam} ')
         # create horizontal beams in x direction
-        text += (f'\n! genbox {material} post {x_length} {s_beam} {s_beam} \
-                | xform  -t {x_start} {y_start} {h_post - s_beam - 0.2} \
+        text += (f'\n!genbox {material} post {x_length} {s_beam} {s_beam} \
+                | xform -t {x_start} {y_start} {h_post - s_beam - 0.2} \
                 -a {self.scn["nRows"]} -t 0 {self.scn["pitch"]} 0 \
                 -a 2 -t 0 0 {-d_beam} '
                  )
@@ -194,20 +197,20 @@ class GeometriesHandler:
 
     def groundscan_area(self) -> str:
         text = (
-            f'! genbox grass field {self.x_field} {self.y_field} 0.00001'
+            f'!genbox grass field {self.x_field} {self.y_field} 0.00001'
             f' | xform -t {self.sw_corner_scan_x} {self.sw_corner_scan_y} 0'
         )
 
         if self.debug_mode:
             text += (
                 # mark origin
-                f'\n! genbox black post {0.5} {0.5} 10'
-                f'\n! genbox white_EPDM post {0.2} {0.2} 10'
+                f'\n!genbox black post {0.5} {0.5} 10'
+                f'\n!genbox white_EPDM post {0.2} {0.2} 10'
                 # mark field center
-                f'\n! genbox black post {0.3} {0.3} 8 | xform '
+                f'\n!genbox black post {0.3} {0.3} 8 | xform '
                 f'-t {self.center_offset_x} {self.center_offset_y} 0'
                 # mark system edge
-                f'\n! genbox black post {0.2} {0.2} 8 | xform '
+                f'\n!genbox black post {0.2} {0.2} 8 | xform '
                 f'-t {self.sw_corner_scan_x} {self.sw_corner_scan_y} 0'
             )
 

@@ -21,6 +21,7 @@ nach Mohds Arbeit:
 
 '''
 # import needed packages
+from apv.classes import geometries_handler
 from apv.utils import units_converter as uc
 from apv.utils import files_interface as fi
 from apv.settings.simulation import Simulation
@@ -326,6 +327,9 @@ class BR_Wrapper:
         self.scene = self.radObj.makeScene(
             moduletype=APV_SystSettings.module_name,
             sceneDict=APV_SystSettings.sceneDict)
+
+        all_modules_rad_file = self.scene.radfiles
+
         rad_text = ''
         structure_type = APV_SystSettings.mounting_structure_type
         # create mounting structure as custom object:
@@ -338,17 +342,33 @@ class BR_Wrapper:
             rad_text += APV_SystSettings.extra_customObject_rad_text
 
         if rad_text != '':
+            shift_x = (APV_SystSettings.module_set_distance_x
+                       + self.geomObj.singleRow_length_x)
+            n_sets_x = APV_SystSettings.n_sets_x
             rz = 180 - APV_SystSettings.sceneDict["azimuth"]
             # add mounting structure to the radObj with rotation
             self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
                 radfile=self.scene.radfiles,
                 customObject=self.radObj.makeCustomObject(
                     'structure', rad_text),
-                text=f'!xform -rz {rz}'
+                text=f'!xform -rz {rz} -a {n_sets_x} -t {shift_x} 0 0'
+            )
+
+        if n_sets_x > 1:
+            modules_text = (
+                self.radObj.moduleDict['text']
+                + self.scene.text.replace('!xform', '|xform').replace(
+                    f' objects\\{self.APV_SystSettings.module_name}.rad', ''))
+
+            self.radObj.appendtoScene(
+                radfile=self.scene.radfiles,
+                customObject=self.radObj.makeCustomObject(
+                    'modules', modules_text),
+                text=f'!xform -rz {rz} -a {n_sets_x} -t {shift_x} 0 0'
             )
 
         # add ground scan area visualization to the radObj without rotation
-        if self.APV_SystSettings.add_groundScanArea_as_object_to_scene:
+        if APV_SystSettings.add_groundScanArea_as_object_to_scene:
             ground_rad_text = ghObj.groundscan_area()
 
             self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
@@ -390,6 +410,7 @@ class BR_Wrapper:
 
         if oct_file_name is None:
             oct_file_name = self.oct_file_name
+        # self.radObj.makeOct(octname=self.oct_file_name)
 
         scd = self.APV_SystSettings.scene_camera_dicts[view_name]
 
