@@ -21,7 +21,6 @@ nach Mohds Arbeit:
 
 '''
 # import needed packages
-from apv.classes import geometries_handler
 from apv.utils import units_converter as uc
 from apv.utils import files_interface as fi
 from apv.settings.simulation import Simulation
@@ -76,6 +75,7 @@ class BR_Wrapper:
             self,
             SimSettings: Simulation,
             APV_SystSettings: APV_SystSettings,
+            geometryObj: GeometriesHandler = None,
             # weather_file=None,  # to optionally skip epw download
             debug_mode=False
             # create_oct_file=True
@@ -83,7 +83,7 @@ class BR_Wrapper:
         self.SimSettings = SimSettings
         self.APV_SystSettings = APV_SystSettings
 
-        self.geomObj = GeometriesHandler(
+        self.geomObj = geometryObj or GeometriesHandler(
             SimSettings, APV_SystSettings, debug_mode)
         self.simDT = SimDT(SimSettings)
         self.weatherData = WeatherData(SimSettings)
@@ -189,7 +189,7 @@ class BR_Wrapper:
         # gendaylit using Perez models for direct and diffuse components
         self.radObj.gendaylit2manual(
             dni_singleValue, dhi_singleValue,
-            self.weatherData.sunalt, self.weatherData.sunalt)
+            self.weatherData.sunalt, self.weatherData.sunaz)
 
         self.oct_file_name = self.radObj.name \
             + '_' + self.SimSettings.sim_date_time
@@ -328,8 +328,6 @@ class BR_Wrapper:
             moduletype=APV_SystSettings.module_name,
             sceneDict=APV_SystSettings.sceneDict)
 
-        all_modules_rad_file = self.scene.radfiles
-
         rad_text = ''
         structure_type = APV_SystSettings.mounting_structure_type
         # create mounting structure as custom object:
@@ -355,15 +353,35 @@ class BR_Wrapper:
             )
 
         if n_sets_x > 1:
+            """ TODO cleaner code and slight speed optimization:
+            Return concat of matfiles, radfiles and skyfiles
+
+            filelist = self.radObj.materialfiles + self.radObj.skyfiles \
+                + radfiles <<- ersetzen mit eigener liste ohne erstes set
+            um eigene liste zu erstellen, makeCustomobject und appendtoscene
+            in eine eigene Methode zusammenführen mit besserer Namensgebung.
+
+            und im moment wird standardmäßig auch nur der boden unter dem
+            haupt set gescant.
+            """
+
+            # was passiert hier: um alle module kopieren zu können, muss
+            # module + scene erstellung in einem schritt erfolgen, damit ein
+            # file anschließend als ganzes (ohne interne file weiterleitung)
+            # kopiert werden kann. Dazu nehme ich die rad_text
+            # aus br und modifiziere sie.
             modules_text = (
-                self.radObj.moduleDict['text']
-                + self.scene.text.replace('!xform', '|xform').replace(
+                self.radObj.moduleDict['text']  # module text
+                # (only "numpanels" considered)
+                + self.scene.text.replace(  # all modules in first set
+                    '!xform', '|xform').replace(
                     f' objects\\{self.APV_SystSettings.module_name}.rad', ''))
 
             self.radObj.appendtoScene(
                 radfile=self.scene.radfiles,
                 customObject=self.radObj.makeCustomObject(
-                    'modules', modules_text),
+                    'copied_modules', modules_text),
+                # cloning all modules from first set into all sets
                 text=f'!xform -rz {rz} -a {n_sets_x} -t {shift_x} 0 0'
             )
 

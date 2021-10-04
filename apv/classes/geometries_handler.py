@@ -152,6 +152,12 @@ class GeometriesHandler:
         s_x = self.APV_SystSettings.ground_scan_shift_x
         s_y = self.APV_SystSettings.ground_scan_shift_y
 
+        # #TODO if self.APV_SystSettings.n_sets_x > 1:
+        # statt n_sets_x --> schöner name für "Anzahl geclonter Sets für
+        # periodische Randbedingungen
+        # in einer Richtung (-x oder +x)" mit "Set" = Struktur + Module?
+        # aber eigentlich will man später vllt alle clone scannen können?
+
         self.sw_corner_scan_x = -self.x_field/2 + self.center_offset_x + s_x
         self.sw_corner_scan_y = -self.y_field/2 + self.center_offset_y + s_y
 

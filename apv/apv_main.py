@@ -14,7 +14,7 @@ if __name__ == '__main__':
 
     # #
     brObj.view_scene(
-        view_name='total', view_type='perspective'
+        view_name='top_down', view_type='parallel'
     )
 # #
 if __name__ == '__main__':

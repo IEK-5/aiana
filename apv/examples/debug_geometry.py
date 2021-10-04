@@ -31,7 +31,6 @@ if __name__ == '__main__':
     # rise: 5:20
     # set: 21:52
     SimSettings.sky_gen_mode = 'gendaylit'
-    SimSettings.sim_date_time = '6-21_8h'
     ###############################################
 
     SimSettings.spatial_resolution = 0.1
@@ -87,6 +86,7 @@ if __name__ == '__main__':
         APV_SystSettings=APV_SystSettings
     )
 
+    SimSettings.sim_date_time = '6-21_15h'
     brObj.setup_br()
     # evalObj.evaluate_APV(SimSettings=SimSettings)
     # #
