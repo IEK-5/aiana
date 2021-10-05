@@ -60,8 +60,8 @@ class Simulation:
 
     # needed for sky_gen_mode = 'gencumsky':
     # Insert start date of the year as [month,day,hour]
-    startdt = '1-1_0h'
+    startdt = '1-1_0:00'
     # Insert end date of year as [month,day,hour]
-    enddt = '1-1_23h'
+    enddt = '1-1_23:00'
 
     cm_unit: Literal['Irradiance', 'PAR', 'Shadow-Depth'] = 'Irradiance'

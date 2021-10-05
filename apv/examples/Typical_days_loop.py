@@ -19,9 +19,9 @@ if __name__ == '__main__':
         SimSettings=SimSettings, APV_SystSettings=APV_SystSettings)
 
     # ### settings:  ####
-    APV_SystSettings.module_form = 'cell_level_checker_board'
-    APV_SystSettings.sceneDict['pitch'] = 12
-    SimSettings.spatial_resolution = 0.1
+    APV_SystSettings.module_form = 'std'
+    # APV_SystSettings.sceneDict['pitch'] = 10
+    SimSettings.spatial_resolution = 5
     APV_SystSettings.n_sets_x = 4
 
     # APV_SystSettings.add_groundScanArea_as_object_to_scene = True
@@ -80,10 +80,8 @@ if __name__ == '__main__':
             elif ghi < 50:
                 print(f'GHI too low ({ghi} Wh/m²).')
             else:
-                SimSettings.sim_name = (
-                    f'APV_Morschenich_{APV_SystSettings.module_form}'
-                    f'_res_{SimSettings.spatial_resolution}'
-                    f'_{SimSettings.sim_date_time}')
+                SimSettings.sim_name = ('APV_Morschenich',
+                                        f'{SimSettings.spatial_resolution}')
 
                 brObj = apv.br_wrapper.BR_Wrapper(
                     SimSettings=SimSettings,
@@ -95,8 +93,9 @@ if __name__ == '__main__':
                 )
                 brObj.setup_br(dni_singleValue=dni, dhi_singleValue=dhi)
                 brObj.view_scene(view_name='top_down', view_type='parallel')
-                # brObj.run_raytracing_simulation()
-                # brObj.plot_ground_insolation()
+                brObj.run_raytracing_simulation()
+                # #
+                brObj.plot_ground_insolation()
 
     # #
     evalObj.evaluate_APV()

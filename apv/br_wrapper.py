@@ -7,14 +7,7 @@ to presets in settings.py
 TODO
 - gencumsky time input fixen ähnlich wie bei gendaylit  -->Leo
 - Plots für Bart
-
-
-- pvlib zeit checken --> Mohd
--
-
-- shadow map prüfen --> Mohd
 - aufräumen, dokumentieren... -->Mohd
-
 
 nach Mohds Arbeit:
 - umstrukturieren? --> Leo
@@ -102,6 +95,7 @@ class BR_Wrapper:
 
         self.df_ground_results = pd.DataFrame()
         self.csv_file_name = str()
+        self.final_results_folder = Path()
 
     def setup_br(self, dni_singleValue=None, dhi_singleValue=None):
         """
@@ -139,10 +133,14 @@ class BR_Wrapper:
             self.APV_SystSettings)
 
         working_folder = user_pathes.bifacial_radiance_files_folder
+        self.final_results_folder = os.path.join(
+            user_pathes.results_folder, f'{self.SimSettings.sim_name}',
+            f'{self.APV_SystSettings.module_form}')
         # check folder existence
         fi.make_dirs_if_not_there([working_folder,
                                    user_pathes.data_download_folder,
-                                   user_pathes.results_folder])
+                                   user_pathes.results_folder,
+                                   self.final_results_folder])
 
         # create Bifacial_Radiance Object with ground
         self.radObj = br.RadianceObj(
@@ -190,9 +188,9 @@ class BR_Wrapper:
         self.radObj.gendaylit2manual(
             dni_singleValue, dhi_singleValue,
             self.weatherData.sunalt, self.weatherData.sunaz)
-
+        sim_date_name = self.SimSettings.sim_date_time.replace(':', '_')
         self.oct_file_name = self.radObj.name \
-            + '_' + self.SimSettings.sim_date_time
+            + '_' + sim_date_name
 
         """
         # gencumskyself.met_data
@@ -575,7 +573,7 @@ class BR_Wrapper:
         df_ground_results = df_ground_results.reset_index()
 
         # Path for saving final results
-        f_result_path = os.path.join(user_pathes.results_folder,
+        f_result_path = os.path.join(self.final_results_folder,
                                      self.csv_file_name)
         df_ground_results.to_csv(f_result_path)
         print(f'merged file saved in {f_result_path}\n')
@@ -597,9 +595,10 @@ class BR_Wrapper:
         """
 
         if df is None:
+            f_result_path = os.path.join(self.final_results_folder,
+                                         self.csv_file_name)
             df = apv.utils.files_interface.df_from_file_or_folder(
-                apv.settings.user_pathes.results_folder / Path(
-                    self.csv_file_name))
+                f_result_path)
         if cm_unit is None:
             cm_unit = self.SimSettings.cm_unit
 
@@ -620,7 +619,7 @@ class BR_Wrapper:
 
         if cm_unit == 'PAR':
             df = uc.irradiance_to_PAR(df=df)
-            f_result_path = os.path.join(user_pathes.results_folder,
+            f_result_path = os.path.join(self.final_results_folder,
                                          self.csv_file_name)
             df.to_csv(f_result_path)
             z = 'PARGround'
@@ -630,7 +629,7 @@ class BR_Wrapper:
         elif cm_unit == 'Shadow-Depth':
             df = uc.irradiance_to_shadowdepth(df=df,
                                               SimSettings=self.SimSettings)
-            f_result_path = os.path.join(user_pathes.results_folder,
+            f_result_path = os.path.join(self.final_results_folder,
                                          self.csv_file_name)
             df.to_csv(f_result_path)
             z = 'ShadowDepth'
@@ -651,6 +650,9 @@ class BR_Wrapper:
         fig.axes[1] = apv.utils.plots.add_north_arrow(
             fig.axes[1], self.APV_SystSettings.sceneDict['azimuth'])
 
-        apv.utils.files_interface.save_fig(fig, self.oct_file_name+'_'+z)
+        apv.utils.files_interface.save_fig(
+            fig,
+            self.oct_file_name+'_'+z,
+            parent_folder_path=self.final_results_folder)
 
 # #

@@ -33,7 +33,7 @@ if __name__ == '__main__':
     SimSettings.sky_gen_mode = 'gendaylit'
     ###############################################
 
-    SimSettings.spatial_resolution = 0.1
+    SimSettings.spatial_resolution = 5
     SimSettings.irradiance_data_source = 'ADS_satellite'
     print(SimSettings.irradiance_data_source)
     # Insert start end-date of the year as [month,day,hour]
@@ -118,7 +118,7 @@ if __name__ == '__main__':
 if __name__ == '__main__':
     brObj.run_raytracing_simulation()
     # #
-    brObj.plot_ground_insolation()
+    brObj.plot_ground_insolation(cm_unit='PAR')
     # #
     # show result data frame
     brObj.df_ground_results
