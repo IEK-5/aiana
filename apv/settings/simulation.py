@@ -43,7 +43,7 @@ class Simulation:
 
     # time settings (as local time of the timezone defined in apv_location.tz)
     # currently only as typical meterological year (TMY) = mean over 2005-2020
-    sim_date_time = '06-15_20h'  # used as second part of the .oct file name
+    sim_date_time = '06-15_20:00'  # used as second part of the .oct file name
     time_step = '1hour'  # also possible: '30minute', '1hour'
     # if irradiance_data_source == 'ADS_satellite': dhi and dni values are
     # averaged from sim_date_time-time_step until sim_date_time+time_step

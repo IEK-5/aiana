@@ -25,7 +25,7 @@ class SimDT:
             SimSettings.enddt,
             SimSettings.apv_location.tz
         )
-
+        # TODO freq anpassen für time_step < 1hour
         self.times = pd.date_range(start=self.startdt_utc, end=self.enddt_utc,
                                    freq='1h', closed='right')
 
@@ -45,7 +45,7 @@ class SimDT:
             int: hours_of_year
         """
         sim_dt_tz_naiv: datetime = datetime.strptime(
-            '22-'+date_time_str, '%y-%m-%d_%Hh')
+            '22-'+date_time_str, '%y-%m-%d_%H:%M')
         pytz_tz = pytz.timezone(tz)
         sim_dt = pytz_tz.localize(sim_dt_tz_naiv)
 

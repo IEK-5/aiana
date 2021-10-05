@@ -18,25 +18,26 @@ def adjust_settings(
         APV_SystSettings.sceneDict['azimuth'] = 90
         APV_SystSettings.moduleDict['numpanels'] = 2
 
-    def _calc_cell_size(mod_size, num_cell, cell_gap):
-        # add cell sizes
-
-        # formula derivation:
-        # x = numcellsx * xcell + (numcellsx-1) * xcellgap
-        # xcell = (x - (numcellsx-1)*xcellgap) / numcellsx
-        cell_size = (mod_size - (num_cell-1)*cell_gap) / num_cell
-        return cell_size
-
-    APV_SystSettings.cellLevelModuleParams['xcell'] = _calc_cell_size(
+    APV_SystSettings.cellLevelModuleParams['xcell'] = calc_cell_size(
         APV_SystSettings.moduleDict['x'],
         APV_SystSettings.cellLevelModuleParams['numcellsx'],
         APV_SystSettings.cellLevelModuleParams['xcellgap']
     )
 
-    APV_SystSettings.cellLevelModuleParams['ycell'] = _calc_cell_size(
+    APV_SystSettings.cellLevelModuleParams['ycell'] = calc_cell_size(
         APV_SystSettings.moduleDict['y'],
         APV_SystSettings.cellLevelModuleParams['numcellsy'],
         APV_SystSettings.cellLevelModuleParams['ycellgap']
     )
 
     return APV_SystSettings
+
+
+def calc_cell_size(mod_size, num_cell, cell_gap):
+    # add cell sizes
+
+    # formula derivation:
+    # x = numcellsx * xcell + (numcellsx-1) * xcellgap
+    # xcell = (x - (numcellsx-1)*xcellgap) / numcellsx
+    cell_size = (mod_size - (num_cell-1)*cell_gap) / num_cell
+    return cell_size
