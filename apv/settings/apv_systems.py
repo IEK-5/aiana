@@ -67,8 +67,10 @@ class Default:
 
     s_post: float = 0.25  # post thickness
     n_post_x: int = 2  # number of posts
-    module_set_distance_x: float = 4*s_post
-    n_sets_x: int = 3
+
+    n_apv_system_clones_in_x: int = 0  # for azimuth 180 towards east
+    n_apv_system_clones_in_negative_x: int = 0  # towards west
+    apv_system_clones_distance: float = 4*s_post
 
     scene_camera_dicts: dict = {
         'total': {'cam_pos_x': -14,   # depth
@@ -114,8 +116,8 @@ class Default:
     ground_scan_margin_x: float = 8
     ground_scan_margin_y: float = 4
     # shift scan area [m]
-    ground_scan_shift_x: float = -1  # positiv: towards east
-    ground_scan_shift_y: float = 1  # positiv: towards north
+    ground_scan_shift_x: float = 0  # positiv: towards east
+    ground_scan_shift_y: float = 0  # positiv: towards north
 
     round_up_field_dimensions: bool = True
 

@@ -26,46 +26,42 @@ if __name__ == '__main__':
     APV_SystSettings.module_form = 'std'
     SimSettings.spatial_resolution = 5
     # APV_SystSettings.sceneDict['pitch'] = 10
-    APV_SystSettings.n_sets_x = 4
-
-    # APV_SystSettings.add_groundScanArea_as_object_to_scene = True
+    APV_SystSettings.add_groundScanArea_as_object_to_scene = True
 
     geomObj = GeometriesHandler(SimSettings, APV_SystSettings)
 
     def modify_APV_SystSettings(APV_SystSettings: SystSettings, hour
                                 ) -> SystSettings:
+        APV_SystSettings.scene_camera_dicts[
+            'top_down']['horizontal_view_angle'] = 80
+        APV_SystSettings.scene_camera_dicts[
+            'top_down']['vertical_view_angle'] = 50
+
         # To reduce sim time
         if hour <= 12:
-            x_shift_factor = 1
-            cam_pos_x = 0
+            APV_SystSettings.n_apv_system_clones_in_x = 2
+            APV_SystSettings.n_apv_system_clones_in_negative_x = 1
         elif hour > 12:
-            x_shift_factor = 2
-            cam_pos_x = 25
-        shift_x = (APV_SystSettings.module_set_distance_x
-                   + geomObj.singleRow_length_x)*x_shift_factor
-        APV_SystSettings.scene_camera_dicts[
-            'top_down']['cam_pos_x'] = cam_pos_x
-        APV_SystSettings.ground_scan_shift_x = shift_x
+            APV_SystSettings.n_apv_system_clones_in_x = 1
+            APV_SystSettings.n_apv_system_clones_in_negative_x = 2
+
         return APV_SystSettings
 
-    APV_SystSettings.scene_camera_dicts[
-        'top_down']['horizontal_view_angle'] = 80
-    APV_SystSettings.scene_camera_dicts[
-        'top_down']['vertical_view_angle'] = 50
     # To reduce sim time
     y_reduction = (-APV_SystSettings.sceneDict['pitch']*1/2
                    - APV_SystSettings.moduleDict['y'])
     APV_SystSettings.ground_scan_margin_x = 0
     APV_SystSettings.ground_scan_margin_y = y_reduction
+    # APV_SystSettings.sceneDict["azimuth"] = 200
 
     # dummy for path part
     brObj = apv.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings)
-    brObj.setup_br()
+    # brObj.setup_br()
     results_path_part: Path = brObj.results_subfolder
     results_path_part
 # #
 months = [10]  # range(1, 13)
-hours = [17]  # range(0, 24, 1)
+hours = [18]  # range(0, 24, 1)
 if __name__ == '__main__':
     weatherData = WeatherData(SimSettings)
     df_mean_hours_per_month = weatherData.typical_day_of_month()
@@ -74,6 +70,7 @@ if __name__ == '__main__':
         day = 15  # (int(df_all['day_nearest_to_mean'].loc[month]))
         for hour in hours:
             APV_SystSettings = modify_APV_SystSettings(APV_SystSettings, hour)
+
             SimSettings.sim_date_time = f'{month}-{day}_{hour}:00'
             simDT = SimDT(SimSettings)
             weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(simDT)
@@ -89,17 +86,15 @@ if __name__ == '__main__':
                 print(f'GHI too low ({ghi} Wh/m²).')
             else:
                 brObj = apv.br_wrapper.BR_Wrapper(
-                    SimSettings=SimSettings,
-                    APV_SystSettings=APV_SystSettings
-                )
+                    SimSettings, APV_SystSettings)
                 evalObj = apv.classes.APV_evaluation.APV_Evaluation(
                     SimSettings=SimSettings,
                     APV_SystSettings=APV_SystSettings
                 )
                 brObj.setup_br(dni_singleValue=dni, dhi_singleValue=dhi)
                 brObj.view_scene(view_name='top_down', view_type='parallel')
-                brObj.results_subfolder = results_path_part / Path(month)
-                brObj.run_raytracing_simulation()
+                # brObj.results_subfolder = results_path_part / Path(month)
+                # brObj.run_raytracing_simulation()
                 # #
                 brObj.plot_ground_insolation()
 
@@ -121,10 +116,5 @@ df_merged
 
 # #
 brObj.plot_ground_insolation(df_merged)
-
-
-# #
-1 or 2
-
 
 # #

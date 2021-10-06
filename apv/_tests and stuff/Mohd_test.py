@@ -2,7 +2,7 @@
 import os
 from pandas.io.parsers import read_csv
 from apv.settings import apv_systems
-from apv.settings.apv_systems import Default as APV_SystSettings
+from apv.settings.apv_systems import Default as SystSettings
 from apv.utils.files_interface import save_fig
 import pandas as pd
 import apv.settings.user_pathes as user_pathes
@@ -128,7 +128,7 @@ print(number_of_hours)
 # #
 results_folder = os.path.join(
     user_pathes.results_folder, f'{SimSettings.sim_name}',
-    f'{APV_SystSettings.module_form}')
+    f'{SystSettings.module_form}')
 
 # #
 results_folder

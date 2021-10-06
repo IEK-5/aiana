@@ -17,7 +17,7 @@ nach Mohds Arbeit:
 from apv.utils import units_converter as uc
 from apv.utils import files_interface as fi
 from apv.settings.simulation import Simulation
-from apv.settings.apv_systems import Default as APV_SystSettings
+from apv.settings.apv_systems import Default as SystSettings
 from apv.classes.geometries_handler import GeometriesHandler
 from apv.classes.weather_data import WeatherData
 from apv.classes.sim_datetime import SimDT
@@ -67,7 +67,7 @@ class BR_Wrapper:
     def __init__(
             self,
             SimSettings: Simulation,
-            APV_SystSettings: APV_SystSettings,
+            APV_SystSettings: SystSettings,
             geometryObj: GeometriesHandler = None,
             # weather_file=None,  # to optionally skip epw download
             debug_mode=False
@@ -246,7 +246,7 @@ class BR_Wrapper:
             # https://curry.eas.gatech.edu/Courses/6140/ency/Chapter9/Ency_Atmos/Reflectance_Albedo_Surface.pdf
             roughness=0.3)
 
-    def create_geometries(self, APV_SystSettings: APV_SystSettings):
+    def create_geometries(self, APV_SystSettings: SystSettings):
         """creates mounting structure (optional), pv modules"""
 
         ghObj = GeometriesHandler(
@@ -306,19 +306,18 @@ class BR_Wrapper:
             rad_text += APV_SystSettings.extra_customObject_rad_text
 
         if rad_text != '':
-            shift_x = (APV_SystSettings.module_set_distance_x
-                       + self.geomObj.singleRow_length_x)
-            n_sets_x = APV_SystSettings.n_sets_x
-            rz = 180 - APV_SystSettings.sceneDict["azimuth"]
+
             # add mounting structure to the radObj with rotation
             self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
                 radfile=self.scene.radfiles,
                 customObject=self.radObj.makeCustomObject(
                     'structure', rad_text),
-                text=f'!xform -rz {rz} -a {n_sets_x} -t {shift_x} 0 0'
+                text=self.geomObj.get_customObject_cloning_rad_txt(
+                    APV_SystSettings)
             )
 
-        if n_sets_x > 1:
+        if APV_SystSettings.n_apv_system_clones_in_x > 1 \
+                or APV_SystSettings.n_apv_system_clones_in_negative_x > 1:
             """ TODO cleaner code and slight speed optimization:
             Return concat of matfiles, radfiles and skyfiles
 
@@ -348,7 +347,8 @@ class BR_Wrapper:
                 customObject=self.radObj.makeCustomObject(
                     'copied_modules', modules_text),
                 # cloning all modules from first set into all sets
-                text=f'!xform -rz {rz} -a {n_sets_x} -t {shift_x} 0 0'
+                text=self.geomObj.get_customObject_cloning_rad_txt(
+                    APV_SystSettings)
             )
 
         # add ground scan area visualization to the radObj without rotation
@@ -391,7 +391,7 @@ class BR_Wrapper:
             being located in the view_fp parent directory (e.g. 'Demo1')
              """
 
-        oct_file_name = oct_file_name or self.file_name
+        oct_file_name = oct_file_name or self.oct_file_name
 
         scd = self.APV_SystSettings.scene_camera_dicts[view_name]
 
@@ -530,6 +530,8 @@ class BR_Wrapper:
             print_reading_messages=False)
 
         df_ground_results = df_ground_results.reset_index()
+        df_ground_results['time_local'] = self.simDT.sim_dt_local
+        df_ground_results['time_utc'] = self.simDT.sim_dt_utc_pd
         df_ground_results.to_csv(self.csv_file_path)
         print(f'merged file saved in {self.csv_file_path}\n')
         self.df_ground_results = df_ground_results

@@ -15,7 +15,7 @@ import numpy as np
 from typing import Literal
 import inspect
 import apv
-from apv.settings.apv_systems import Default as APV_SystSettings
+from apv.settings.apv_systems import Default as SystSettings
 
 import apv.settings.user_pathes as user_pathes
 from pathlib import Path
@@ -161,6 +161,21 @@ class GeometriesHandler:
         self.sw_corner_scan_x = -self.x_field/2 + self.center_offset_x + s_x
         self.sw_corner_scan_y = -self.y_field/2 + self.center_offset_y + s_y
 
+    def get_customObject_cloning_rad_txt(self, APV_SystSettings: SystSettings):
+        shift_x_per_system = (APV_SystSettings.apv_system_clones_distance
+                              + self.singleRow_length_x)
+
+        shift_x_array_start = \
+            -APV_SystSettings.n_apv_system_clones_in_negative_x\
+            * shift_x_per_system
+
+        n_sets_x = APV_SystSettings.n_apv_system_clones_in_x + 1 + \
+            APV_SystSettings.n_apv_system_clones_in_negative_x
+
+        rz = 180 - APV_SystSettings.sceneDict["azimuth"]
+        return (f'!xform -rz {rz} -t {shift_x_array_start} 0 0 '
+                f'-a {n_sets_x} -t {shift_x_per_system} 0 0')
+
     def framed_single_axes_mount(self) -> str:
         """Creates Aluminum posts and mounting structure
         for azimuth = 0,
@@ -279,7 +294,7 @@ class GeometriesHandler:
         return text
 
 
-def checked_module(APV_SystSettings: APV_SystSettings) -> str:
+def checked_module(APV_SystSettings: SystSettings) -> str:
     c = APV_SystSettings.cellLevelModuleParams
     m = APV_SystSettings.moduleDict
 
@@ -336,7 +351,7 @@ def checked_module(APV_SystSettings: APV_SystSettings) -> str:
     return text
 
 
-def make_text_EW(APV_SystSettings: APV_SystSettings) -> str:
+def make_text_EW(APV_SystSettings: SystSettings) -> str:
     """creates the needed text needed in makemodule() to create E-W.
     Azimuth angle must be 90! and number of panels must be 2!
 
@@ -369,7 +384,7 @@ def make_text_EW(APV_SystSettings: APV_SystSettings) -> str:
     return text
 
 
-def cell_level_EW_fixed(APV_SystSettings: APV_SystSettings) -> str:
+def cell_level_EW_fixed(APV_SystSettings: SystSettings) -> str:
     """creates needed text needed in makemodule() to create cell-level E-W.
     Azimuth angle must be 90! and number of panels must be 2!
 
