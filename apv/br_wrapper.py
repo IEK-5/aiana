@@ -5,8 +5,8 @@ to presets in settings.py
 
 
 TODO
-- gencumsky time input fixen ähnlich wie bei gendaylit  -->Leo
-- Plots für Bart
+- sub pfade fixen für plot merge
+- clones for azi <> 180°
 - aufräumen, dokumentieren... -->Mohd
 
 nach Mohds Arbeit:

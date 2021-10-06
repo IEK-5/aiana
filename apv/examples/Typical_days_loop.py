@@ -1,9 +1,7 @@
 # #
-""""""
-import pandas as pd
-import apv
 if __name__ == '__main__':
     from pathlib import Path
+    import pandas as pd
     import importlib as imp
     import apv
     from apv.classes.weather_data import WeatherData
@@ -25,8 +23,9 @@ if __name__ == '__main__':
     SimSettings.sim_name = 'APV_Morschenich'
     APV_SystSettings.module_form = 'std'
     SimSettings.spatial_resolution = 3
+    # SimSettings.use_multi_processing = False
     # APV_SystSettings.sceneDict['pitch'] = 10
-    APV_SystSettings.add_groundScanArea_as_object_to_scene = True
+    # APV_SystSettings.add_groundScanArea_as_object_to_scene = True
 
     geomObj = GeometriesHandler(SimSettings, APV_SystSettings)
 
@@ -60,9 +59,10 @@ if __name__ == '__main__':
     # results_path_part: Path = brObj.results_subfolder
     # results_path_part
 # #
-months = [10]  # range(1, 13)
-hours = [18]  # range(0, 24, 1)
 if __name__ == '__main__':
+    months = [10]  # range(1, 13)
+    hours = range(0, 24, 1)  # [18]  #
+
     weatherData = WeatherData(SimSettings)
     df_mean_hours_per_month = weatherData.typical_day_of_month()
 
@@ -93,29 +93,24 @@ if __name__ == '__main__':
                 )
                 brObj.setup_br(dni_singleValue=dni, dhi_singleValue=dhi)
                 # brObj.view_scene(view_name='top_down', view_type='parallel')
-                # brObj.results_subfolder = brObj.results_subfolder / Path(
-                #    str(month))
+                brObj.results_subfolder = brObj.results_subfolder / Path(
+                    str(month))
                 brObj.run_raytracing_simulation()
-                # #
                 brObj.plot_ground_insolation()
 
+# #
+if __name__ == '__main__':
+    # evalObj.evaluate_APV(SimSettings)
+
     # #
-    evalObj.evaluate_APV()
+    df = apv.utils.files_interface.df_from_file_or_folder(
+        brObj.results_subfolder, append_all_in_folder=True, index_col=0)
+    df['xy'] = df['x'].astype(str) + df['y'].astype(str)
+    df
+    # #
+    df_merged = pd.pivot_table(
+        df, index=['x', 'y'], values=['x', 'y', 'z', 'Wm2'], aggfunc='sum')
+    df_merged
 
-# #
-month = 4
-temppath = r'C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich\\' \
-    + str(month)
-df = apv.utils.files_interface.df_from_file_or_folder(
-    temppath, append_all_in_folder=True, index_col=0)
-df['xy'] = df['x'].astype(str) + df['y'].astype(str)
-df
-# #
-df_merged = pd.pivot_table(
-    df, index=['x', 'y'], values=['x', 'y', 'z', 'Wm2'], aggfunc='sum')
-df_merged
-
-# #
-brObj.plot_ground_insolation(df_merged)
-
-# #
+    # #
+    brObj.plot_ground_insolation(df_merged)

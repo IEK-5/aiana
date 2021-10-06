@@ -3,15 +3,16 @@ if __name__ == '__main__':
     import apv
 
     SimSettings = apv.settings.simulation.Simulation()
+    SimSettings.sim_name = 'declined_tables_and_glassbox'
     SimSettings.spatial_resolution = 1
-    APV_SystSettings = apv.settings.apv_systems.Default()
+    APV_SystSettings = \
+        apv.settings.apv_systems.APV_Syst_InclinedTables_Juelich()
+
     brObj = apv.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings)
     brObj.setup_br()
 
     # #
-    brObj.view_scene(
-        view_name='top_down', view_type='parallel'
-    )
+    brObj.view_scene()
 # #
 if __name__ == '__main__':
     brObj.run_raytracing_simulation()
@@ -22,10 +23,3 @@ if __name__ == '__main__':
     # #
     # show result data frame
     brObj.df_ground_results
-# #
-if __name__ == '__main__':
-    evalObj = apv.classes.APV_evaluation.APV_Evaluation(
-        SimSettings=SimSettings,
-        APV_SystSettings=APV_SystSettings
-    )
-    evalObj.evaluate_APV()

@@ -50,7 +50,7 @@ def irradiance_to_shadowdepth(df, SimSettings):
     simDT = SimDT(SimSettings)
     path = user_pathes.bifacial_radiance_files_folder / Path(
         'EPWs' + '/epw_temp.csv')
-    epw = files_interface.df_from_file_or_folder(path, header=None)
+    epw = files_interface.df_from_file_or_folder(str(path), header=None)
 
     if SimSettings.sky_gen_mode == 'gendaylit':
         sim_time = simDT.convert_settings_localtime_to_UTC(
