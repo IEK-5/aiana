@@ -1,15 +1,14 @@
 # #
+from apv.br_wrapper import BR_Wrapper
+
+
 if __name__ == '__main__':
     from pathlib import Path
     import apv
 
     SimSettings = apv.settings.simulation.Simulation()
     APV_SystSettings = apv.settings.apv_systems.Default()
-    brObj = apv.br_wrapper.BR_Wrapper(
-        SimSettings=SimSettings,
-        APV_SystSettings=APV_SystSettings
-    )
-
+    brObj = apv.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings)
     brObj.setup_br()
 
     # #

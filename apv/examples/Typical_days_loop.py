@@ -24,7 +24,7 @@ if __name__ == '__main__':
     # ### settings:  ####
     SimSettings.sim_name = 'APV_Morschenich'
     APV_SystSettings.module_form = 'std'
-    SimSettings.spatial_resolution = 5
+    SimSettings.spatial_resolution = 3
     # APV_SystSettings.sceneDict['pitch'] = 10
     APV_SystSettings.add_groundScanArea_as_object_to_scene = True
 
@@ -55,10 +55,10 @@ if __name__ == '__main__':
     # APV_SystSettings.sceneDict["azimuth"] = 200
 
     # dummy for path part
-    brObj = apv.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings)
+    # brObj = apv.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings)
     # brObj.setup_br()
-    results_path_part: Path = brObj.results_subfolder
-    results_path_part
+    # results_path_part: Path = brObj.results_subfolder
+    # results_path_part
 # #
 months = [10]  # range(1, 13)
 hours = [18]  # range(0, 24, 1)
@@ -92,9 +92,10 @@ if __name__ == '__main__':
                     APV_SystSettings=APV_SystSettings
                 )
                 brObj.setup_br(dni_singleValue=dni, dhi_singleValue=dhi)
-                brObj.view_scene(view_name='top_down', view_type='parallel')
-                # brObj.results_subfolder = results_path_part / Path(month)
-                # brObj.run_raytracing_simulation()
+                # brObj.view_scene(view_name='top_down', view_type='parallel')
+                # brObj.results_subfolder = brObj.results_subfolder / Path(
+                #    str(month))
+                brObj.run_raytracing_simulation()
                 # #
                 brObj.plot_ground_insolation()
 

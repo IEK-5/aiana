@@ -90,7 +90,7 @@ class BR_Wrapper:
         self.frontscan = dict()
 
         self.df_ground_results = pd.DataFrame()
-        self.results_subfolder: Path = None
+        self.results_subfolder = Path()
         self.csv_file_path = Path()
         self.oct_file_name = str()
         self.file_name = str()  # for plot and csv file
@@ -112,12 +112,11 @@ class BR_Wrapper:
         self.set_up_AnalObj_and_groundscan()
 
     def set_up_file_names_and_paths(self):
-        self.results_subfolder = self.results_subfolder or \
-            user_pathes.results_folder / Path(
-                self.SimSettings.sim_name,
-                self.APV_SystSettings.module_form
-                + '_res-' + str(self.SimSettings.spatial_resolution)
-            )
+        self.results_subfolder = user_pathes.results_folder / Path(
+            self.SimSettings.sim_name,
+            self.APV_SystSettings.module_form
+            + '_res-' + str(self.SimSettings.spatial_resolution)
+        )
 
         self.file_name = self.SimSettings.sim_date_time.replace(':', 'h')
         self.oct_file_name = self.SimSettings.sim_name \
@@ -430,7 +429,7 @@ class BR_Wrapper:
     def set_up_AnalObj_and_groundscan(self):
         # instantiate analysis
         self.analObj = br.AnalysisObj(
-            octfile=self.file_name+'.oct', name=self.radObj.name)
+            octfile=self.oct_file_name+'.oct', name=self.radObj.name)
 
         # number of sensors on ground against y-axis (along x-axis)
         sensorsy = np.round(
@@ -478,7 +477,7 @@ class BR_Wrapper:
         temp_name = (f'{self.radObj.name}_{self.SimSettings.scan_target}_'
                      f'scan_{y_start:.3f}')
 
-        self.analObj.analysis(self.file_name+'.oct',
+        self.analObj.analysis(self.oct_file_name+'.oct',
                               temp_name,
                               self.frontscan,
                               self.backscan,
