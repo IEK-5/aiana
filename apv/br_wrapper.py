@@ -71,7 +71,6 @@ class BR_Wrapper:
             geometryObj: GeometriesHandler = None,
             # weather_file=None,  # to optionally skip epw download
             debug_mode=False
-            # create_oct_file=True
     ):
         self.SimSettings = SimSettings
         self.APV_SystSettings = APV_SystSettings
@@ -80,13 +79,10 @@ class BR_Wrapper:
             SimSettings, APV_SystSettings, debug_mode)
         self.simDT = SimDT(SimSettings)
         self.weatherData = WeatherData(SimSettings)
-        # self.weather_file_br_epw = weather_file
         self.debug_mode = debug_mode
-        # self.create_oct_file = create_oct_file
 
         self.radObj: br.RadianceObj = None
         self.scene: br.SceneObj = None
-        self.oct_file_name: str = None
         self.analObj: br.AnalysisObj = None
 
         self.ygrid: list[int] = []
@@ -94,86 +90,62 @@ class BR_Wrapper:
         self.frontscan = dict()
 
         self.df_ground_results = pd.DataFrame()
-        self.csv_file_name = str()
-        self.final_results_folder = Path()
+        self.results_subfolder: Path = None
+        self.csv_file_path = Path()
+        self.oct_file_name = str()
+        self.file_name = str()  # for plot and csv file
 
     def setup_br(self, dni_singleValue=None, dhi_singleValue=None):
-        """
-        docstring noch veraltet
 
-        Creates the scene according to parameters and presets defined in
-        settings.py - scene created as follows:
-        0- adjust settings
-        1- create Radiance-Object
-        2- setting albedo of ground
-        3- read TMY data (from EPW or pre-installed)
-        4- create module (either cell defined or not)
-        5- create structure object
-        6- create sky according to modelling model 'gendaylit' or 'gencumsky'
-        7- define number of panels, rows, and columns and final scene (.oct)
-
-        Args:
-            sim_type (str, optional): 'gendaylit' for perez hourly analysis
-            or 'gencumsky' for cumulative perez model
-
-            cellLevelModule (bool, optional):
-            assign module acccording to cell level parameters if true.
-
-            EPW (bool, optional):
-            True: downloads nearest EPW data
-            False: checks downloaded TMY data.
-
-        Returns:
-            radObj: Radiance Object
-            scene:
-            metdata: Meteorological csv data
-        """
-
+        self.set_up_file_names_and_paths()
+        # adjust e.g. add cell sizes
         self.APV_SystSettings = apv.utils.settings_adjuster.adjust_settings(
             self.APV_SystSettings)
+        # create a bifacial_radiance object
+        self.radObj = br.RadianceObj(  # TODO is this name important?
+            self.file_name, str(user_pathes.bifacial_radiance_files_folder)
+        )
+        self.radObj.setGround(self.SimSettings.ground_albedo)
+        self.create_sky(dni_single=dni_singleValue, dhi_single=dhi_singleValue)
+        self.create_materials()
+        self.create_geometries(APV_SystSettings=self.APV_SystSettings)
+        self.set_up_AnalObj_and_groundscan()
 
-        working_folder = user_pathes.bifacial_radiance_files_folder
-        self.final_results_folder = os.path.join(
-            user_pathes.results_folder, f'{self.SimSettings.sim_name}',
-            f'{self.APV_SystSettings.module_form}')
+    def set_up_file_names_and_paths(self):
+        self.results_subfolder = self.results_subfolder or \
+            user_pathes.results_folder / Path(
+                self.SimSettings.sim_name,
+                self.APV_SystSettings.module_form
+                + '_res-' + str(self.SimSettings.spatial_resolution)
+            )
+
+        self.file_name = self.SimSettings.sim_date_time.replace(':', 'h')
+        self.oct_file_name = self.SimSettings.sim_name \
+            + '_' + self.APV_SystSettings.module_form + '_' + self.file_name
+        # set csv file path for saving final merged results
+        self.csv_file_path: Path = self.results_subfolder / Path(
+            self.file_name + '.csv')
+
         # check folder existence
-        fi.make_dirs_if_not_there([working_folder,
+        fi.make_dirs_if_not_there([user_pathes.bifacial_radiance_files_folder,
                                    user_pathes.data_download_folder,
                                    user_pathes.results_folder,
-                                   self.final_results_folder])
+                                   self.results_subfolder]
+                                  )
 
-        # create Bifacial_Radiance Object with ground
-        self.radObj = br.RadianceObj(
-            self.SimSettings.sim_name, path=str(working_folder))
-        self.radObj.setGround(self.SimSettings.ground_albedo)
-
-        self.create_sky(
-            dni_singleValue=dni_singleValue, dhi_singleValue=dhi_singleValue)
-
-        # set csv file name
-        # (placed here to allow for access also without a simulation run)
-        self.csv_file_name = self.oct_file_name + '.csv'
-
-        # create mounting structure (optional) and pv modules
-        self._create_materials()
-        self._create_geometries(APV_SystSettings=self.APV_SystSettings)
-
-        self._set_up_AnalObj_and_groundscan()
-        return
-
-    def create_sky(self, dni_singleValue=None, dhi_singleValue=None):
+    def create_sky(self, dni_single=None, dhi_single=None):
         """
         """
 
         # if self.SimSettings.sky_gen_mode == 'gendaylit':
         self.weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(self.simDT)
         # to be able to pass own dni/dhi values:
-        if dni_singleValue is None:
-            dni_singleValue = self.weatherData.dni
-        if dhi_singleValue is None:
-            dhi_singleValue = self.weatherData.dhi
+        if dni_single is None:
+            dni_single = self.weatherData.dni
+        if dhi_single is None:
+            dhi_single = self.weatherData.dhi
 
-        if dni_singleValue == 0 and dhi_singleValue == 0:
+        if dni_single == 0 and dhi_single == 0:
             sys.exit("""DNI and DHI are 0 within the last hour until the \
                 time given in settings/simulation/sim_date_time.\
                 \n--> Creating radiance files and view_scene() is not \
@@ -186,11 +158,8 @@ class BR_Wrapper:
 
         # gendaylit using Perez models for direct and diffuse components
         self.radObj.gendaylit2manual(
-            dni_singleValue, dhi_singleValue,
+            dni_single, dhi_single,
             self.weatherData.sunalt, self.weatherData.sunaz)
-        sim_date_name = self.SimSettings.sim_date_time.replace(':', '_')
-        self.oct_file_name = self.radObj.name \
-            + '_' + sim_date_name
 
         """
         # gencumskyself.met_data
@@ -264,9 +233,8 @@ class BR_Wrapper:
                 print(f"{print_string} custom material {mat_name}.")
             f.writelines(lines_new + [text])
             f.close()
-        return
 
-    def _create_materials(self):
+    def create_materials(self):
         # self.makeCustomMaterial(mat_name='dark_glass', mat_type='glass',
         #                        R=0.6, G=0.6, B=0.6)
         self.makeCustomMaterial(
@@ -278,8 +246,8 @@ class BR_Wrapper:
             # https://curry.eas.gatech.edu/Courses/6140/ency/Chapter9/Ency_Atmos/Reflectance_Albedo_Surface.pdf
             roughness=0.3)
 
-    def _create_geometries(self, APV_SystSettings: APV_SystSettings):
-        """create mounting structure (optional), pv modules"""
+    def create_geometries(self, APV_SystSettings: APV_SystSettings):
+        """creates mounting structure (optional), pv modules"""
 
         ghObj = GeometriesHandler(
             self.SimSettings, APV_SystSettings, self.debug_mode)
@@ -399,7 +367,6 @@ class BR_Wrapper:
                 # by !xform object/customObjectName.rad
             )
 
-        # make oct file
         self.radObj.makeOct(octname=self.oct_file_name)
 
     def view_scene(
@@ -424,9 +391,7 @@ class BR_Wrapper:
             being located in the view_fp parent directory (e.g. 'Demo1')
              """
 
-        if oct_file_name is None:
-            oct_file_name = self.oct_file_name
-        # self.radObj.makeOct(octname=self.oct_file_name)
+        oct_file_name = oct_file_name or self.file_name
 
         scd = self.APV_SystSettings.scene_camera_dicts[view_name]
 
@@ -462,15 +427,10 @@ class BR_Wrapper:
         subprocess.call(
             ['rvu', '-vf', view_fp, '-e', '.01', oct_file_name+'.oct'])
 
-    def _set_up_AnalObj_and_groundscan(self):
-
-        octfile = self.oct_file_name
-        # add extension if not there:
-        if octfile[-4] != '.oct':
-            octfile += '.oct'
+    def set_up_AnalObj_and_groundscan(self):
         # instantiate analysis
         self.analObj = br.AnalysisObj(
-            octfile=octfile, name=self.radObj.name)
+            octfile=self.file_name+'.oct', name=self.radObj.name)
 
         # number of sensors on ground against y-axis (along x-axis)
         sensorsy = np.round(
@@ -518,7 +478,7 @@ class BR_Wrapper:
         temp_name = (f'{self.radObj.name}_{self.SimSettings.scan_target}_'
                      f'scan_{y_start:.3f}')
 
-        self.analObj.analysis(self.oct_file_name+'.oct',
+        self.analObj.analysis(self.file_name+'.oct',
                               temp_name,
                               self.frontscan,
                               self.backscan,
@@ -559,7 +519,6 @@ class BR_Wrapper:
         print('\n')
 
         self.merge_line_scans()
-        return
 
     def merge_line_scans(self):
         """merge results to create one complete ground DataFrame
@@ -571,14 +530,9 @@ class BR_Wrapper:
             print_reading_messages=False)
 
         df_ground_results = df_ground_results.reset_index()
-
-        # Path for saving final results
-        f_result_path = os.path.join(self.final_results_folder,
-                                     self.csv_file_name)
-        df_ground_results.to_csv(f_result_path)
-        print(f'merged file saved in {f_result_path}\n')
+        df_ground_results.to_csv(self.csv_file_path)
+        print(f'merged file saved in {self.csv_file_path}\n')
         self.df_ground_results = df_ground_results
-        return
 
     def plot_ground_insolation(
         self,
@@ -593,12 +547,10 @@ class BR_Wrapper:
             from the csv file name stored in an instance of this class.
             Defaults to None.
         """
-
         if df is None:
-            f_result_path = os.path.join(self.final_results_folder,
-                                         self.csv_file_name)
             df = apv.utils.files_interface.df_from_file_or_folder(
-                f_result_path)
+                self.csv_file_path)
+
         if cm_unit is None:
             cm_unit = self.SimSettings.cm_unit
 
@@ -619,9 +571,7 @@ class BR_Wrapper:
 
         if cm_unit == 'PAR':
             df = uc.irradiance_to_PAR(df=df)
-            f_result_path = os.path.join(self.final_results_folder,
-                                         self.csv_file_name)
-            df.to_csv(f_result_path)
+            df.to_csv(self.csv_file_path)
             z = 'PARGround'
             colormap = 'YlOrBr'
             z_label = 'PAR [μmol quanta.m$^{-2}$.s$^{-1}$]'
@@ -629,9 +579,7 @@ class BR_Wrapper:
         elif cm_unit == 'Shadow-Depth':
             df = uc.irradiance_to_shadowdepth(df=df,
                                               SimSettings=self.SimSettings)
-            f_result_path = os.path.join(self.final_results_folder,
-                                         self.csv_file_name)
-            df.to_csv(f_result_path)
+            df.to_csv(self.csv_file_path)
             z = 'ShadowDepth'
             colormap = 'viridis_r'
             z_label = 'Shadow-Depth [%]'
@@ -652,7 +600,7 @@ class BR_Wrapper:
 
         apv.utils.files_interface.save_fig(
             fig,
-            self.oct_file_name+'_'+z,
-            parent_folder_path=self.final_results_folder)
+            self.file_name+'_'+z,
+            parent_folder_path=self.results_subfolder)
 
 # #

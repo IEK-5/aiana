@@ -102,7 +102,7 @@ if __name__ == '__main__':
         # for azimuth in range(180, 361, 30):
 
         APV_SystSettings.sceneDict['azimuth'] = azimuth
-        brObj._create_geometries(
+        brObj.create_geometries(
             APV_SystSettings=APV_SystSettings
         )
         brObj.view_scene(

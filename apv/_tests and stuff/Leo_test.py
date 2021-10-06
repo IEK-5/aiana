@@ -81,6 +81,8 @@ df['Hour'] = df.index.hour
 df['Minute'] = df.index.minute
 df
 # #
+Path('a', 'b')
+# #
 df_mean_hours_per_month = pd.pivot_table(
     df,
     index=['Month', 'Hour'],

@@ -42,11 +42,12 @@ def make_dirs_if_not_there(folder_paths: str or list):
 
 
 def df_from_file_or_folder(
-        rel_path: Path, path_main=path_main,
+        path: Path,
         skiprows=0, index_col=None,
         delimiter='\t|,|;', squeeze=False,
         append_all_in_folder=False,
-        names=None, header='infer', print_reading_messages=True):
+        names=None, header='infer', print_reading_messages=True,
+        add_source_file_name_to_df=False):
     '''
     rel_path: relative file path with file extension,
     in case of append_all_in_folder=True: rel_path = folder path
@@ -59,7 +60,7 @@ def df_from_file_or_folder(
     def read_file(source_file):
         if print_reading_messages:
             print('reading ' + source_file.split('\\')[-1])
-        return pd.read_csv(
+        df = pd.read_csv(
             source_file,
             skiprows=skiprows,
             delimiter=delimiter,
@@ -68,12 +69,14 @@ def df_from_file_or_folder(
             header=header,
             engine='python',
             squeeze=squeeze)
+        if add_source_file_name_to_df:
+            df['source'] = source_file.split('\\')[-1]
+        return df
 
     if append_all_in_folder:
-        source_folder = os.path.join(path_main, rel_path)
         source_files = []
-        for file_name in os.listdir(source_folder):
-            source_files += [os.path.join(path_main, rel_path, file_name)]
+        for file_name in os.listdir(path):
+            source_files += [os.path.join(path, file_name)]
         # generator (as list comprehension but without storing the actual
         # content, only what to loop, which is much faster)
         dfs = (
@@ -81,13 +84,13 @@ def df_from_file_or_folder(
         )
         df = pd.concat(dfs)
     else:
-        source_file = os.path.join(path_main, rel_path)
         try:
-            df = read_file(source_file)
+            df = read_file(path)
         except FileNotFoundError:
-            folder_path = "/".join(source_file.split("\\")[:-1])
+            folder_path = "/".join(path.split("\\")[:-1])
             if os.path.exists(folder_path):
-                print("check filename: " + str(os.listdir(folder_path)))
+                print(
+                    "check path or filename\n" + str(os.listdir(folder_path)))
     return df
 
 

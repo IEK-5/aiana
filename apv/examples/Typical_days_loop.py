@@ -1,5 +1,7 @@
 # #
 """"""
+import pandas as pd
+import apv
 if __name__ == '__main__':
     from pathlib import Path
     import importlib as imp
@@ -8,6 +10,7 @@ if __name__ == '__main__':
     from apv.classes.sim_datetime import SimDT
     from apv.classes.geometries_handler import GeometriesHandler
     from apv.settings.apv_systems import Default as SystSettings
+    from apv.settings import user_pathes
 
     imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.settings.apv_systems)
@@ -19,9 +22,10 @@ if __name__ == '__main__':
         SimSettings=SimSettings, APV_SystSettings=APV_SystSettings)
 
     # ### settings:  ####
+    SimSettings.sim_name = 'APV_Morschenich'
     APV_SystSettings.module_form = 'std'
-    # APV_SystSettings.sceneDict['pitch'] = 10
     SimSettings.spatial_resolution = 5
+    # APV_SystSettings.sceneDict['pitch'] = 10
     APV_SystSettings.n_sets_x = 4
 
     # APV_SystSettings.add_groundScanArea_as_object_to_scene = True
@@ -54,7 +58,11 @@ if __name__ == '__main__':
     APV_SystSettings.ground_scan_margin_x = 0
     APV_SystSettings.ground_scan_margin_y = y_reduction
 
-
+    # dummy for path part
+    brObj = apv.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings)
+    brObj.setup_br()
+    results_path_part: Path = brObj.results_subfolder
+    results_path_part
 # #
 months = [10]  # range(1, 13)
 hours = [17]  # range(0, 24, 1)
@@ -80,9 +88,6 @@ if __name__ == '__main__':
             elif ghi < 50:
                 print(f'GHI too low ({ghi} Wh/m²).')
             else:
-                SimSettings.sim_name = ('APV_Morschenich',
-                                        f'{SimSettings.spatial_resolution}')
-
                 brObj = apv.br_wrapper.BR_Wrapper(
                     SimSettings=SimSettings,
                     APV_SystSettings=APV_SystSettings
@@ -93,9 +98,33 @@ if __name__ == '__main__':
                 )
                 brObj.setup_br(dni_singleValue=dni, dhi_singleValue=dhi)
                 brObj.view_scene(view_name='top_down', view_type='parallel')
+                brObj.results_subfolder = results_path_part / Path(month)
                 brObj.run_raytracing_simulation()
                 # #
                 brObj.plot_ground_insolation()
 
     # #
     evalObj.evaluate_APV()
+
+# #
+month = 4
+temppath = r'C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich\\' \
+    + str(month)
+df = apv.utils.files_interface.df_from_file_or_folder(
+    temppath, append_all_in_folder=True, index_col=0)
+df['xy'] = df['x'].astype(str) + df['y'].astype(str)
+df
+# #
+df_merged = pd.pivot_table(
+    df, index=['x', 'y'], values=['x', 'y', 'z', 'Wm2'], aggfunc='sum')
+df_merged
+
+# #
+brObj.plot_ground_insolation(df_merged)
+
+
+# #
+1 or 2
+
+
+# #
