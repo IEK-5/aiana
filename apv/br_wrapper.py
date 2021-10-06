@@ -550,7 +550,7 @@ class BR_Wrapper:
         """
         if df is None:
             df = apv.utils.files_interface.df_from_file_or_folder(
-                self.csv_file_path)
+                str(self.csv_file_path))
 
         if cm_unit is None:
             cm_unit = self.SimSettings.cm_unit

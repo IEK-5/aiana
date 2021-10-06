@@ -33,6 +33,8 @@ if __name__ == '__main__':
     # #
     # plot existing data (simulation cell does not need to be repeated)
     brObj.plot_ground_insolation()
-
+    # #
     # show result data frame
     brObj.df_ground_results
+
+# #
