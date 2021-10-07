@@ -32,7 +32,7 @@ if __name__ == '__main__':
     brObj.run_raytracing_simulation()
     # #
     # plot existing data (simulation cell does not need to be repeated)
-    brObj.plot_ground_insolation()
+    brObj.plot_ground_heatmap()
     # #
     # show result data frame
     brObj.df_ground_results

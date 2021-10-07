@@ -5,3 +5,7 @@ EPW Docs:
 
 gendaymtx:
 https: // www.radiance-online.org//learning/documentation/manual-pages/pdfs/gendaymtx.pdf
+
+irradiation (~insolation is a vague term, should be avoided) (Wh/m2)
+irradiance (W/m2)
+source: https://www.researchgate.net/post/What-is-the-difference-between-insolation-and-solar-irradiance

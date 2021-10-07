@@ -17,9 +17,9 @@ if __name__ == '__main__':
 if __name__ == '__main__':
     brObj.run_raytracing_simulation()
     # #
-    brObj.plot_ground_insolation()
+    brObj.plot_ground_heatmap()
     # #
-    brObj.plot_ground_insolation(cm_unit='Shadow-Depth')
+    brObj.plot_ground_heatmap(cm_unit='Shadow-Depth')
     # #
     # show result data frame
     brObj.df_ground_results

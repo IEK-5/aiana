@@ -111,25 +111,30 @@ class BR_Wrapper:
         self.create_geometries(APV_SystSettings=self.APV_SystSettings)
         self.set_up_AnalObj_and_groundscan()
 
-    def set_up_file_names_and_paths(self):
-        self.results_subfolder = user_pathes.results_folder / Path(
-            self.SimSettings.sim_name,
-            self.APV_SystSettings.module_form
-            + '_res-' + str(self.SimSettings.spatial_resolution)
-        )
+    def set_up_file_names_and_paths(self, results_subfolder=None):
+        if results_subfolder is None:
+            self.results_subfolder = user_pathes.results_folder / Path(
+                self.SimSettings.sim_name,
+                self.APV_SystSettings.module_form
+                + '_res-' + str(self.SimSettings.spatial_resolution)
+            )
+        else:
+            self.results_subfolder = results_subfolder
 
         self.file_name = self.SimSettings.sim_date_time.replace(':', 'h')
         self.oct_file_name = self.SimSettings.sim_name \
             + '_' + self.APV_SystSettings.module_form + '_' + self.file_name
         # set csv file path for saving final merged results
-        self.csv_file_path: Path = self.results_subfolder / Path(
+        self.csv_parent_folder: Path = self.results_subfolder / Path('data')
+        self.csv_file_path: Path = self.csv_parent_folder / Path(
             self.file_name + '.csv')
 
         # check folder existence
         fi.make_dirs_if_not_there([user_pathes.bifacial_radiance_files_folder,
                                    user_pathes.data_download_folder,
                                    user_pathes.results_folder,
-                                   self.results_subfolder]
+                                   self.results_subfolder,
+                                   self.csv_parent_folder]
                                   )
 
     def create_sky(self, dni_single=None, dhi_single=None):
@@ -535,10 +540,12 @@ class BR_Wrapper:
         print(f'merged file saved in {self.csv_file_path}\n')
         self.df_ground_results = df_ground_results
 
-    def plot_ground_insolation(
+    def plot_ground_heatmap(
         self,
         df=None,
-        cm_unit: Literal['Irradiance', 'PAR', 'Shadow-Depth'] = None
+        file_name=None,
+        cm_unit: Literal[
+            'Irradiance', 'Irradiation', 'PAR', 'Shadow-Depth'] = None
     ):
         """plots the ground insolation as a heat map and saves it into
             the results/plots folder.
@@ -599,9 +606,13 @@ class BR_Wrapper:
         fig.axes[1] = apv.utils.plots.add_north_arrow(
             fig.axes[1], self.APV_SystSettings.sceneDict['azimuth'])
 
+        if file_name is None:
+            file_name = self.file_name
         apv.utils.files_interface.save_fig(
             fig,
-            self.file_name+'_'+z,
-            parent_folder_path=self.results_subfolder)
+            file_name+'_'+z,
+            parent_folder_path=self.results_subfolder,
+            sub_folder_name='',
+        )
 
 # #

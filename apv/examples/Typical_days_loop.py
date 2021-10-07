@@ -1,4 +1,7 @@
 # #
+from apv import resources
+
+
 if __name__ == '__main__':
     from pathlib import Path
     import pandas as pd
@@ -22,7 +25,7 @@ if __name__ == '__main__':
     # ### settings:  ####
     SimSettings.sim_name = 'APV_Morschenich'
     APV_SystSettings.module_form = 'std'
-    SimSettings.spatial_resolution = 3
+    SimSettings.spatial_resolution = 0.5
     # SimSettings.use_multi_processing = False
     # APV_SystSettings.sceneDict['pitch'] = 10
     # APV_SystSettings.add_groundScanArea_as_object_to_scene = True
@@ -61,7 +64,7 @@ if __name__ == '__main__':
 # #
 if __name__ == '__main__':
     months = [10]  # range(1, 13)
-    hours = range(0, 24, 1)  # [18]  #
+    hours = [17, 18]  # range(0, 24, 1)  #
 
     weatherData = WeatherData(SimSettings)
     df_mean_hours_per_month = weatherData.typical_day_of_month()
@@ -93,24 +96,34 @@ if __name__ == '__main__':
                 )
                 brObj.setup_br(dni_singleValue=dni, dhi_singleValue=dhi)
                 # brObj.view_scene(view_name='top_down', view_type='parallel')
-                brObj.results_subfolder = brObj.results_subfolder / Path(
-                    str(month))
+                brObj.set_up_file_names_and_paths(
+                    results_subfolder=user_pathes.results_folder / Path(
+                        SimSettings.sim_name,
+                        APV_SystSettings.module_form
+                        + '_res-' + str(SimSettings.spatial_resolution),
+                        str(month)
+                    )
+                )
                 brObj.run_raytracing_simulation()
-                brObj.plot_ground_insolation()
+                brObj.plot_ground_heatmap()
 
 # #
 if __name__ == '__main__':
     # evalObj.evaluate_APV(SimSettings)
-
-    # #
     df = apv.utils.files_interface.df_from_file_or_folder(
-        brObj.results_subfolder, append_all_in_folder=True, index_col=0)
+        brObj.csv_parent_folder, append_all_in_folder=True, index_col=0)
     df['xy'] = df['x'].astype(str) + df['y'].astype(str)
+    # #
     df
     # #
     df_merged = pd.pivot_table(
-        df, index=['x', 'y'], values=['x', 'y', 'z', 'Wm2'], aggfunc='sum')
-    df_merged
+        df, index=['xy'], values=['x', 'y', 'z', 'Wm2'], aggfunc='sum')
+
+    # TODO rename column
+    # df_merged['Wm2'] = 'Whm2'
 
     # #
-    brObj.plot_ground_insolation(df_merged)
+    brObj.plot_ground_heatmap(df_merged, file_name='cummulative')
+
+    # #
+    pd.read_csv('sub_folder_name')

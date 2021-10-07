@@ -36,9 +36,9 @@ if __name__ == '__main__':
     brObj.run_raytracing_simulation()
     # #
     # also plots existing data (simulation does not need to be repeated)
-    brObj.plot_ground_insolation()
+    brObj.plot_ground_heatmap()
     # TODO why is there a darker line at the top? Edge of the ground?
     # #
-    brObj.plot_ground_insolation(cm_unit='Shadow-Depth')
+    brObj.plot_ground_heatmap(cm_unit='Shadow-Depth')
     # show result data frame
     brObj.df_ground_results

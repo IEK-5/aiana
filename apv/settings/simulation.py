@@ -64,4 +64,5 @@ class Simulation:
     # Insert end date of year as [month,day,hour]
     enddt = '1-1_23:00'
 
-    cm_unit: Literal['Irradiance', 'PAR', 'Shadow-Depth'] = 'Irradiance'
+    cm_unit: Literal[
+        'Irradiance', 'Irradiation', 'PAR', 'Shadow-Depth'] = 'Irradiance'

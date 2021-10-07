@@ -42,7 +42,7 @@ def make_dirs_if_not_there(folder_paths: str or list):
 
 
 def df_from_file_or_folder(
-        path: Path,
+        f_path: Path,
         skiprows=0, index_col=None,
         delimiter='\t|,|;', squeeze=False,
         append_all_in_folder=False,
@@ -57,11 +57,11 @@ def df_from_file_or_folder(
     '''
     df = pd.DataFrame()
 
-    def read_file(source_file):
+    def read_file(f_path):
         if print_reading_messages:
-            print('reading ' + source_file.split('\\')[-1])
+            print('reading ' + f_path.split('\\')[-1])
         df = pd.read_csv(
-            source_file,
+            f_path,
             skiprows=skiprows,
             delimiter=delimiter,
             index_col=index_col,
@@ -70,13 +70,13 @@ def df_from_file_or_folder(
             engine='python',
             squeeze=squeeze)
         if add_source_file_name_to_df:
-            df['source'] = source_file.split('\\')[-1]
+            df['source'] = f_path.split('\\')[-1]
         return df
 
     if append_all_in_folder:
         source_files = []
-        for file_name in os.listdir(path):
-            source_files += [os.path.join(path, file_name)]
+        for file_name in os.listdir(f_path):
+            source_files += [os.path.join(f_path, file_name)]
         # generator (as list comprehension but without storing the actual
         # content, only what to loop, which is much faster)
         dfs = (
@@ -85,12 +85,13 @@ def df_from_file_or_folder(
         df = pd.concat(dfs)
     else:
         try:
-            df = read_file(path)
+            df = read_file(f_path)
         except FileNotFoundError:
-            folder_path = "/".join(path.split("\\")[:-1])
-            if os.path.exists(folder_path):
+            parent_folder_path = "/".join(f_path.split("\\")[:-1])
+            if os.path.exists(parent_folder_path):
                 print(
-                    "check path or filename\n" + str(os.listdir(folder_path)))
+                    "check path or filename\n" + str(
+                        os.listdir(parent_folder_path)))
     return df
 
 
