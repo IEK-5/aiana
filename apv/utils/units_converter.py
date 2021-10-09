@@ -9,6 +9,8 @@ from apv.settings.simulation import Simulation
 from pathlib import Path
 from apv.settings import user_pathes
 import numpy as np
+from typing import Literal
+from apv.classes.weather_data import WeatherData
 
 
 def irradiance_to_PAR(df=None):
@@ -30,8 +32,9 @@ def irradiance_to_PAR(df=None):
 # #
 
 
-def irradiance_to_shadowdepth(df, SimSettings):
-    """ Shadow Depth is loss of incident solar energy in comparison
+def irradiance_to_shadowdepth(df, SimSettings, strt=None, enddt=None,
+                              cumulative=False):
+    """Shadow Depth is loss of incident solar energy in comparison
     with a non intersected irradiation; if 90% of irradiation available after
     being intersected by objects then the shadow depth is 10% [1][2].
 
@@ -44,31 +47,84 @@ def irradiance_to_shadowdepth(df, SimSettings):
     (2019): Design Considerations for Agrophotovoltaic Systems: Maintaining PV
     Area with Increased Crop Yield. DOI: 10.1109/PVSC40753.2019.8981324
 
-       Args:
-           df ([type], optional): [description]. Defaults to None.
-       """
+    Args:
+        df (DataFrame): The DataFrame with W.m^-2 values
+        SimSettings : self.SimSettings should be given.
+        strt (['M-D_H:m], optional): only in case specific period need to be
+        converted in cumulative form. Defaults to None and read from
+        SimSettings.
+        enddt ([M-D_H:m], optional): only in case specific period need to be
+        converted in cumulative form. Defaults to None and read from
+        SimSettings.
+        cumulative (bool, optional): used only if cumulative data were used.
+        Gencumsky turns this automaticaly to True. Defaults to False.
+
+    Returns:
+        [type]: [description]
+    """
     simDT = SimDT(SimSettings)
-    path = user_pathes.bifacial_radiance_files_folder / Path(
-        'EPWs' + '/epw_temp.csv')
-    epw = files_interface.df_from_file_or_folder(str(path), header=None)
+    weatherObj = WeatherData(SimSettings=SimSettings)
+    download_file_path = weatherObj.download_insolation_data(
+        SimSettings.apv_location,
+        '2005-01-01/2021-01-01', '1hour')
+    # make/read own TMY data
+    ADS_irradiance = weatherObj.satellite_insolation_data_to_TMY(
+        download_file_path)
 
     if SimSettings.sky_gen_mode == 'gendaylit':
         sim_time = simDT.convert_settings_localtime_to_UTC(
             SimSettings.sim_date_time, SimSettings.apv_location.tz)
         timeindex = simDT.get_hour_of_tmy(sim_time)
-        GHI = int(epw.loc[timeindex][0].split()[0])
+        GHI = int(ADS_irradiance['ghi'].loc[timeindex])
         df['ShadowDepth'] = 100 - ((df['Wm2']/GHI)*100)
 
-    else:
+    elif SimSettings.sky_gen_mode == 'gencumsky' or cumulative:
         cumulative_GHI = 0
         strt = simDT.convert_settings_localtime_to_UTC(
+            strt, SimSettings.apv_location.tz) or \
+            simDT.convert_settings_localtime_to_UTC(
             SimSettings.startdt, SimSettings.apv_location.tz)
+
         endt = simDT.convert_settings_localtime_to_UTC(
+            enddt, SimSettings.apv_location.tz) or\
+            simDT.convert_settings_localtime_to_UTC(
             SimSettings.enddt, SimSettings.apv_location.tz)
         stdt = simDT.get_hour_of_tmy(strt)
         enddt = simDT.get_hour_of_tmy(endt)
+
         for timeindex in np.arange(stdt, enddt+1):
-            GHI = int(epw.loc[timeindex][0].split()[0])
+            GHI = int(ADS_irradiance['ghi'].loc[timeindex])
             cumulative_GHI += GHI
         df['ShadowDepth'] = 100 - ((df['Wm2']/cumulative_GHI)*100)
     return df
+
+
+def convert_units(SimSettings, df=None, cumulative=False):
+    if 'PARGround' not in df.columns:
+        df = irradiance_to_PAR(df=df)
+
+    df = irradiance_to_shadowdepth(df=df, SimSettings=SimSettings,
+                                   cumulative=cumulative)
+    if cumulative or SimSettings.cm_unit == 'Irradiation':
+        df.rename(columns={"Wm2": "Whm2"}, inplace=True)
+    return df
+
+
+def get_units_parameters(cm_unit=None):
+    if cm_unit == 'PAR':
+        unit_parameters = {'z': 'PARGround', 'colormap': 'YlOrBr',
+                           'z_label': 'PAR [μmol quanta.m$^{-2}$.s$^{-1}$]'}
+
+    elif cm_unit == 'Irradiation':
+        unit_parameters = {
+            'z': 'Whm2',  'colormap': 'inferno',
+            'z_label': 'Cumulative Irradiance on Ground [Wh m$^{-2}$]'}
+
+    elif cm_unit == 'Shadow-Depth':
+        unit_parameters = {'z': 'ShadowDepth',  'colormap': 'viridis_r',
+                           'z_label': 'Shadow-Depth [%]'}
+    else:
+        unit_parameters = {'z': 'Wm2', 'colormap': 'inferno',
+                           'z_label': 'Irradiance on Ground [W m$^{-2}$]'}
+
+    return unit_parameters

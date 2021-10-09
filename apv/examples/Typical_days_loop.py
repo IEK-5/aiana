@@ -1,5 +1,6 @@
 # #
 from apv import resources
+from apv.utils import evaluation
 
 
 if __name__ == '__main__':
@@ -25,9 +26,10 @@ if __name__ == '__main__':
     # ### settings:  ####
     SimSettings.sim_name = 'APV_Morschenich'
     APV_SystSettings.module_form = 'std'
-    SimSettings.spatial_resolution = 0.5
+    SimSettings.cm_unit = 'Irradiance'
+    SimSettings.spatial_resolution = 1
     # SimSettings.use_multi_processing = False
-    # APV_SystSettings.sceneDict['pitch'] = 10
+    APV_SystSettings.sceneDict['pitch'] = 12
     # APV_SystSettings.add_groundScanArea_as_object_to_scene = True
 
     geomObj = GeometriesHandler(SimSettings, APV_SystSettings)
@@ -105,8 +107,10 @@ if __name__ == '__main__':
                     )
                 )
                 brObj.run_raytracing_simulation()
-                brObj.plot_ground_heatmap()
-
+                brObj.plot_ground_heatmap(cm_unit='Shadow-Depth')
+        evaluation.merge_hours_to_day(
+            csv_parent_folder=brObj.csv_parent_folder,
+            SimSettings=SimSettings, month=month, hours=hours)
 # #
 if __name__ == '__main__':
     # evalObj.evaluate_APV(SimSettings)
@@ -117,8 +121,10 @@ if __name__ == '__main__':
     df
     # #
     df_merged = pd.pivot_table(
-        df, index=['xy'], values=['x', 'y', 'z', 'Wm2'], aggfunc='sum')
+        df, index=['x', 'y'], values=['Wm2', 'PARGround'], aggfunc='sum')
 
+    # #
+    df_merged
     # TODO rename column
     # df_merged['Wm2'] = 'Whm2'
 

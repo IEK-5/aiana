@@ -3,7 +3,7 @@ import os
 from pandas.io.parsers import read_csv
 from apv.settings import apv_systems
 from apv.settings.apv_systems import Default as SystSettings
-from apv.utils.files_interface import save_fig
+from apv.utils.files_interface import save_fig, df_from_file_or_folder
 import pandas as pd
 import apv.settings.user_pathes as user_pathes
 from pathlib import Path
@@ -132,5 +132,28 @@ results_folder = os.path.join(
 
 # #
 results_folder
+
+# #
+source_file = \
+    'TMY_insolation-data_2005-01-01_to_2021-01-01_lat-50.86351_lon-6.52946_time_step-1hour.csv'
+path = user_pathes.bifacial_radiance_files_folder / Path(
+    'satellite_weatherData/' + source_file)
+ads_TMY = df_from_file_or_folder(str(path), header=None, delimiter=' ')
+ads_TMY.columns = names = ['ghi', 'dhi']
+
+# #
+ads_TMY.head(25)
+# #
+GHI = int(ads_TMY['ghi'].loc[10])
+
+GHI
+
+# #
+path = r"C:\Users\moham\Documents\agri-PV\results\APV_Morschenich\std_res-1\10\data\radiation_10-15_17h00.csv"
+path2 = r"C:\Users\moham\Documents\agri-PV\results\APV_Morschenich\std_res-1\10\data\radiation_10-15_18h00.csv"
+df = pd.read_csv(path)
+df2 = pd.read_csv(path2)
+# #
+
 
 # #
