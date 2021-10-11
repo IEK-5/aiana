@@ -3,26 +3,45 @@ from collections import namedtuple
 import apv
 from apv.utils import units_converter
 from pathlib import Path
+from apv.settings.simulation import Simulation
 
 RMSE_MBE_results = namedtuple(
     'RMSE_MBE_results', ('mbe', 'rel_mbe', 'rmse', 'rel_rmse'))
 
 
-def merge_hours_to_day(csv_parent_folder, SimSettings, month, hours=[0, 23]):
+def cumulate_gendaylit_results(
+        file_folder_to_merge, merged_csv_path, SimSettings: Simulation):
+
+    # load all single hour results and append
     df = apv.utils.files_interface.df_from_file_or_folder(
-        csv_parent_folder, append_all_in_folder=True, index_col=0)
+        file_folder_to_merge, append_all_in_folder=True, index_col=0)
+
     df['xy'] = df['x'].astype(str) + df['y'].astype(str)
 
+    # radiation and PAR
     df_merged = pd.pivot_table(
-        df, index=['x', 'y'], values=['Wm2', 'PARGround'], aggfunc='sum')
-    strt = f'{month}-{15}_{hours[0]}:00'
-    enddt = f'{month}-{15}_{hours[-1]}:00'
-    df_merged = units_converter.irradiance_to_shadowdepth(
-        df=df_merged, SimSettings=SimSettings, strt=strt, enddt=enddt)
-    csv_file_path = csv_parent_folder / Path(
-        'radiation' + '_cumulative_' + str(month) + '.csv')
-    df_merged.to_csv(csv_file_path)
-    print(f'Typical day cumulative hours of month {month} completed!\n',
+        df, index=['xy'],
+        values=['Wm2', 'PARGround'],
+        aggfunc='sum')
+
+    # TODO nicer way?
+    df_merged2 = pd.pivot_table(
+        df, index=['xy'],
+        values=['x', 'y'],
+        aggfunc='mean')
+
+    df_merged['x'] = df_merged2['x']
+    df_merged['y'] = df_merged2['y']
+
+    df_merged.rename(columns={"Wm2": "Whm2"}, inplace=True)
+    df_merged.rename(columns={"Wm2": "PARGround_cum"}, inplace=True)
+
+    # shadow depth cumulative
+    df_merged = units_converter.add_shadowdepth(
+        df=df_merged, SimSettings=SimSettings, cumulative=True)
+
+    df_merged.to_csv(merged_csv_path)
+    print(f'Cumulating hours completed!\n',
           'NOTE: Shadow_depth was recalculated for cumulative data\n')
     return df_merged
 

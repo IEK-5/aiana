@@ -13,7 +13,7 @@ from typing import Literal
 from apv.classes.weather_data import WeatherData
 
 
-def irradiance_to_PAR(df=None):
+def add_PAR(df=None):
     """Converts irradiance from [W/m2] to
      Photosynthetic Active Radiation PAR [μmol quanta/ m2.s] [1]
 
@@ -32,8 +32,7 @@ def irradiance_to_PAR(df=None):
 # #
 
 
-def irradiance_to_shadowdepth(df, SimSettings, strt=None, enddt=None,
-                              cumulative=False):
+def add_shadowdepth(df, SimSettings: Simulation, cumulative=False):
     """Shadow Depth is loss of incident solar energy in comparison
     with a non intersected irradiation; if 90% of irradiation available after
     being intersected by objects then the shadow depth is 10% [1][2].
@@ -50,11 +49,11 @@ def irradiance_to_shadowdepth(df, SimSettings, strt=None, enddt=None,
     Args:
         df (DataFrame): The DataFrame with W.m^-2 values
         SimSettings : self.SimSettings should be given.
-        strt (['M-D_H:m], optional): only in case specific period need to be
-        converted in cumulative form. Defaults to None and read from
+        start_dt_loc (['M-D_H:m], optional): only in case specific period need
+        to be converted to cumulative form. Defaults to None and read from
         SimSettings.
-        enddt ([M-D_H:m], optional): only in case specific period need to be
-        converted in cumulative form. Defaults to None and read from
+        end_dt_loc ([M-D_H:m], optional): only in case specific period need to
+        be converted to cumulative form. Defaults to None and read from
         SimSettings.
         cumulative (bool, optional): used only if cumulative data were used.
         Gencumsky turns this automaticaly to True. Defaults to False.
@@ -68,10 +67,14 @@ def irradiance_to_shadowdepth(df, SimSettings, strt=None, enddt=None,
         SimSettings.apv_location,
         '2005-01-01/2021-01-01', '1hour')
     # make/read own TMY data
+    # TODO at the moment TMY data is hourly and indexed by hour of year
+    # problem for higher time resolution: not compatible with
+    # gencumsky of br, and date-time index needs a year, should we take
+    # a random non-leap-year for this?
     ADS_irradiance = weatherObj.satellite_insolation_data_to_TMY(
         download_file_path)
 
-    if SimSettings.sky_gen_mode == 'gendaylit':
+    if SimSettings.sky_gen_mode == 'gendaylit' and not cumulative:
         sim_time = simDT.convert_settings_localtime_to_UTC(
             SimSettings.sim_date_time, SimSettings.apv_location.tz)
         timeindex = simDT.get_hour_of_tmy(sim_time)
@@ -79,52 +82,48 @@ def irradiance_to_shadowdepth(df, SimSettings, strt=None, enddt=None,
         df['ShadowDepth'] = 100 - ((df['Wm2']/GHI)*100)
 
     elif SimSettings.sky_gen_mode == 'gencumsky' or cumulative:
-        cumulative_GHI = 0
-        strt = simDT.convert_settings_localtime_to_UTC(
-            strt, SimSettings.apv_location.tz) or \
-            simDT.convert_settings_localtime_to_UTC(
-            SimSettings.startdt, SimSettings.apv_location.tz)
+        cumulative_GHI = ADS_irradiance['ghi'].loc[
+            simDT.start_hour_of_tmy:simDT.end_hour_of_tmy+1].sum()
 
-        endt = simDT.convert_settings_localtime_to_UTC(
-            enddt, SimSettings.apv_location.tz) or\
-            simDT.convert_settings_localtime_to_UTC(
-            SimSettings.enddt, SimSettings.apv_location.tz)
-        stdt = simDT.get_hour_of_tmy(strt)
-        enddt = simDT.get_hour_of_tmy(endt)
-
-        for timeindex in np.arange(stdt, enddt+1):
-            GHI = int(ADS_irradiance['ghi'].loc[timeindex])
-            cumulative_GHI += GHI
-        df['ShadowDepth'] = 100 - ((df['Wm2']/cumulative_GHI)*100)
+        df['ShadowDepth_cum'] = 100 - ((df['Whm2']/cumulative_GHI)*100)
     return df
 
 
-def convert_units(SimSettings, df=None, cumulative=False):
-    if 'PARGround' not in df.columns:
-        df = irradiance_to_PAR(df=df)
+def get_label_and_cm_input(cm_unit, cumulative):
+    """for the heatmap"""
 
-    df = irradiance_to_shadowdepth(df=df, SimSettings=SimSettings,
-                                   cumulative=cumulative)
-    if cumulative or SimSettings.cm_unit == 'Irradiation':
-        df.rename(columns={"Wm2": "Whm2"}, inplace=True)
-    return df
+    if not cumulative:
 
+        if cm_unit == 'radiation':
+            unit_parameters = {'z': 'Wm2', 'colormap': 'inferno',
+                               'z_label': 'Irradiance on Ground [W m$^{-2}$]'}
 
-def get_units_parameters(cm_unit=None):
-    if cm_unit == 'PAR':
-        unit_parameters = {'z': 'PARGround', 'colormap': 'YlOrBr',
-                           'z_label': 'PAR [μmol quanta.m$^{-2}$.s$^{-1}$]'}
+        elif cm_unit == 'shadow_depth':
+            unit_parameters = {'z': 'ShadowDepth',  'colormap': 'viridis_r',
+                               'z_label': 'shadow_depth [%]'}
 
-    elif cm_unit == 'Irradiation':
-        unit_parameters = {
-            'z': 'Whm2',  'colormap': 'inferno',
-            'z_label': 'Cumulative Irradiance on Ground [Wh m$^{-2}$]'}
+        elif cm_unit == 'PAR':
+            unit_parameters = {
+                'z': 'PARGround', 'colormap': 'YlOrBr',
+                'z_label': 'PAR [μmol quanta.m$^{-2}$.s$^{-1}$]'}
+        else:
+            print('cm_unit has to be radiation, shadow_depth or PAR')
 
-    elif cm_unit == 'Shadow-Depth':
-        unit_parameters = {'z': 'ShadowDepth',  'colormap': 'viridis_r',
-                           'z_label': 'Shadow-Depth [%]'}
-    else:
-        unit_parameters = {'z': 'Wm2', 'colormap': 'inferno',
-                           'z_label': 'Irradiance on Ground [W m$^{-2}$]'}
+    elif cumulative:
 
+        if cm_unit == 'radiation':
+            unit_parameters = {
+                'z': 'Whm2',  'colormap': 'inferno',
+                'z_label': 'Cumulative Irradiation on Ground [Wh m$^{-2}$]'}
+
+        elif cm_unit == 'shadow_depth':
+            unit_parameters = {'z': 'ShadowDepth_cum',  'colormap': 'viridis_r',
+                               'z_label': 'Cumulative Shadow Depth [%]'}
+
+        elif cm_unit == 'PAR':  # TODO unit changes also to *h ?
+            unit_parameters = {
+                'z': 'PARGround_cum', 'colormap': 'YlOrBr',
+                'z_label': 'Cumulative PAR [μmol quanta.m$^{-2}\cdot s^{-1}$]'}
+        else:
+            print('cm_unit has to be radiation, shadow_depth or PAR')
     return unit_parameters

@@ -18,7 +18,7 @@ if __name__ == '__main__':
     # #
     brObj.plot_ground_heatmap()
     # #
-    brObj.plot_ground_heatmap(cm_unit='Shadow-Depth')
+    brObj.plot_ground_heatmap(cm_unit='shadow_depth')
     # #
     # show result data frame
     brObj.df_ground_results

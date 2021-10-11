@@ -26,8 +26,8 @@ if __name__ == '__main__':
     # ### settings:  ####
     SimSettings.sim_name = 'APV_Morschenich'
     APV_SystSettings.module_form = 'std'
-    SimSettings.cm_unit = 'Irradiance'
-    SimSettings.spatial_resolution = 1
+    SimSettings.cm_unit = 'radiation'
+    SimSettings.spatial_resolution = 0.1
     # SimSettings.use_multi_processing = False
     APV_SystSettings.sceneDict['pitch'] = 12
     # APV_SystSettings.add_groundScanArea_as_object_to_scene = True
@@ -65,14 +65,21 @@ if __name__ == '__main__':
     # results_path_part
 # #
 if __name__ == '__main__':
-    months = [10]  # range(1, 13)
-    hours = [17, 18]  # range(0, 24, 1)  #
+    months = [6]  # range(1, 13)
+    hours = [17]  # range(0, 24, 1)  #
 
     weatherData = WeatherData(SimSettings)
     df_mean_hours_per_month = weatherData.typical_day_of_month()
 
     for month in months:
         day = 15  # (int(df_all['day_nearest_to_mean'].loc[month]))
+        results_subfolder = user_pathes.results_folder / Path(
+            SimSettings.sim_name,
+            APV_SystSettings.module_form
+            + '_res-' + str(SimSettings.spatial_resolution),
+            str(month)
+        )
+
         for hour in hours:
             APV_SystSettings = modify_APV_SystSettings(APV_SystSettings, hour)
 
@@ -99,37 +106,37 @@ if __name__ == '__main__':
                 brObj.setup_br(dni_singleValue=dni, dhi_singleValue=dhi)
                 # brObj.view_scene(view_name='top_down', view_type='parallel')
                 brObj.set_up_file_names_and_paths(
-                    results_subfolder=user_pathes.results_folder / Path(
-                        SimSettings.sim_name,
-                        APV_SystSettings.module_form
-                        + '_res-' + str(SimSettings.spatial_resolution),
-                        str(month)
-                    )
+                    results_subfolder=results_subfolder
                 )
-                brObj.run_raytracing_simulation()
-                brObj.plot_ground_heatmap(cm_unit='Shadow-Depth')
-        evaluation.merge_hours_to_day(
-            csv_parent_folder=brObj.csv_parent_folder,
-            SimSettings=SimSettings, month=month, hours=hours)
+                # brObj.run_raytracing_simulation()
+                # brObj.plot_ground_heatmap(cm_unit='shadow_depth')
+
+        SimSettings.startdt = f'{month}-{day}_00:00'
+        SimSettings.enddt = f'{month}-{day}_23:00'
+
+        merged_csv_path = results_subfolder / Path(
+            'ground_results' + '_cumulative_' + str(month) + '.csv')
+
+        df_merged = evaluation.cumulate_gendaylit_results(
+            brObj.csv_parent_folder, merged_csv_path, SimSettings)
+        # df_merged = apv.utils.files_interface.df_from_file_or_folder(
+        #    merged_csv_path)
+        brObj.plot_ground_heatmap(
+            df_merged, file_name='cumulative', cumulative=True)
+
 # #
-if __name__ == '__main__':
-    # evalObj.evaluate_APV(SimSettings)
-    df = apv.utils.files_interface.df_from_file_or_folder(
-        brObj.csv_parent_folder, append_all_in_folder=True, index_col=0)
-    df['xy'] = df['x'].astype(str) + df['y'].astype(str)
-    # #
-    df
-    # #
-    df_merged = pd.pivot_table(
-        df, index=['x', 'y'], values=['Wm2', 'PARGround'], aggfunc='sum')
 
-    # #
-    df_merged
-    # TODO rename column
-    # df_merged['Wm2'] = 'Whm2'
-
-    # #
-    brObj.plot_ground_heatmap(df_merged, file_name='cummulative')
-
-    # #
-    pd.read_csv('sub_folder_name')
+""" for unit...
+    for month...
+        results_subfolder = user_pathes.results_folder / Path(
+            SimSettings.sim_name,
+            APV_SystSettings.module_form
+            + '_res-' + str(SimSettings.spatial_resolution),
+            str(month)
+        )
+        merged_csv_path = results_subfolder / Path(
+            'ground_results' + '_cumulative_' + str(month) + '.csv')
+        df_merged = apv.utils.files_interface.df_from_file_or_folder(
+                merged_csv_path)
+        brObj.plot_ground_heatmap(
+            df_merged, file_name='cumulative', cumulative=True) """

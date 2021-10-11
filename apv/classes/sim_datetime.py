@@ -18,25 +18,33 @@ class SimDT:
         self.enddt_utc: datetime = None
         self.times: pd.Timestamp = None
 
+        self.hour_of_tmy: int = None
+        self.start_hour_of_tmy: int = None
+        self.end_hour_of_tmy: int = None
+
         self.set_time_variables()
 
     def set_time_variables(self):
-        self.sim_dt_utc: datetime = self.convert_settings_localtime_to_UTC(
-            self.SimSettings.sim_date_time,
-            self.SimSettings.apv_location.tz
-        )
-        self.sim_dt_utc_pd: pd.Timestamp = pd.to_datetime(self.sim_dt_utc)
-        self.hour_of_tmy: int = self.get_hour_of_tmy(self.sim_dt_utc)
+        tz = self.SimSettings.apv_location.tz
 
+        self.sim_dt_utc: datetime = self.convert_settings_localtime_to_UTC(
+            self.SimSettings.sim_date_time, tz
+        )
         self.startdt_utc: datetime = self.convert_settings_localtime_to_UTC(
-            self.SimSettings.startdt,
-            self.SimSettings.apv_location.tz
+            self.SimSettings.startdt, tz
         )
         self.enddt_utc: datetime = self.convert_settings_localtime_to_UTC(
-            self.SimSettings.enddt,
-            self.SimSettings.apv_location.tz
+            self.SimSettings.enddt, tz
         )
+
+        self.hour_of_tmy: int = self.get_hour_of_tmy(self.sim_dt_utc)
+        self.start_hour_of_tmy: int = self.get_hour_of_tmy(self.startdt_utc)
+        self.end_hour_of_tmy: int = self.get_hour_of_tmy(self.enddt_utc)
+
+        self.sim_dt_utc_pd: pd.Timestamp = pd.to_datetime(self.sim_dt_utc)
+
         # TODO freq anpassen für time_step < 1hour
+        # (da muss noch viel mehr angefasst werden)
         self.times = pd.date_range(start=self.startdt_utc, end=self.enddt_utc,
                                    freq='1h', closed='right')
 

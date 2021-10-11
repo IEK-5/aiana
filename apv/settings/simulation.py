@@ -62,7 +62,9 @@ class Simulation:
     # Insert start date of the year as [month,day,hour]
     startdt = '1-1_0:00'
     # Insert end date of year as [month,day,hour]
-    enddt = '1-1_23:00'
+    enddt = '1-1_23:00'  # inclusive ([:end+1])
 
     cm_unit: Literal[
-        'Irradiance', 'Irradiation', 'PAR', 'Shadow-Depth'] = 'Irradiance'
+        'radiation', 'PAR', 'shadow_depth'] = 'radiation'
+
+    cumulative: bool = False

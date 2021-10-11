@@ -3,14 +3,12 @@
 objects, create scene and run simulation with Bifacial_Radiance according
 to presets in settings.py
 
-
 TODO
+- implement higher time resolution
 - sub pfade fixen für plot merge
 - clones for azi <> 180°
-- aufräumen, dokumentieren... -->Mohd
 
-nach Mohds Arbeit:
-- umstrukturieren? --> Leo
+- aufräumen, dokumentieren... -->Mohd
 
 '''
 # import needed packages
@@ -92,6 +90,7 @@ class BR_Wrapper:
 
         self.df_ground_results = pd.DataFrame()
         self.results_subfolder = Path()
+        self.csv_parent_folder = Path()  # only for non cumulative (hourly)
         self.csv_file_path = Path()
         self.oct_file_name = str()
         self.file_name = str()  # for plot and csv file
@@ -130,7 +129,7 @@ class BR_Wrapper:
         # set csv file path for saving final merged results
         self.csv_parent_folder: Path = self.results_subfolder / Path('data')
         self.csv_file_path: Path = self.csv_parent_folder / Path(
-            'radiation' + '_' + self.file_name + '.csv')
+            'ground_results' + '_' + self.file_name + '.csv')
 
         # check folder existence
         fi.make_dirs_if_not_there([user_pathes.bifacial_radiance_files_folder,
@@ -532,23 +531,27 @@ class BR_Wrapper:
         """
         temp_results: Path = user_pathes.bifacial_radiance_files_folder / Path(
             'results')
-        df_ground_results: pd.DataFrame = fi.df_from_file_or_folder(
+        df: pd.DataFrame = fi.df_from_file_or_folder(
             temp_results, append_all_in_folder=True,
             print_reading_messages=False)
-        df_ground_results = df_ground_results.reset_index()
-        df_ground_results['time_local'] = self.simDT.sim_dt_local
-        df_ground_results['time_utc'] = self.simDT.sim_dt_utc_pd
-        df_ground_results = uc.convert_units(SimSettings=self.SimSettings,
-                                             df=df_ground_results)
-        df_ground_results.to_csv(self.csv_file_path)
+        df = df.reset_index()
+        df['time_local'] = self.simDT.sim_dt_local
+        df['time_utc'] = self.simDT.sim_dt_utc_pd
+
+        df = uc.add_PAR(df=df)
+        df = uc.add_shadowdepth(
+            df=df, SimSettings=self.SimSettings, cumulative=False)
+
+        df.to_csv(self.csv_file_path)
         print(f'merged file saved in {self.csv_file_path}\n')
-        self.df_ground_results = df_ground_results
+        self.df_ground_results = df
 
     def plot_ground_heatmap(
         self,
         df=None,
         file_name=None,
-        cm_unit=None
+        cm_unit=None,
+        cumulative=None
     ):
         """plots the ground insolation as a heat map and saves it into
             the results/plots folder.
@@ -565,6 +568,9 @@ class BR_Wrapper:
         if cm_unit is None:
             cm_unit = self.SimSettings.cm_unit
 
+        if cumulative is None:
+            cumulative = self.SimSettings.cumulative
+
         ticklabels_skip_count_number = int(
             4/self.SimSettings.spatial_resolution)
         if ticklabels_skip_count_number < 2:
@@ -580,14 +586,14 @@ class BR_Wrapper:
                      f'To: [{self.SimSettings.enddt}]\n'
                      f'Resolution: {self.SimSettings.spatial_resolution} m')
 
-        unit_parameters = uc.get_units_parameters(
-            cm_unit=cm_unit)
+        label_and_cm_input: dict = uc.get_label_and_cm_input(
+            cm_unit=cm_unit, cumulative=cumulative)
 
         fig = apv.utils.plots.plot_heatmap(
-            df=df, x='x', y='y', z=unit_parameters['z'],
-            cm=unit_parameters['colormap'],
+            df=df, x='x', y='y', z=label_and_cm_input['z'],
+            cm=label_and_cm_input['colormap'],
             x_label='x [m]', y_label='y [m]',
-            z_label=unit_parameters['z_label'],
+            z_label=label_and_cm_input['z_label'],
             plot_title=title,
             ticklabels_skip_count_number=ticklabels_skip_count_number
         )
@@ -598,7 +604,7 @@ class BR_Wrapper:
             file_name = self.file_name
         apv.utils.files_interface.save_fig(
             fig,
-            cm_unit+'_' + unit_parameters['z']+'_' + file_name,
+            cm_unit+'_' + label_and_cm_input['z']+'_' + file_name,
             parent_folder_path=self.results_subfolder,
             sub_folder_name='',
         )

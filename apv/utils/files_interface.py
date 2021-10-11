@@ -59,7 +59,7 @@ def df_from_file_or_folder(
 
     def read_file(f_path):
         if print_reading_messages:
-            print('reading ' + f_path.split('\\')[-1])
+            print('reading ' + str(f_path).split('\\')[-1])
         df = pd.read_csv(
             f_path,
             skiprows=skiprows,
@@ -70,7 +70,7 @@ def df_from_file_or_folder(
             engine='python',
             squeeze=squeeze)
         if add_source_file_name_to_df:
-            df['source'] = f_path.split('\\')[-1]
+            df['source'] = str(f_path).split('\\')[-1]
         return df
 
     if append_all_in_folder:
@@ -87,7 +87,7 @@ def df_from_file_or_folder(
         try:
             df = read_file(f_path)
         except FileNotFoundError:
-            parent_folder_path = "/".join(f_path.split("\\")[:-1])
+            parent_folder_path = "/".join(str(f_path).split("\\")[:-1])
             if os.path.exists(parent_folder_path):
                 print(
                     "check path or filename\n" + str(
