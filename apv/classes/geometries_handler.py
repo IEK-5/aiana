@@ -191,9 +191,11 @@ class GeometriesHandler:
 
         h_post = self.scn["hub_height"] + 0.2  # post height
 
-        x_length = self.allRows_footprint_x + 4*s_post
-        clone_distance_x = x_length/(n_post_x-1)
-        y_length = self.allRows_footprint_y-self.singleRow_footprint_y
+        beamlength_x = self.allRows_footprint_x + 4*s_post
+        clone_distance_x = beamlength_x/(n_post_x-1)
+        # -0.4 instead of -1 to enlarge beams by half pitch
+        # to get periodic shadows in summer sunrise and set
+        beamlength_y = self.scn['pitch']*(self.scn['nRows']-0.4)
 
         x_start = self.sw_modCorner_azi0_x - 2*s_post
         y_start = self.sw_modCorner_azi0_y + self.singleRow_footprint_y/2
@@ -205,11 +207,11 @@ class GeometriesHandler:
                 -a {self.scn["nRows"]} -t 0 {self.scn["pitch"]} 0 '
                 )
         # create horizontal beams in y direction
-        text += (f'\n!genbox {material} post {s_beam} {y_length} {s_beam} \
+        text += (f'\n!genbox {material} post {s_beam} {beamlength_y} {s_beam} \
             | xform -t {x_start} {y_start} {h_post - s_beam - 0.4} \
             -a {n_post_x} -t {clone_distance_x} 0 0 -a 2 -t 0 0 {-d_beam} ')
         # create horizontal beams in x direction
-        text += (f'\n!genbox {material} post {x_length} {s_beam} {s_beam} \
+        text += (f'\n!genbox {material} post {beamlength_x} {s_beam} {s_beam} \
                 | xform -t {x_start} {y_start} {h_post - s_beam - 0.2} \
                 -a {self.scn["nRows"]} -t 0 {self.scn["pitch"]} 0 \
                 -a 2 -t 0 0 {-d_beam} '

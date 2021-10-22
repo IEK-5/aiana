@@ -39,11 +39,11 @@ import honeybee_radiance_command as hrc
 
 SimSettings = apv.settings.simulation.Simulation()
 simdt = SimDT(SimSettings)
-weatherObj = WeatherData()
+weatherObj = WeatherData(SimSettings)
 
 download_file_path = weatherObj.download_insolation_data(
     SimSettings.apv_location,
-    '2005-01-01/2021-01-01', '1hour')
+    '2005-01-01/2021-01-01', '15minute')
 source_file_path = download_file_path
 
 file_name = 'TMY_'+str(source_file_path).split('\\')[-1]
@@ -80,6 +80,11 @@ df['Day'] = df.index.day
 df['Hour'] = df.index.hour
 df['Minute'] = df.index.minute
 df
+
+# #
+df[:24*4].plot(x='obs_end', y='DHI', kind='scatter')
+
+
 # #
 Path('a', 'b')
 # #

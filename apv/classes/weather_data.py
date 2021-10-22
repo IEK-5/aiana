@@ -1,10 +1,12 @@
 # #
 import pandas as pd
+from pandas.io.formats.format import TextAdjustment
 # import shutil
 import pvlib
 import cdsapi
 import pathlib
 import os
+from pytz import timezone
 import yaml
 import urllib3
 from pathlib import Path
@@ -25,38 +27,74 @@ class WeatherData:
     """credentials (dict): output of .load_credentials()
     """
 
-    def __init__(self, SimSettings: Simulation):
+    def __init__(self, SimSettings: Simulation, debug_mode=False):
         self.SimSettings = SimSettings
+        self.simDT = SimDT(SimSettings)
 
         self.credentials = self.load_API_credentials()
-        self.ghi = float()
-        self.dhi = float()
-        self.dni = float()
-        self.sunalt = float()
-        self.sunaz = float()
+        self.ghi: float = None
+        self.dhi: float = None
+        self.dni: float = None
+        self.sunalt: float = None
+        self.sunaz: float = None
 
         # download data for longest full year time span available
         download_file_path = self.download_insolation_data(
             self.SimSettings.apv_location,
             '2005-01-01/2021-01-01',
-            self.SimSettings.time_step)
+            1  # always 1 minute, will be resampled coarser later
+        )
 
-        # make average year TMY data
-        self.df_irradiance = self.satellite_insolation_data_to_TMY(
-            download_file_path)
+        # datetime index
+        self.df_irradiance = self.load_and_process_insolation_data(
+            download_file_path, debug_mode
+        )
+        # make TMY data (W/m2)
+        # datetime index
+        self.df_irradiance_tmy = self.df_irradiance_to_TMY(
+            self.df_irradiance
+        )
+
+        # make TMY typcal day per month data (W/m2)
+        # #multi-index (month, hour...)
+        self.df_irradiance_typ_day_per_month = self.typical_day_of_month(
+            self.df_irradiance_tmy
+        )
+
+        self.set_dhi_dni_ghi_and_sunpos_to_simDT(self.simDT)
+        # dfs:
+        # as downloaded from ads,
+        # obs_end labeled
+        #
+        # tmy (braucht leap year filter)
+        # typical day per month (braucht leap year filter nicht,
+        # geht aber schneller, wenn tmy als input genommen wird)
+        # x,y für gencumsky
+        # x,y für die klasse für ghi, dhi at simDT
 
     def set_dhi_dni_ghi_and_sunpos_to_simDT(self, simDT: SimDT):
 
-        self.ghi = self.df_irradiance.ghi[simDT.hour_of_tmy]
-        self.dhi = self.df_irradiance.dhi[simDT.hour_of_tmy]
-        # for sky to untilted ground cos(tilt) = 1 and GHI = DNI + DHI ->
+        if self.SimSettings.sim_year == 'TMY':
+            # sim year is set to dummy non leap year 2019,
+            # but with irradiance values averaged
+            df_irr = self.df_irradiance_tmy
+        else:
+            df_irr = self.df_irradiance
+
+        # TODO wont work with y year like this,
+        # year is not in sim_dt_utc included
+        self.ghi = df_irr.loc[simDT.sim_dt_utc, 'ghi_Wm-2']
+        self.dhi = df_irr.loc[simDT.sim_dt_utc, 'dhi_Wm-2']
+
+        # for sky to untilted ground cos(tilt) = 1 and GHI = DNI + DHI
         self.dni = self.ghi - self.dhi
 
         # sun position
+        # 30 seconds rounding error should not matter for sunposition
+        timedelta = str(int(self.SimSettings.time_step_in_minutes/2))
         solpos: pd.DataFrame = \
             self.SimSettings.apv_location.get_solarposition(
-                times=simDT.sim_dt_utc_pd-pd.Timedelta('30min'),
-                # TODO alles centered labeled machen?
+                times=simDT.sim_dt_utc_pd-pd.Timedelta(f'{timedelta}min'),
                 temperature=12  # TODO use temperature from ERA5 data
             )
 
@@ -110,21 +148,21 @@ class WeatherData:
             month: str or list,
             day: str or list) -> None:
         '''
-    Downloads wind and temperature data from the climate data store (CDS).
-    The data set is called "ERA5", which stands for 5th ECMWF Reanalysis
-    with ECMWF = European Centre for Medium-Range Weather Forecasts.
-    https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-land?tab=overview
-    Time step = 1h, full days
-    The download folder is defined in the user_settings.py.
+        Downloads wind and temperature data from the climate data store (CDS).
+        The data set is called "ERA5", which stands for 5th ECMWF Reanalysis
+        with ECMWF = European Centre for Medium-Range Weather Forecasts.
+        https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-land?tab=overview
+        Time step = 1h, full days
+        The download folder is defined in the user_settings.py.
 
-    Args:
-        credentials (dict): output of .load_credentials()
-        file_name (str): name of the .nc file containing the downloaded data
-        location (pvlib.location): pvlib location object to pass coordinates
-        year (str or list of str): e.g. '2020' or ['2020', '2021']
-        month (str or list of str)
-        day (str or list of str)
-    '''
+        Args:
+            credentials (dict): output of .load_credentials()
+            file_name (str): name of the .nc file containing the downloaded data
+            location (pvlib.location): pvlib location object to pass coordinates
+            year (str or list of str): e.g. '2020' or ['2020', '2021']
+            month (str or list of str)
+            day (str or list of str)
+        '''
 
         # instance of cdsapi for cds data only
         c = cdsapi.Client(
@@ -168,30 +206,35 @@ class WeatherData:
             self,
             location: pvlib.location.Location,
             date_range: str,
-            time_step: str
+            time_step_in_minutes: int
     ) -> str:
         '''
-    Downloads insolation data from the atmosphere data store (ADS),
-    which is provided by the Copernicus Atmosphere Monitoring Service (CAMS):
-    https://ads.atmosphere.copernicus.eu/cdsapp#!/dataset/cams-solar-radiation-timeseries?tab=overview
+        Downloads insolation data from the atmosphere data store (ADS),
+        which is provided by the Copernicus Atmosphere Monitoring Service (CAMS):
+        https://ads.atmosphere.copernicus.eu/cdsapp#!/dataset/cams-solar-radiation-timeseries?tab=overview
 
-    The data is satelite based and takes into account the observed weather.
-    The download folder is defined in the user_settings.py.
+        The data is satelite based and takes into account the observed weather.
+        The download folder is defined in the user_settings.py.
 
-    Args:
-        file_name (str): name of the .csv file containing the downloaded data
-        location (pvlib.location.Location): location object to pass coordinates
-        date_range (str): start and end date str, e.g. '2015-01-01/2015-01-02'
-        time_step (str): minimum: '1minute',
-                         also possible: '15minute', '1hour', ...
-    Returns:
-        file_path (str): file path of the result file
+        Args:
+            file_name (str): name of the .csv file containing the downloaded data
+            location (pvlib.location.Location): location object to pass coordinates
+            date_range (str): start and end date str, e.g. '2015-01-01/2015-01-02'
+            time_step_in_minutes (int): e.g. 15 results in DHI [Wh/m²] within
+            15 minutes observation periods. Has to be 1, 15 or 60.
+        Returns:
+            file_path (str): file path of the result file
 
-    '''
+        '''
+        if time_step_in_minutes == 60:
+            time_step_str = '1hour'
+        else:
+            time_step_str = f'{time_step_in_minutes}minute'
+
         file_name = ('insolation-data_' + date_range.replace('/', '_to_') +
                      f'_lat-{location.latitude}'
                      f'_lon-{location.longitude}'
-                     f'_time_step-{time_step}')
+                     f'_time_step-{time_step_str}')
 
         file_path: Path = user_pathes.data_download_folder/Path(
             file_name+'.csv')
@@ -212,7 +255,7 @@ class WeatherData:
                     },
                     'altitude': str(location.altitude),
                     'date': date_range,
-                    'time_step': time_step,
+                    'time_step': time_step_str,
                     'time_reference': 'universal_time',
                     'format': 'csv',
                 },
@@ -225,34 +268,113 @@ class WeatherData:
     def wind_and_T_data_to_TMY(self, source_file_path):
         return
 
-    def satellite_insolation_data_to_TMY(self, source_file_path):
+    def load_and_process_insolation_data(
+            self, source_file_path: Path,
+            debug_mode=False) -> pd.DataFrame:
+        """
+        - set index to observation end
+        - add global and diffusive horizontal irradiance in W/m²
+        - add Month, Day... columns to use pivot_table() later
 
-        file_name = 'TMY_'+str(source_file_path).split('\\')[-1]
-        tmy_folder_path = user_pathes.bifacial_radiance_files_folder / Path(
+        keeping "right-labeled" instead of "center labeld",
+        since lowest resolution of 15 minutes should not
+        be made coarser by grouping two adjacent data points
+
+        ...
+        """
+        time_step = self.SimSettings.time_step_in_minutes
+        file_name = str(source_file_path).split('\\')[-1].replace(
+            '1minute', f'{time_step}minute')
+        folder_path = user_pathes.bifacial_radiance_files_folder / Path(
             'satellite_weatherData')
 
-        tmy_file_path = tmy_folder_path/file_name
+        downsampled_data_file_path = folder_path/file_name
 
-        """
-        if tmy_file_path.exists():
-            return apv.utils.files_interface.df_from_file_or_folder(
-                tmy_file_path, delimiter=' ', names=['ghi', 'dhi']
+        if downsampled_data_file_path.exists() and not debug_mode:
+            df = apv.utils.files_interface.df_from_file_or_folder(
+                downsampled_data_file_path, delimiter=' ', index_col=0)
+            df.set_index(
+                pd.to_datetime(df.index, utc=True),  # "right-labeled" as inBR
+                inplace=True
             )
-        """
-        # else:
-        apv.utils.files_interface.make_dirs_if_not_there(tmy_folder_path)
+            df.Name = file_name
+            return df
 
+        # else:
+        apv.utils.files_interface.make_dirs_if_not_there(folder_path)
+        print(f'reading {source_file_path}...')
         df: pd.DataFrame = pd.read_csv(source_file_path, skiprows=42, sep=';')
+
+        df.drop(columns=['TOA', 'Reliability'], inplace=True)
+
         df[['obs_start', 'obs_end']] = \
             df.iloc[:, 0].str.split('/', 1, expand=True)
+
         df.set_index(
             pd.to_datetime(df['obs_end'], utc=True),  # "right-labeled" as inBR
             inplace=True
         )
 
+        if time_step > 1:
+            # downsample_1min_insolation_data
+            print(f'coarsening time resolution from 1 to {time_step} minutes.')
+            df = df.resample(
+                f'{time_step}min',
+                closed='right',
+                label='right',
+                kind='timestamp'
+            ).sum()
+
+        # GHI and DHI are in Wh/m²
+        time_step_in_hours = time_step/60
+        df.loc[:, 'ghi_Wm-2'] = df['GHI']/time_step_in_hours
+        df.loc[:, 'dhi_Wm-2'] = df['DHI']/time_step_in_hours
+        df.rename(columns={'GHI': 'ghi_Whm-2'}, inplace=True)
+
+        # this values are a power per area at the end of the observation period
+
+        df.to_csv(
+            downsampled_data_file_path, sep=' ',
+            columns=['ghi_Wm-2', 'dhi_Wm-2', 'ghi_Whm-2']
+        )
+        df.Name = file_name
+        return df
+
+    def df_irradiance_to_TMY(self, df: pd.DataFrame):
+
         # filter out 29th Feb
         mask = (df.index.is_leap_year) & (df.index.dayofyear == 60)
-        df = df[~mask]
+        df.loc[:] = df[~mask]
+        # .loc[:] prevents creating new df object, which would loose .Name
+
+        df.loc[:, 'month'] = df.index.month
+        df.loc[:, 'day'] = df.index.day
+        df.loc[:, 'hour'] = df.index.hour
+        df.loc[:, 'minute'] = df.index.minute
+
+        df_tmy = pd.pivot_table(
+            df,
+            index=['month', 'day', 'hour', 'minute'],
+            values=['ghi_Wm-2', 'dhi_Wm-2', 'ghi_Whm-2'])
+
+        freq = f"{self.SimSettings.time_step_in_minutes}min"
+        df_tmy.index = pd.date_range(
+            start="2019-01-01", periods=len(df_tmy), freq=freq, tz='utc')
+
+        df_tmy.Name = 'TMY_'+df.Name
+        tmy_file_path = user_pathes.bifacial_radiance_files_folder / Path(
+            'satellite_weatherData', df_tmy.Name)
+
+        df_tmy.to_csv(tmy_file_path, index=False, header=False, sep=' ',
+                      columns=['ghi_Wm-2', 'dhi_Wm-2', 'ghi_Whm-2']
+                      )
+        return df_tmy
+
+    """
+    def write_ghi_dhi_data_for_gendaylit():
+
+        # else:
+        apv.utils.files_interface.make_dirs_if_not_there(tmy_folder_path)
 
         # create average GHI and DHI for each hour per year
         group_list = [df.index.month, df.index.day, df.index.hour]
@@ -278,9 +400,9 @@ class WeatherData:
             index=['Month', 'Day', 'Hour'],
             values=['GHI', 'DHI'])
 
-        return df_tmy
+        return df_tmy """
 
-    def typical_day_of_month(self):
+    def typical_day_of_month(self, df):
         """Extract from TMY irradiation data 3 typical representative days
         of each month: day 1 is when daily GHI itegral is minimum, day 2 is
         when daily GHI integral is maximum, and day 3 is the day that is most
@@ -288,49 +410,35 @@ class WeatherData:
 
         Returns:
             [df_all]: [DataFrame with values and indexes of the 3 days of
-            each month]
+                       each month]
         """
-        # TODO make integrated in satellite_insolation_data_to_TMY
-        # read weather file and define indexes to group by
-        apv_location = location.Location(
-            50.86351, 6.52946, altitude=123, tz='Europe/Berlin',
-            name='Morchenich')
-        source_file_path = self.download_insolation_data(
-            apv_location, '2005-01-01/2021-01-01', '1hour')
-        df: pd.DataFrame = pd.read_csv(source_file_path, skiprows=42, sep=';')
-        df[['obs_start', 'obs_end']] = \
-            df.iloc[:, 0].str.split('/', 1, expand=True)
-        df.set_index(
-            pd.to_datetime(df['obs_end'], utc=True),  # "right-labeled" as inBR
-            inplace=True
-        )
-        df['Month'] = df.index.month
-        df['Day'] = df.index.day
-        df['Hour'] = df.index.hour
-        df['Minute'] = df.index.minute
 
-        df_mean_hours_per_month = pd.pivot_table(
+        df.loc[:, 'month'] = df.index.month
+        df.loc[:, 'hour'] = df.index.hour
+        df.loc[:, 'minute'] = df.index.minute
+
+        df_typ_day_per_month = pd.pivot_table(
             df,
-            index=['Month', 'Hour'],
-            values=['GHI', 'DHI'],
+            index=['month', 'hour', 'minute'],  # no day ->all days are grouped
+            values=['ghi_Wm-2', 'dhi_Wm-2', 'ghi_Whm-2'],
             aggfunc='mean')
 
-        return df_mean_hours_per_month
+        return df_typ_day_per_month
 
         # create TMY from ADS yearly data
         df_tmy = pd.pivot_table(df,
-                                index=['Month', 'Day', 'Hour'],
+                                index=['month', 'day', 'hour'],
                                 values=['GHI', 'DHI'], aggfunc=np.mean)
 
         # create daily sum to identify max, min, and avg
         df_day_sums = pd.pivot_table(
             df,
-            index=['Month', 'Day'],
+            index=['month', 'day'],
             values=['GHI'],
             aggfunc='sum')
         # identify value where sum is max, min, or avg
         df_all = pd.pivot_table(
-            df_day_sums, index='Month',
+            df_day_sums, index='month',
             values=['GHI'], aggfunc=['min', 'mean', 'max'])
         # give index where max, min, and avg idenitified
         for month in range(1, 13):
@@ -343,6 +451,8 @@ class WeatherData:
 
 
 """
+
+
 def retrieve_nsrdb_data(
         lat, lon, year=2019, interval=15,
         attributes='ghi,dhi,dni,wind_speed,air_temperature,surface_albedo'
@@ -398,3 +508,52 @@ def retrieve_nsrdb_data(
     return data """
 
 # #
+if __name__ == '__main__':
+    SimSettings = apv.settings.simulation.Simulation()
+    # SimSettings.time_step_in_minutes = 1
+    WData = WeatherData(SimSettings,  # debug_mode=True
+                        )
+    # #
+    df = WData.df_irradiance_typ_day_per_month
+    month = int(SimSettings.sim_date_time.split('-')[0])
+    df.loc[(1), 'ghi_Whm-2'].sum()
+    # #
+    from typing import Literal
+    Test: 1 or 2 = 2
+    type(Test)
+    Test
+    # #
+    df.loc[simDT.sim_dt_utc]
+    # #
+    df.Name
+    # #
+    df['time'] = df.day + df.hour
+
+    df
+
+    # #
+    WData.set_dhi_dni_ghi_and_sunpos_to_simDT(simDT)
+    WData.dhi
+    # #
+
+    sim_dt_tz_naiv: datetime = datetime.strptime(
+        year_str+'-'+date_time_str, '%y-%m-%d_%H:%M')
+    pytz_tz = pytz.timezone(tz)
+    self.sim_dt_local: datetime = pytz_tz.localize(sim_dt_tz_naiv)
+
+    sim_dt_utc = self.sim_dt_local.astimezone(pytz.utc)
+    # #
+
+    group_list = [df.index.month, df.index.day, df.index.hour, df.index.minute]
+
+    df2 = df.groupby(group_list).mean()
+    df2
+    # #
+    df
+    # #
+    test = pd.DataFrame(columns=['a'])
+
+    # test.Name = 'hi'
+    test['a'] = 2
+    test.Name
+    # test

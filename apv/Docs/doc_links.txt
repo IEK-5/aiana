@@ -4,8 +4,17 @@ EPW Docs:
 
 
 gendaymtx:
-https: // www.radiance-online.org//learning/documentation/manual-pages/pdfs/gendaymtx.pdf
+https://www.radiance-online.org//learning/documentation/manual-pages/pdfs/gendaymtx.pdf
 
-irradiation (~insolation is a vague term, should be avoided) (Wh/m2)
-irradiance (W/m2)
+
+gendaylit takes irradiance as input !
+https://floyd.lbl.gov/radiance/gendaylit.1.html
+
+and ads satellite returns irradiation as output
+
+irradiation = energy per area (Wh/m2)
+irradiance = power per area (W/m2)
+insolation moslty = irradiation, but is a vague term, should be avoided
+
+
 source: https://www.researchgate.net/post/What-is-the-difference-between-insolation-and-solar-irradiance

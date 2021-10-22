@@ -4,21 +4,37 @@ objects, create scene and run simulation with Bifacial_Radiance according
 to presets in settings.py
 
 TODO
-- implement higher time resolution
-- sub pfade fixen für plot merge
+erledigt:
+- std 0.25m 6min
+noch:
+- std 0.25m 30 min
+x = 30 min (oder 15 min wenn nötig)
+- checker 0.25m x min
+- std 0.25m x min mit nur 3 clones
+
+(- est-west 0.25m x min)
+
+
+---------------------
 - clones for azi <> 180°
 
-- aufräumen, dokumentieren... -->Mohd
+- aufräumen, dokumentieren
+
+- 50 Wh/m² filter too high for winter (sum is only 200, so we cut of like 50%
+in december !)
+
+- longterm:
+https://www.pv-magazine.com/2020/07/23/special-solar-panels-for-agrivoltaics/
 
 '''
 # import needed packages
 
-from apv.utils import units_converter as uc
 from apv.utils import files_interface as fi
 from apv.settings.simulation import Simulation
 from apv.settings.apv_systems import Default as SystSettings
 from apv.classes.geometries_handler import GeometriesHandler
 from apv.classes.weather_data import WeatherData
+from apv.classes.APV_evaluation import APV_Evaluation
 from apv.classes.sim_datetime import SimDT
 
 import apv.settings.user_pathes as user_pathes
@@ -68,6 +84,8 @@ class BR_Wrapper:
             SimSettings: Simulation,
             APV_SystSettings: SystSettings,
             geometryObj: GeometriesHandler = None,
+            results_subfolder: Path = None,
+            weatherData=None,
             # weather_file=None,  # to optionally skip epw download
             debug_mode=False
     ):
@@ -76,8 +94,19 @@ class BR_Wrapper:
 
         self.geomObj = geometryObj or GeometriesHandler(
             SimSettings, APV_SystSettings, debug_mode)
-        self.simDT = SimDT(SimSettings)
-        self.weatherData = WeatherData(SimSettings)
+        self.simDT: SimDT = None
+
+        self.evalObj: APV_Evaluation = APV_Evaluation(
+            SimSettings=SimSettings,
+            APV_SystSettings=APV_SystSettings,
+            weatherData=weatherData
+        )
+
+        if weatherData is None:
+            self.weatherData = WeatherData(self.SimSettings)
+        else:
+            self.weatherData = weatherData
+
         self.debug_mode = debug_mode
 
         self.radObj: br.RadianceObj = None
@@ -89,14 +118,14 @@ class BR_Wrapper:
         self.frontscan = dict()
 
         self.df_ground_results = pd.DataFrame()
-        self.results_subfolder = Path()
+        self.results_subfolder = results_subfolder
         self.csv_parent_folder = Path()  # only for non cumulative (hourly)
         self.csv_file_path = Path()
         self.oct_file_name = str()
         self.file_name = str()  # for plot and csv file
 
     def setup_br(self, dni_singleValue=None, dhi_singleValue=None):
-
+        self.simDT = SimDT(self.SimSettings)
         self.set_up_file_names_and_paths()
         # adjust e.g. add cell sizes
         self.APV_SystSettings = apv.utils.settings_adjuster.adjust_settings(
@@ -112,16 +141,17 @@ class BR_Wrapper:
         self.create_geometries(APV_SystSettings=self.APV_SystSettings)
         self.set_up_AnalObj_and_groundscan()
 
-    def set_up_file_names_and_paths(self, results_subfolder=None):
+    def set_up_file_names_and_paths(self):
 
-        if results_subfolder is None:
+        if self.results_subfolder is None:
             self.results_subfolder = user_pathes.results_folder / Path(
                 self.SimSettings.sim_name,
                 self.APV_SystSettings.module_form
-                + '_res-' + str(self.SimSettings.spatial_resolution)
+                + '_res-' + str(self.SimSettings.spatial_resolution)+'m'
+                + '_step-' + str(self.SimSettings.time_step_in_minutes)+'min'
             )
         else:
-            self.results_subfolder = results_subfolder
+            self.results_subfolder = self.results_subfolder
 
         self.file_name = self.SimSettings.sim_date_time.replace(':', 'h')
         self.oct_file_name = self.SimSettings.sim_name \
@@ -538,8 +568,8 @@ class BR_Wrapper:
         df['time_local'] = self.simDT.sim_dt_local
         df['time_utc'] = self.simDT.sim_dt_utc_pd
 
-        df = uc.add_PAR(df=df)
-        df = uc.add_shadowdepth(
+        df = self.evalObj.add_PAR(df=df)
+        df = self.evalObj.add_shadowdepth(
             df=df, SimSettings=self.SimSettings, cumulative=False)
 
         df.to_csv(self.csv_file_path)
@@ -548,10 +578,11 @@ class BR_Wrapper:
 
     def plot_ground_heatmap(
         self,
-        df=None,
-        file_name=None,
-        cm_unit=None,
-        cumulative=None
+        df: pd.DataFrame = None,
+        destination_folder: Path = None,
+        file_name: str = None,
+        cm_unit: str = None,
+        cumulative: bool = None
     ):
         """plots the ground insolation as a heat map and saves it into
             the results/plots folder.
@@ -576,7 +607,7 @@ class BR_Wrapper:
         if ticklabels_skip_count_number < 2:
             ticklabels_skip_count_number = "auto"
 
-        if self.SimSettings.sky_gen_mode == 'gendaylit':
+        if self.SimSettings.sky_gen_mode == 'gendaylit' and not cumulative:
             title = (f'Module Form: {self.APV_SystSettings.module_form}\n'
                      f'Date & Time: {self.SimSettings.sim_date_time}\n'
                      f'Resolution: {self.SimSettings.spatial_resolution} m')
@@ -586,7 +617,7 @@ class BR_Wrapper:
                      f'To: [{self.SimSettings.enddt}]\n'
                      f'Resolution: {self.SimSettings.spatial_resolution} m')
 
-        label_and_cm_input: dict = uc.get_label_and_cm_input(
+        label_and_cm_input: dict = self.evalObj.get_label_and_cm_input(
             cm_unit=cm_unit, cumulative=cumulative)
 
         fig = apv.utils.plots.plot_heatmap(
@@ -602,10 +633,13 @@ class BR_Wrapper:
             fig.axes[1], self.APV_SystSettings.sceneDict['azimuth'])
         if file_name is None:
             file_name = self.file_name
+
+        if destination_folder is None:
+            destination_folder = self.results_subfolder
         apv.utils.files_interface.save_fig(
             fig,
             cm_unit+'_' + label_and_cm_input['z']+'_' + file_name,
-            parent_folder_path=self.results_subfolder,
+            parent_folder_path=destination_folder,
             sub_folder_name='',
         )
 

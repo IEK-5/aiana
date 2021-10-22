@@ -42,15 +42,24 @@ class Simulation:
         name='Morchenich')
 
     # time settings (as local time of the timezone defined in apv_location.tz)
-    # currently only as typical meterological year (TMY) = mean over 2005-2020
+    # currently only as typical meterological year
+
+    sim_year: int or Literal['TMY'] = 'TMY'  # or e.g. 2020
+    # TMY = typical meterological year; here: mean data from 2005 to 2020
+
+    # TODO restructure? problem:
+    # different index... maybe dummy day 15 as for year
+    use_typical_day_per_month_for_shadow_depth_calculation = False
+
     sim_date_time = '06-15_20:00'  # used as second part of the .oct file name
-    time_step = '1hour'  # also possible: '30minute', '1hour'
+    time_step_in_minutes: int = 60  # only 1,2,3,6,10,12,15,20,30,60
+
     # if irradiance_data_source == 'ADS_satellite': dhi and dni values are
     # averaged from sim_date_time-time_step until sim_date_time+time_step
     # (center labeled)
     # and sunposition for gendaylit is also at the sim_date_time
 
-    # irradiance_data_source: Literal['EPW', 'ADS_satellite'] = 'ADS_satellite'
+    irradiance_data_source: Literal['EPW', 'ADS_satellite'] = 'ADS_satellite'
     # >>> we dont use EPW anymore, bad data
 
     # sky generation type:

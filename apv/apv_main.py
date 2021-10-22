@@ -10,7 +10,7 @@ if __name__ == '__main__':
 
     # #
     brObj.view_scene(
-        view_name='top_down', view_type='parallel'
+        # view_name='top_down', view_type='parallel'
     )
 # #
 if __name__ == '__main__':
@@ -28,4 +28,4 @@ if __name__ == '__main__':
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings
     )
-    evalObj.evaluate_APV()
+    evalObj.evaluate_APV(SimSettings)
