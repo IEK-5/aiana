@@ -110,6 +110,7 @@ class GeometriesHandler:
         # make it larger if not azimuth = 0 or 180 to cover footprint within
         # scan field aligned to north and parallel to x and y axes:
         azi_rad = self.scn['azimuth']*np.pi/180
+        # e.g. for azimuth = 90° x and y field dimensions are switched
         x_field = abs(np.sin(azi_rad))*y_field0 + abs(np.cos(azi_rad))*x_field0
         # switch cos and sin for y
         y_field = abs(np.cos(azi_rad))*y_field0 + abs(np.sin(azi_rad))*x_field0
@@ -191,11 +192,16 @@ class GeometriesHandler:
 
         h_post = self.scn["hub_height"] + 0.2  # post height
 
-        beamlength_x = self.allRows_footprint_x + 4*s_post
+        beamlength_x = (self.allRows_footprint_x
+                        + self.APV_SystSettings.apv_system_clones_distance)
         clone_distance_x = beamlength_x/(n_post_x-1)
-        # -0.4 instead of -1 to enlarge beams by half pitch
-        # to get periodic shadows in summer sunrise and set
-        beamlength_y = self.scn['pitch']*(self.scn['nRows']-0.4)
+
+        if self.APV_SystSettings.enlarge_beams_for_periodic_shadows:
+            beamlength_x = self.allRows_footprint_x * 1.2
+            # to get periodic shadows in summer sunrise and set
+            beamlength_y = self.scn['pitch']*(self.scn['nRows']-0.4)
+        else:
+            beamlength_y = self.scn['pitch']*(self.scn['nRows']-1)
 
         x_start = self.sw_modCorner_azi0_x - 2*s_post
         y_start = self.sw_modCorner_azi0_y + self.singleRow_footprint_y/2

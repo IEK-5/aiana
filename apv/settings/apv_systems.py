@@ -119,9 +119,71 @@ class Default:
     ground_scan_shift_x: float = 0  # positiv: towards east
     ground_scan_shift_y: float = 0  # positiv: towards north
 
-    round_up_field_dimensions: bool = True
+    round_up_field_dimensions: bool = False
+    enlarge_beams_for_periodic_shadows: bool = False
 
     extra_customObject_rad_text: str = None
+
+
+class APV_Morchenich_Std_or_Checkerboard(Default):
+    module_form: Default.module_form = 'EW_fixed'
+    # set gap in std module form = 1m
+    sceneDict = Default.sceneDict.copy()
+    sceneDict['nRows'] = 5
+
+    scene_camera_dicts = Default.scene_camera_dicts.copy()
+    scene_camera_dicts['top_down']['horizontal_view_angle'] = 80
+    scene_camera_dicts['top_down']['vertical_view_angle'] = 50
+
+    # To reduce sim time and get periodic boundary conditions
+    ground_scan_margin_x = 0
+    # y reduction (negative margin)
+    ground_scan_margin_y = (
+        -sceneDict['pitch'] * (sceneDict['nRows']/2-1)-Default.moduleDict['y'])
+
+    # north shift is needed for winter to get
+    # periodic boundary conditions in this setup (geometry etc)
+    ground_scan_shift_y = sceneDict['pitch']
+    enlarge_beams_for_periodic_shadows: bool = True
+
+
+class APV_Morchenich_EastWest(Default):
+    module_form: Default.module_form = 'EW_fixed'
+
+    moduleDict = Default.moduleDict.copy()
+    moduleDict['x'] = 55*Default.moduleDict['x']+54*Default.moduleDict['xgap']
+
+    # set gap in std module form = 1m
+    sceneDict = {'tilt': 20,
+                 'pitch': 10,
+                 'hub_height': 4.5,
+                 'azimuth': 90,
+                 'nMods': 1,  # (10+1)*5,
+                 'nRows': 7,
+                 }
+    apv_system_clones_distance = 0
+    n_post_x: int = 6  # number of posts
+
+    scene_camera_dicts = Default.scene_camera_dicts.copy()
+    scene_camera_dicts['top_down']['horizontal_view_angle'] = 60
+    scene_camera_dicts['top_down']['vertical_view_angle'] = 60
+
+    # To reduce sim time and get periodic boundary conditions
+    # north shift is needed for winter to get
+    # periodic boundary conditions in this setup (geometry etc)
+
+    # TODO x,y for scan margin is rotated,
+    # but for shift not, that is confusing. Should be consistent!
+    # ground_scan_shift_x = Default.moduleDict['x']/2
+    # y reduction (negative margin)
+    x_pitch = moduleDict['x']*11/55
+    # 11*(Default.moduleDict['x']+Default.moduleDict['xgap'])
+    ground_scan_margin_x = -2*x_pitch
+    ground_scan_margin_y = (
+        -sceneDict['pitch'] * (sceneDict['nRows']/2-1)-Default.moduleDict['y'])
+    ground_scan_shift_y = -Default.moduleDict['x']/2 + x_pitch
+
+    enlarge_beams_for_periodic_shadows: bool = True
 
 
 class APV_Syst_InclinedTables_Juelich(Default):

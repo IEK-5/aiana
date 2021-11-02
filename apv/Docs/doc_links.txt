@@ -7,6 +7,13 @@ gendaymtx:
 https://www.radiance-online.org//learning/documentation/manual-pages/pdfs/gendaymtx.pdf
 
 
+radiance accuracy settings:
+http://designbuilder.co.uk/helpv3.0/Content/Daylighting%20Calculation%20Options.htm
+
+
+
+
+
 gendaylit takes irradiance as input !
 https://floyd.lbl.gov/radiance/gendaylit.1.html
 
@@ -18,3 +25,11 @@ insolation moslty = irradiation, but is a vague term, should be avoided
 
 
 source: https://www.researchgate.net/post/What-is-the-difference-between-insolation-and-solar-irradiance
+
+
+
+
+---
+to get code lines, put following command in bash console:
+
+git ls-files --exclude-standard -- ':!:**/*.[pjs][npv]g' ':!:**/*.txt' ':!:**/*.csv' ':!:**/*.pyc' ':!:__pycache__' ':!:.gitignore' | xargs wc -l

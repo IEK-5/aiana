@@ -14,48 +14,35 @@ if __name__ == '__main__':
     imp.reload(apv.settings.apv_systems)
     imp.reload(apv.br_wrapper)
 
+    # ############ SIM SETTINGS #############
     SimSettings = apv.settings.simulation.Simulation()
-    APV_SystSettings = apv.settings.apv_systems.Default()
-
-    # ### settings:  ####
-
+    # SimSettings.sim_name = 'APV_Morschenich_only_one_neighborset'
     SimSettings.sim_name = 'APV_Morschenich'
-    APV_SystSettings.module_form = 'std'
-    SimSettings.spatial_resolution = 0.25
-    SimSettings.time_step_in_minutes = 30  # 6
     SimSettings.use_typical_day_per_month_for_shadow_depth_calculation = True
+    SimSettings.spatial_resolution = 0.25
+    SimSettings.time_step_in_minutes = 6  # 6
     # SimSettings.use_multi_processing = False
-    # APV_SystSettings.add_groundScanArea_as_object_to_scene = True
-    APV_SystSettings.sceneDict['nRows'] = 5  # old: 3, new: 5
-    # this plus north shift is needed for winter to get
-    # periodic boundary conditions in this setup (geometry etc)
+    #########################################
 
-    APV_SystSettings.scene_camera_dicts[
-        'top_down']['horizontal_view_angle'] = 80
-    APV_SystSettings.scene_camera_dicts[
-        'top_down']['vertical_view_angle'] = 50
-
-    geomObj = GeometriesHandler(SimSettings, APV_SystSettings)
+    # ### APV_SystSettings:  ####
+    # APV_SystSettings = apv.settings.apv_systems.APV_Morchenich_Std_or_Checkerboard()
+    # APV_SystSettings.module_form = 'cell_level_checker_board'
+    APV_SystSettings = apv.settings.apv_systems.APV_Morchenich_EastWest()
+    # APV_SystSettings.module_form = 'none'
+    APV_SystSettings.add_groundScanArea_as_object_to_scene = True
 
     def adjust_APVclone_position(APV_SystSettings: SystSettings, hour
                                  ) -> SystSettings:
         # To reduce sim time
         if hour <= 12:
-            APV_SystSettings.n_apv_system_clones_in_x = 3  # old: 2, new: 3
-            APV_SystSettings.n_apv_system_clones_in_negative_x = 1
+            APV_SystSettings.n_apv_system_clones_in_x = 3  # old: 2, new: 3,
+            APV_SystSettings.n_apv_system_clones_in_negative_x = 1  # 1
         elif hour > 12:
-            APV_SystSettings.n_apv_system_clones_in_x = 1
+            APV_SystSettings.n_apv_system_clones_in_x = 1  # 1
             APV_SystSettings.n_apv_system_clones_in_negative_x = 3  # 2 or 3
 
         return APV_SystSettings
 
-    # To reduce sim time
-    y_reduction = (-APV_SystSettings.sceneDict['pitch']
-                   * (APV_SystSettings.sceneDict['nRows']/2-1)
-                   - APV_SystSettings.moduleDict['y'])
-    APV_SystSettings.ground_scan_margin_x = 0
-    APV_SystSettings.ground_scan_margin_y = y_reduction
-    APV_SystSettings.ground_scan_shift_y = APV_SystSettings.sceneDict['pitch']
     # APV_SystSettings.sceneDict["azimuth"] = 200
 
     # dummy for path part
@@ -63,13 +50,13 @@ if __name__ == '__main__':
     # brObj.setup_br()
     # results_path_part: Path = brObj.results_subfolder
     # results_path_part
-# #
+
 if __name__ == '__main__':
     ###########################################################################
-    simulate = True
+    setup_br_and_simulate = True
     ###########################################################################
-    months = [1]  # range(1, 13)
-    hours = range(0, 24, 1)  # [12]  #
+    months = [12]  # range(7, 13)
+    hours = range(0, 24, 1)  #
     minutes = range(0, 60, SimSettings.time_step_in_minutes)  # [0]  #
     # minute 60 is and has to be exclusive
 
@@ -98,10 +85,15 @@ if __name__ == '__main__':
         brObj.results_subfolder = user_pathes.results_folder / subfolder
 
         for hour in hours:
-            for minute in minutes:
+            if APV_SystSettings.module_form in [
+                    'std', 'cell_level_checker_board']:
                 APV_SystSettings = adjust_APVclone_position(
                     APV_SystSettings, hour
                 )
+            geomObj = GeometriesHandler(SimSettings, APV_SystSettings)
+            # TODO syst cloning should be called also in geometries handler
+            # and not in br_wrapper
+            for minute in minutes:
                 # for optical reasons only:
                 min_str = str(minute)
                 if minute < 10:
@@ -115,6 +107,7 @@ if __name__ == '__main__':
                     month, hour_utc, minute]
                 dhi = df_typic_day_of_month['dhi_Wm-2'].loc[
                     month, hour_utc, minute]
+
                 dni = ghi-dhi  # (as ground has tilt 0)
                 weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(simDT)
 
@@ -133,12 +126,13 @@ if __name__ == '__main__':
                         sun_shines = True
 
                     brObj.SimSettings = SimSettings
-                    if simulate:
-                        # brObj.view_scene(view_name='top_down', view_type='parallel')
-
+                    if setup_br_and_simulate:
                         brObj.setup_br(
                             dni_singleValue=dni, dhi_singleValue=dhi)
+                        # brObj.view_scene(view_name='top_down', view_type='parallel')
+                        ########
                         brObj.run_raytracing_simulation()
+                        ########
                         for cm_unit in ['radiation', 'shadow_depth']:
                             brObj.plot_ground_heatmap(cm_unit=cm_unit)
 

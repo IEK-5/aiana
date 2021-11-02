@@ -4,27 +4,27 @@ objects, create scene and run simulation with Bifacial_Radiance according
 to presets in settings.py
 
 TODO
-erledigt:
-- std 0.25m 6min
-noch:
-- std 0.25m 30 min
-x = 30 min (oder 15 min wenn nötig)
-- checker 0.25m x min
-- std 0.25m x min mit nur 3 clones
-
-(- est-west 0.25m x min)
-
 
 ---------------------
+- aufräumen, dokumentieren, codeinterne TODOs sichten
+- apv evaluation angucken und verstehen (Leo)
+
+- typical day of month optional in settings integrieren
+(evt. dann doch nicht ein string für datum-uhrzeit
+sondern year, month, day, hour, minute separat
+angeben?)
+- wedge plots integrieren
+- wieder aufräumen, dokumentieren
+
 - clones for azi <> 180°
+- panel sensors?
 
-- aufräumen, dokumentieren
-
-- 50 Wh/m² filter too high for winter (sum is only 200, so we cut of like 50%
-in december !)
-
+------------
 - longterm:
 https://www.pv-magazine.com/2020/07/23/special-solar-panels-for-agrivoltaics/
+
+(-bei azi 180°:
+wedgeplot x-achse: y-position im field, y-achse: GHI, monat 1-12 untereinander)
 
 '''
 # import needed packages
