@@ -74,6 +74,6 @@ class Simulation:
     enddt = '1-1_23:00'  # inclusive ([:end+1])
 
     cm_unit: Literal[
-        'radiation', 'PAR', 'shadow_depth'] = 'radiation'
+        'radiation', 'PAR', 'shadow_depth', 'DLI'] = 'radiation'
 
     cumulative: bool = False

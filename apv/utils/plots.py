@@ -1,7 +1,9 @@
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 import pandas as pd
+from pandas.core.frame import DataFrame
 import seaborn as sns
+import joypy
 
 
 def plot_heatmap(
@@ -136,6 +138,31 @@ def add_north_arrow(
                   ec=arrow_color, lw=1), transform=ax.transAxes)
 
     return ax
+
+
+def Ridge_plot(data, seperate_by='Month', column='ShadowDepth_cum',
+               color='#eb4d4b', xlabel='Shadow depth [%]'):
+    """Creates multiple Kernel Denisty Plots by grouping data
+
+    Args:
+        data ([DataFrame]): Contains column to plot and column to group by
+        seperate_by (str, optional): Element to group by. Defaults to 'Month'.
+        column (str, optional): column of the df. Defaults to 'ShadowDepth_cum'.
+        color (str, optional): Red. Defaults to '#eb4d4b'.
+        xlabel (str, optional): according to column. Defaults to 'Shadow depth [%]'.
+
+    Returns:
+        Figure: Kernel denisty function for each month
+    """
+
+    fig, axes = joypy.joyplot(data=data, by=seperate_by,
+                              column=column,
+                              color=color, fade=False, grid=True,
+                              xlabels=True, ylabels=True, alpha=0.85)
+    plt.xlabel(xlabel)
+    plt.ylabel(seperate_by)
+
+    return fig, axes
 
 
 # TODO brauchen wir nicht mehr, oder? Da man Pfostenschatten sieht.
