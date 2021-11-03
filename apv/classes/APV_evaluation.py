@@ -59,6 +59,13 @@ class APV_Evaluation:
         self.irrad_data = pd.DataFrame()
 
     def evaluate_APV(self, SimSettings):
+        """manages estimate_energy according to settings and returns
+        final estimates for complete system.
+
+
+        Args:
+            SimSettings ([type]): inherited settings
+        """
 
         # Adjust settings
         self.APV_SystSettings = apv.utils.settings_adjuster.adjust_settings(
@@ -131,20 +138,22 @@ class APV_Evaluation:
                         * self.APV_SystSettings.sceneDict['nMods'] \
                         * self.APV_SystSettings.sceneDict['nRows'] \
                         / 1000
-            else:
-                energy = self.estimate_energy(
-                    SimSettings=SimSettings,
-                    APV_SystSettings=self.APV_SystSettings,
-                    time=t,
-                    timeindex=timeindex, tmydata=self.tmydata,
-                    irrad_data=self.irrad_data)
-                system_energy = energy['p_mp'] \
-                    * self.APV_SystSettings.sceneDict['nMods'] \
-                    * self.APV_SystSettings.sceneDict['nRows'] \
-                    * self.APV_SystSettings.moduleDict['numpanels'] \
-                    / 1000
-                self.df_energy_results.loc[t] = (energy['p_mp'], system_energy)
-
+                    self.df_energy_results.loc[t] = (energy['p_mp'],
+                                                     system_energy)
+                else:
+                    energy = self.estimate_energy(
+                        SimSettings=SimSettings,
+                        APV_SystSettings=self.APV_SystSettings,
+                        time=t,
+                        timeindex=timeindex, tmydata=self.tmydata,
+                        irrad_data=self.irrad_data)
+                    system_energy = energy['p_mp'] \
+                        * self.APV_SystSettings.sceneDict['nMods'] \
+                        * self.APV_SystSettings.sceneDict['nRows'] \
+                        * self.APV_SystSettings.moduleDict['numpanels'] \
+                        / 1000
+                    self.df_energy_results.loc[t] = (energy['p_mp'], system_energy)
+            # Save csv file containing date and total energy for system
             path = os.path.join(eval_res_path, self.csv_file_name)
             self.df_energy_results.to_csv(path)
             total = self.df_energy_results['kWh System'].sum()
@@ -153,6 +162,31 @@ class APV_Evaluation:
     def estimate_energy(self, SimSettings: Simulation, APV_SystSettings,
                         time, timeindex,
                         tmydata, irrad_data, sur_azimuth_manual=None):
+        """Use PVlib mathematical model to estimate energy yield. simulation
+        steps are as follows:
+        1-
+
+
+        Args:
+            SimSettings (Simulation): needed for geographic location location
+            APV_SystSettings : inherited APV settings
+            time ([timestampt UTC]): needed to shift solar position 30m and
+                to get extra-terristerial irradiation
+            timeindex ([type]): to determine tmydata and irrad_data for hour
+            tmydata ([type]): Currently EPW data, used for temperature and wind
+                speed, see TODO.
+            irrad_data ([type]): ADS data containing GHI,DNI,and DHI
+            sur_azimuth_manual ([type], optional): azimuth either read
+                automatically from settings or given here for
+                EW (1st:90, 2nd:270)
+
+        Returns:
+            [return total_energy]: [5 points on IV curve]
+
+        # TODO ADD Bifacial factor
+        # TODO Make temperature and wind from CDS
+        # TODO add module series as argument - see cell 194
+        """
 
         sDict = self.APV_SystSettings.sceneDict
         # read PV module specs
@@ -292,7 +326,8 @@ class APV_Evaluation:
         # TODO do we have to do this outcommented line: ???
         # df_merged.loc[:, 'PARGround'] *= SimSettings.time_step_in_minutes/60
         df_merged.rename(columns={"PARGround": "PARGround_cum"}, inplace=True)
-
+        # Add Daily Light integral
+        df_merged['DLI'] = df_merged['Whm2']*4.6*0.45*3600/1000000
         # shadow depth cumulative
         df_merged = self.add_shadowdepth(
             df=df_merged, SimSettings=SimSettings, cumulative=True)
@@ -301,6 +336,29 @@ class APV_Evaluation:
         print(f'Cumulating hours completed!\n',
               'NOTE: Shadow_depth was recalculated for cumulative data\n')
         return df_merged
+
+    @staticmethod
+    def monthly_avg_std(
+        data, column, group_by
+    ):
+        """From appended data, creates a dataframe of average and std of
+        each month
+
+        Args:
+            data (DataFrame): complete appended data with Month column
+            column (str): which column to find avg and std to
+            group_by (str): group by 'Month'
+
+        Returns:
+            [DataFrame]: [df with avg and std per month]
+        """
+        means = data[column].groupby(data[group_by]).mean()
+        stds = data[column].groupby(data[group_by]).std()
+        df = pd.DataFrame(means)
+        df['std'] = stds
+        print(df)
+
+        return df
 
     # unit converting:
 
@@ -400,6 +458,11 @@ class APV_Evaluation:
                 unit_parameters = {
                     'z': 'PARGround_cum', 'colormap': 'YlOrBr',
                     'z_label': 'Cumulative PAR [μmol quanta.m$^{-2}\cdot s^{-1}$]'}
+
+            elif cm_unit == 'DLI':
+                unit_parameters = {
+                    'z': 'DLI', 'colormap': 'YlOrBr',
+                    'z_label': 'DLI [mol quanta.m$^{-2}\cdot day^{-1}$]'}
             else:
                 print('cm_unit has to be radiation, shadow_depth or PAR')
         return unit_parameters
