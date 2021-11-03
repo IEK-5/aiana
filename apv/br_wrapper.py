@@ -21,6 +21,8 @@ angeben?)
 
 ------------
 - longterm:
+add diffusive glass to be used optional in checker board empty slots.
+ref: Miskin2019 and
 https://www.pv-magazine.com/2020/07/23/special-solar-panels-for-agrivoltaics/
 
 (-bei azi 180°:
@@ -127,12 +129,12 @@ class BR_Wrapper:
     def setup_br(self, dni_singleValue=None, dhi_singleValue=None):
         self.simDT = SimDT(self.SimSettings)
         self.set_up_file_names_and_paths()
-        # adjust e.g. add cell sizes
+        # adjust, e.g. add cell sizes
         self.APV_SystSettings = apv.utils.settings_adjuster.adjust_settings(
             self.APV_SystSettings)
 
         # create a bifacial_radiance object
-        self.radObj = br.RadianceObj(  # TODO is this name important?
+        self.radObj = br.RadianceObj(
             self.file_name, str(user_pathes.bifacial_radiance_files_folder)
         )
         self.radObj.setGround(self.SimSettings.ground_albedo)
@@ -229,8 +231,6 @@ class BR_Wrapper:
         rad_mat_file: Path = user_pathes.bifacial_radiance_files_folder / Path(
             'materials/ground.rad')
     ):
-        # TODO add diffusive glass to be used optional in
-        # checker board empty slots. ref: Miskin2019
         """type trans = translucent plastic
         radiance materials documentation:
         https://floyd.lbl.gov/radiance/refer/ray.html#Materials"""
@@ -276,22 +276,41 @@ class BR_Wrapper:
         self.makeCustomMaterial(
             mat_name='grass', mat_type='plastic',
             R=0.1, G=0.3, B=0.08,
-            specularity=0.1,  # self.SimSettings.ground_albedo,  # TODO
+            specularity=0.1,
+            # self.SimSettings.ground_albedo,  # TODO
             # albedo hängt eigentlich auch von strahlungswinkel
             # und diffusen/direktem licht anteil ab
             # https://curry.eas.gatech.edu/Courses/6140/ency/Chapter9/Ency_Atmos/Reflectance_Albedo_Surface.pdf
             roughness=0.3)
 
     def create_geometries(self, APV_SystSettings: SystSettings):
-        """creates mounting structure (optional), pv modules"""
+        """creates pv modules and mounting structure (optional)"""
 
-        ghObj = GeometriesHandler(
+        ghObj: GeometriesHandler = GeometriesHandler(
             self.SimSettings, APV_SystSettings, self.debug_mode)
         ghObj._set_init_variables()
 
-        ghModule = apv.classes.geometries_handler  # TODO replace with Obj
+        # # create PV module
+        # this is a bit nasty because we use self.radObj.makeModule()
+        # to create std or cell_level module, whereby in this case
+        # the "text" argument has to be None. For the other module forms,
+        # which are not present in self.radObj.makeModule(), we use own methods
 
-        # create PV module
+        module_text_dict = {
+            'std': None,  # rad text is created by self.radObj.makeModule()
+            'cell_level': None,  # as above
+            'none': "",  # empty
+            'cell_level_checker_board': ghObj.make_checked_module_text,
+            'EW_fixed': ghObj.make_EW_module_text,
+            'cell_level_EW_fixed': ghObj.make_cell_level_EW_module_text,
+        }
+
+        if APV_SystSettings.module_form in ['std', 'cell_level', 'none']:
+            # pass dict value without calling
+            module_text = module_text_dict[APV_SystSettings.module_form]
+        else:
+            # pass dict value being a ghObj method with calling
+            module_text = module_text_dict[APV_SystSettings.module_form]()
 
         if APV_SystSettings.module_form == 'cell_level':
             # then use bifacial radiance by passing cellLevelModuleParams
@@ -299,24 +318,6 @@ class BR_Wrapper:
         else:
             cellLevelModuleParams = None
 
-        module_text_dict = {
-            'std': None,  # rad text created by bifacial radiance
-            'cell_level': None,  # rad text created by bifacial radiance
-            'none': "",  # empty
-            'cell_level_checker_board': ghModule.checked_module,
-            'EW_fixed': ghModule.make_text_EW,
-            'cell_level_EW_fixed': ghModule.cell_level_EW_fixed,
-        }
-
-        if APV_SystSettings.module_form in ['std', 'cell_level', 'none']:
-            # pass dict value without calling
-            module_text = module_text_dict[APV_SystSettings.module_form]
-        else:
-            cellLevelModuleParams = None
-            # pass dict value being a ghObj method with calling
-            module_text = module_text_dict[APV_SystSettings.module_form](
-                APV_SystSettings
-            )
         self.radObj.makeModule(
             name=APV_SystSettings.module_name,
             **APV_SystSettings.moduleDict,

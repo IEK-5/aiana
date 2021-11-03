@@ -41,6 +41,7 @@ class GeometriesHandler:
         self.debug_mode = debug_mode
 
         self.APV_SystSettings = APV_SystSettings
+        # short cuts:
         self.mod = self.APV_SystSettings.moduleDict
         self.scn = self.APV_SystSettings.sceneDict
 
@@ -254,7 +255,6 @@ class GeometriesHandler:
         """
 
         scn = self.scn
-
         # define these: ####
         inner_table_post_distance_y = 3.4  # *table_footprint_y/4.8296
         # table_footprint_y/4.8296 = ca. 1 for given setup
@@ -301,147 +301,135 @@ class GeometriesHandler:
 
         return text
 
+    def make_checked_module_text(self) -> str:
 
-def checked_module(APV_SystSettings: SystSettings) -> str:
-    c = APV_SystSettings.cellLevelModuleParams
-    m = APV_SystSettings.moduleDict
+        mod = self.mod
+        c = self.APV_SystSettings.cellLevelModuleParams
 
-    # copied from br.main.RadianceObj.makeModule() and modified:
-    x = c['numcellsx']*c['xcell'] + (c['numcellsx']-1)*c['xcellgap']
-    y = c['numcellsy']*c['ycell'] + (c['numcellsy']-1)*c['ycellgap']
+        # copied from br.main.RadianceObj.makeModule() and modified:
+        x = c['numcellsx']*c['xcell']+(c['numcellsx']-1)*c['xcellgap']
+        y = c['numcellsy']*c['ycell']+(c['numcellsy']-1)*c['ycellgap']
 
-    # center cell -
-    if c['numcellsx'] % 2 == 0:
-        cc = c['xcell']/2.0
-        print(
-            "Module was shifted by {} in X to avoid sensors on air".format(
-                cc))
+        # center cell -
+        if c['numcellsx'] % 2 == 0:
+            cc = c['xcell']/2.0
+            print(
+                "Module was shifted by {} in X to avoid sensors on air".format(
+                    cc))
 
-    material = 'black'
-    # first PV cell
-    text = '! genbox {} cellPVmodule {} {} {} | '.format(
-        material, c['xcell'], c['ycell'], 0.02  # module thickness
-    )
-    # shift cell to lower corner
-    text += 'xform -t {} {} {} '.format(
-        -x/2.0 + cc,
-        (-y*m['numpanels'] / 2.0)-(m['ygap'] * (m['numpanels']-1) / 2.0),
-        0  # offset from axis
-    )
+        material = 'black'
+        # first PV cell
+        text = '! genbox {} cellPVmodule {} {} {} | '.format(
+            material, c['xcell'], c['ycell'], 0.02  # module thickness
+        )
+        # shift cell to lower corner
+        text += 'xform -t {} {} {} '.format(
+            -x/2.0 + cc,
+            (-y*mod['numpanels']/2.0)-(mod['ygap']*(mod['numpanels']-1) / 2.0),
+            0  # offset from axis
+        )
 
-    # def copypaste_radiance_geometry(
-    # number_of_copies, displacement_x, displacement_y)
+        # def copypaste_radiance_geometry(
+        # number_of_copies, displacement_x, displacement_y)
 
-    # checker board
-    text += '-a {} -t {} 0 0 '.format(
-        int(c['numcellsx']/2),
-        (2 * c['xcell'] + c['xcellgap']))
+        # checker board
+        text += '-a {} -t {} 0 0 '.format(
+            int(c['numcellsx']/2),
+            (2 * c['xcell'] + c['xcellgap']))
 
-    text += '-a {} -t 0 {} 0 '.format(
-        c['numcellsy']/2,
-        (2 * c['ycell'] + c['ycellgap']))
+        text += '-a {} -t 0 {} 0 '.format(
+            c['numcellsy']/2,
+            (2 * c['ycell'] + c['ycellgap']))
 
-    text += '-a {} -t {} {} 0 '.format(
-        2,
-        c['xcell'] + c['xcellgap'],
-        c['ycell'] + c['ycellgap'])
+        text += '-a {} -t {} {} 0 '.format(
+            2,
+            c['xcell'] + c['xcellgap'],
+            c['ycell'] + c['ycellgap'])
 
-    # copy module in y direction
-    text += '-a {} -t 0 {} 0'.format(m['numpanels'], y+m['ygap'])
+        # copy module in y direction
+        text += '-a {} -t 0 {} 0'.format(mod['numpanels'], y+mod['ygap'])
 
-    # OPACITY CALCULATION
-    packagingfactor = np.round(
-        (c['xcell']*c['ycell']*c['numcellsx']*c['numcellsy'])/(x*y), 2
-    )
-    print("This is a Cell-Level detailed module with Packaging " +
-          "Factor of {} %".format(packagingfactor))
+        # OPACITY CALCULATION
+        packagingfactor = np.round(
+            (c['xcell']*c['ycell']*c['numcellsx']*c['numcellsy'])/(
+                x*y), 2
+        )
+        print("This is a Cell-Level detailed module with Packaging " +
+              "Factor of {} %".format(packagingfactor))
 
-    return text
+        return text
 
+    def make_EW_module_text(self) -> str:
+        """creates the needed text needed in makemodule() to create E-W.
+        Azimuth angle must be 90! and number of panels must be 2!
 
-def make_text_EW(APV_SystSettings: SystSettings) -> str:
-    """creates the needed text needed in makemodule() to create E-W.
-    Azimuth angle must be 90! and number of panels must be 2!
+        Returns:
+            text [str]: [text to rotate second panel to create E-W (270 - 90)]
+        """
 
-    Args:
-        APV_SystSettings:
-        name ([str]): module_type
-        moduleDict ([dict]): inherited from br_setup and defined in settings.py
-        sceneDict  ([dict]): inherited from br_setup and defined in settings.py
+        mod = self.mod
 
-    Returns:
-        text [str]: [text to rotate second panel to create E-W (270 - 90)]
-    """
-    sDict = APV_SystSettings.sceneDict
-    mDict = APV_SystSettings.moduleDict
-    name = 'EWstd'
-    z = 0.02
-    Ny = mDict['numpanels']  # currently must be 2
-    offsetfromaxis = 0.01
-    tranistion_y = (-mDict['y']*Ny/2.0)-(mDict['ygap']*(Ny-1)/2.0)
-    rotation_angle = 2*(90 - sDict['tilt']) + 180
+        name = 'EWstd'
+        z = 0.02
+        Ny = mod['numpanels']  # currently must be 2
+        offsetfromaxis = 0.01
+        transition_y = (-mod['y']*Ny/2.0)-(mod['ygap']*(Ny-1)/2.0)
+        rotation_angle = 2*(90 - self.scn['tilt']) + 180
 
-    text = '! genbox black {} {} {} {} '.format(
-        name, mDict['x'], mDict['y'], z)
-    text += '| xform -t {} {} {} '.format(
-        -mDict['x']/2.0, (-mDict['y']*Ny/2.0)-(mDict['ygap']*(Ny-1)/2.0),
-        offsetfromaxis)
-    text += '-a {} -t 0 {} 0 -rx {}'.format(
-        Ny, mDict['y']+mDict['ygap'], rotation_angle)
+        text = '! genbox black {} {} {} {} '.format(
+            name, mod['x'], mod['y'], z)
+        text += '| xform -t {} {} {} '.format(
+            -mod['x']/2.0, transition_y, offsetfromaxis)
+        text += '-a {} -t 0 {} 0 -rx {}'.format(
+            Ny, mod['y']+mod['ygap'], rotation_angle)
 
-    return text
+        return text
 
+    def make_cell_level_EW_module_text(self) -> str:
+        """creates needed text needed in makemodule() to create cell-level E-W.
+        Azimuth angle must be 90! and number of panels must be 2!
 
-def cell_level_EW_fixed(APV_SystSettings: SystSettings) -> str:
-    """creates needed text needed in makemodule() to create cell-level E-W.
-    Azimuth angle must be 90! and number of panels must be 2!
+        Returns:
+            text [str]: [text to rotate second panel to create E-W (270 - 90)]
+        """
 
-    Args:
-        APV_SystSettings:
-        name ([str]): module_type
-        moduleDict ([dict]): inherited from br_setup and defined in settings.py
-        sceneDict  ([dict]): inherited from br_setup and defined in settings.py
+        z = 0.02
+        Ny = self.mod['numpanels']  # currently must be 2
+        ygap = self.mod['ygap']
 
-    Returns:
-        text [str]: [text to rotate second panel to create E-W (270 - 90)]
-    """
-    sc = APV_SystSettings.sceneDict
-    m = APV_SystSettings.moduleDict
+        offsetfromaxis = 0.01
+        rotation_angle = 2*(90 - self.scn['tilt']) + 180
 
-    z = 0.02
-    Ny = m['numpanels']  # currently must be 2
-    offsetfromaxis = 0.01
-    rotation_angle = 2*(90 - sc['tilt']) + 180
+        c = self.APV_SystSettings.cellLevelModuleParams
+        # copied from br.main.RadianceObj.makeModule() and modified:
+        x = c['numcellsx']*c['xcell']+(c['numcellsx']-1)*c['xcellgap']
+        y = c['numcellsy']*c['ycell'] + (c['numcellsy']-1)*c['ycellgap']
+        material = 'black'
+        # center cell -
+        if c['numcellsx'] % 2 == 0:
+            cc = c['xcell']/2.0
+            print("Module was shifted by {} in X to\
+                avoid sensors on air".format(cc))
 
-    c = APV_SystSettings.cellLevelModuleParams
-    x = c['numcellsx']*c['xcell'] + (c['numcellsx']-1)*c['xcellgap']
-    y = c['numcellsy']*c['ycell'] + (c['numcellsy']-1)*c['ycellgap']
-    material = 'black'
-    # center cell -
-    if c['numcellsx'] % 2 == 0:
-        cc = c['xcell']/2.0
-        print("Module was shifted by {} in X to\
-              avoid sensors on air".format(cc))
+        text = '! genbox {} cellPVmodule {} {} {} | '.format(
+            material, c['xcell'], c['ycell'], z)
+        text += 'xform -t {} {} {} '.format(-x/2.0 + cc,
+                                            (-y*Ny / 2.0) -
+                                            (ygap*(Ny-1) / 2.0),
+                                            offsetfromaxis)
+        text += '-a {} -t {} 0 0 '.format(c['numcellsx'], c['xcell'] +
+                                          c['xcellgap'])
+        text += '-a {} -t 0 {} 0 '.format(c['numcellsy'], c['ycell'] +
+                                          c['ycellgap'])
+        text += '-a {} -t 0 {} 0 -rx {}'.format(Ny, y+ygap, rotation_angle)
 
-    text = '! genbox {} cellPVmodule {} {} {} | '.format(material, c['xcell'],
-                                                         c['ycell'], z)
-    text += 'xform -t {} {} {} '.format(-x/2.0 + cc,
-                                        (-y*Ny / 2.0) -
-                                        (m['ygap']*(Ny-1) / 2.0),
-                                        offsetfromaxis)
-    text += '-a {} -t {} 0 0 '.format(c['numcellsx'], c['xcell'] +
-                                      c['xcellgap'])
-    text += '-a {} -t 0 {} 0 '.format(c['numcellsy'], c['ycell'] +
-                                      c['ycellgap'])
-    text += '-a {} -t 0 {} 0 -rx {}'.format(Ny, y+m['ygap'], rotation_angle)
+        # OPACITY CALCULATION
+        packagingfactor = np.round((c['xcell']*c['ycell']*c['numcellsx'] *
+                                    c['numcellsy'])/(x*y), 2)
+        print("This is a Cell-Level detailed module with Packaging " +
+              "Factor of {} %".format(packagingfactor))
 
-    # OPACITY CALCULATION
-    packagingfactor = np.round((c['xcell']*c['ycell']*c['numcellsx'] *
-                                c['numcellsy'])/(x*y), 2)
-    print("This is a Cell-Level detailed module with Packaging " +
-          "Factor of {} %".format(packagingfactor))
-
-    return text
+        return text
 
 
 """ def add_box_to_radiance_text(
