@@ -1,40 +1,18 @@
 # #
-"""Important infos
-sim_date_time = 12h will at the moment result in irradiation data
-11-12h and sol position 11:30 !
-(bifacial radiance uses righ-labled timestamps and does it this way)
-epw right-labled:
-https://search.r-project.org/CRAN/refmans/eplusr/html/Epw.html
-br.MetObj: def __init__(self, tmydata, metadata, label='right')
-
-MetObj init can also handle label='center' but then ads satellite data needs to
-be modified by taking mean of DHI, GHI,... e.g.
-DHI(12:00, center) = (DHI(11:30-12:00) + DHI(12:00-12:30))/2
-"""
-
-import datetime as dt
 from typing import Literal
 from pvlib import location
-import pytz
-
-# TODO test other location regarding 30min shift
 
 
 class Simulation:
-    sim_name = 'APV_Floating'  # also used as first part of the .oct file name
+    sim_name = 'APV_Floating'  # also used as first part of the
+    # Radiance scene file name (.oct) and the output files
 
-    # ground
     ground_albedo = 0.25  # grass
 
-    # speed up options
+    # Spatial resolution between virtual radiation sensors
+    spatial_resolution = 0.1  # [m]
 
-    # Spatial resolution between sensors
-    spatial_resolution = 0.1  # 0.15  # [m]
-    # ray tracing accuracy used in br.analysisObj.analysis()
-    ray_tracing_accuracy = 'low'  # 'high' does not improve accuracy much but
-    # sim time is increased by x3-x4
     use_multi_processing = True
-    scan_target: Literal['ground', 'module'] = 'ground'
 
     # location
     apv_location = location.Location(
@@ -47,21 +25,42 @@ class Simulation:
     sim_year: int or Literal['TMY'] = 'TMY'  # or e.g. 2020
     # TMY = typical meterological year; here: mean data from 2005 to 2020
 
-    # TODO restructure? problem:
-    # different index... maybe dummy day 15 as for year
     use_typical_day_per_month_for_shadow_depth_calculation = False
 
     sim_date_time = '06-15_20:00'  # used as second part of the .oct file name
-    time_step_in_minutes: int = 60  # only 1,2,3,6,10,12,15,20,30,60
+    time_step_in_minutes: int = 60  # only 1,2,3,6,10,12,15,20,30,60,120
 
+    """Important info
+    # at the moment ghi and dhi is taken from an observation period ranging
+    # from sim_date_time - time_step_in_minutes until sim_date_time
+    # and the sunposition is taken at
+    # sim_date_time - int(time_step_in_minutes/2)
+    so a sim_date_time = 12h will at the moment result in irradiation data
+    11-12h and sol position 11:30
+    (bifacial radiance uses right-labled timestamps and does it this way)
+    epw right-labled:
+    https://search.r-project.org/CRAN/refmans/eplusr/html/Epw.html
+    br.MetObj: def __init__(self, tmydata, metadata, label='right')
+
+    br.MetObj init can also handle label='center' but then ads satellite data
+    needs to be modified by taking mean of DHI, GHI,... e.g.
+    DHI(12:00, center) = (DHI(11:30-12:00) + DHI(12:00-12:30))/2
+
+    # so.. TODO maybe nice way:
     # if irradiance_data_source == 'ADS_satellite': dhi and dni values are
     # averaged from sim_date_time-time_step until sim_date_time+time_step
     # (center labeled)
-    # and sunposition for gendaylit is also at the sim_date_time
+    # and sunposition for gendaylit is taken at the sim_date_time
+    """
 
-    irradiance_data_source: Literal['EPW', 'ADS_satellite'] = 'ADS_satellite'
-    # >>> we dont use EPW anymore, bad data
+    # quantity on the color map of the heatmap of the results (output)
+    cm_quantity: Literal[
+        'radiation', 'PAR', 'shadow_depth', 'DLI'] = 'radiation'
 
+    ##################
+    # less important / not fully implemented at the moment
+    # TODO implement 'module' scan_target
+    scan_target: Literal['ground', 'module'] = 'ground'
     # sky generation type:
     sky_gen_mode: Literal['gendaylit'
                           # , 'gencumsky'  # not included at the moment
@@ -73,7 +72,11 @@ class Simulation:
     # Insert end date of year as [month,day,hour]
     enddt = '1-1_23:00'  # inclusive ([:end+1])
 
-    cm_unit: Literal[
-        'radiation', 'PAR', 'shadow_depth', 'DLI'] = 'radiation'
-
+    # cumulative is done at the moment via for loop of single moments
     cumulative: bool = False
+    # ray tracing accuracy used in br.analysisObj.analysis()
+    ray_tracing_accuracy = 'low'  # 'high' does not improve accuracy much but
+    # increases simtime by 3x-4x
+
+    irradiance_data_source: Literal['EPW', 'ADS_satellite'] = 'ADS_satellite'
+    # >>> we dont use EPW anymore, bad data

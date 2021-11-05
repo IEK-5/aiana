@@ -1,24 +1,52 @@
 
 from typing import Literal
 """
-    sceApneDict:
-    tilt: panel tilt [degree]
-    pitch: distance between two adjacent module-rows [m]
-    hub_height: vert. distance: ground to modules [m]
-    azimuth: panel face direction [degree]
-    nMods: modules per row (along x in moduleDict) [-]
-    nRows: number of rows [-]
+    sceneDict [from BR (bifacial_radiance package)]:
+        tilt: panel tilt [degree]
+        pitch: distance between two adjacent module-rows [m]
+        hub_height: vert. distance: ground to modules [m]
+        azimuth: panel face direction [degree]
+        nMods: modules per row (along x in moduleDict) [-]
+        nRows: number of rows [-]
 
-    moduleDict:
-    x: module width (and array-copy distance for nMods > 1)
-    y: module height (commonly y is > x and the module is fixed along x)
-    xgap: Distance between modules in the row
-    ygap: Distance between the 2 modules along the collector slope.
-    zgap: If there is a torquetube, this is the distance between the
-        torquetube and the modules. If there is not a module, zgap
-        is the distance between the module and the axis of rotation
-        (relevant for tracking systems).
-    numpanels: number of panels along y """
+    moduleDict [from BR]:
+        x: module width (and array-copy distance for nMods > 1)
+        y: module height (commonly y is > x and the module is fixed along x)
+        xgap: distance between modules in the row
+        ygap: distance between the 2 modules along the collector slope.
+        zgap: if there is a torquetube, this is the distance between the
+            torquetube and the modules. If there is not a module, zgap
+            is the distance between the module and the axis of rotation
+            (relevant for tracking systems).
+        numpanels: number of panels along y
+
+    cellLevelModuleParams [from BR]:
+        = cell parameters within the modules
+        numcellsx: number of cells in x [-]
+        numcellsy: number of cells in y [-]
+        xcellgap: distance between cells in x (along row) [m]
+        ycellgap: distance between cells in y (along pitch) [m]
+        (cell sizes will be added automatically on init)
+
+    module_form:
+        std: standard (one flat solid tile per module) [from BR]
+        cell_level: (cells are created as tiles seperated by the gaps)[from BR]
+        [new]:
+        cell_level_checker_board: cells are left out in a checker board pattern
+        EW_fixed: two std modules are facing to east-west in a roof top shape
+        cell_level_EW_fixed: combination of cell_level and EW_fixed
+        none: no modules (so e.g. only the mounting structure)
+
+    mounting_structure_type [new]:
+        none: no structure
+        declined_tables: 4 posts per row are near the module row edges
+            with different heights to compensate the module tilt
+        framed_single_axes: 'n_post_x' posts per row are placed along the tilt
+            axis the posts within the rows and between different rows are
+            each connected by two horzontal structural beams.
+
+    the others [new] are commented inline
+    """
 
 
 class Default:
@@ -27,7 +55,7 @@ class Default:
 
     # bifacial_radiance geometry-inputs
 
-    sceneDict = {'tilt': 20,
+    sceneDict = {'tilt': 20,  # explanations above
                  'pitch': 10,
                  'hub_height': 4.5,
                  'azimuth': 180,
@@ -62,15 +90,24 @@ class Default:
         'none'
     ] = 'std'
 
+    mountingStructureDict = {
+        'material': 'Metal_Aluminum_Anodized',
+        'post_thickness': 0.25,  # mounting structure post thickness [m]
+        'n_post_x': 2,  # number of posts along x (along row) [-]
+        'module_to_post_distance_x': 0.5
+    }
+
     mounting_structure_type: Literal[
         'none', 'declined_tables', 'framed_single_axes'] = 'framed_single_axes'
 
-    s_post: float = 0.25  # post thickness
-    n_post_x: int = 2  # number of posts
-
-    n_apv_system_clones_in_x: int = 0  # for azimuth 180 towards east
+    # number of apv system clones in x direction
+    # (needed for periodic shadows without border effects, where the sun can
+    # shine on the ground from the side in the morning and evening):
+    n_apv_system_clones_in_x: int = 0  # for azimuth = 180: cloned towards east
     n_apv_system_clones_in_negative_x: int = 0  # towards west
-    apv_system_clones_distance: float = 4*s_post
+
+    # for 'framed_single_axes':
+    enlarge_beams_for_periodic_shadows: bool = False
 
     scene_camera_dicts: dict = {
         'total': {'cam_pos_x': -14,   # depth
@@ -110,26 +147,45 @@ class Default:
                      'vertical_view_angle': 30  # [degree]
                      },
     }
+    # to optionally add a glass plate on the black modules:
     glass_modules: bool = False
+
+    # ### ground scan area settings
+
+    # to see in render preview where the scan will be, should be False for real
+    # simulation at the moment:
     add_groundScanArea_as_object_to_scene: bool = False
-    # one-sided margins [m]
-    ground_scan_margin_x: float = 8
-    ground_scan_margin_y: float = 4
+
+    # the area is placed below the foot print of the apv system, so that the
+    # modules to ground projection are just inside
+    # (all rows, but not the system clones)
+
+    # one-sided margins [m] can be added to enlarge the field
+    # (or to reduce by negative values)
+    ground_scan_margin_x: float = 0
+    ground_scan_margin_y: float = 0
     # shift scan area [m]
     ground_scan_shift_x: float = 0  # positiv: towards east
     ground_scan_shift_y: float = 0  # positiv: towards north
 
+    # round up to full meters (nice numbers in heatmaps)
     round_up_field_dimensions: bool = False
-    enlarge_beams_for_periodic_shadows: bool = False
+    # ###
 
     extra_customObject_rad_text: str = None
 
 
-class APV_Morchenich_Std_or_Checkerboard(Default):
-    module_form: Default.module_form = 'EW_fixed'
+# Other presets inheriting from Default
+class APV_Morchenich_Checkerboard(Default):
+    module_form: Default.module_form = 'cell_level_checker_board'
     # set gap in std module form = 1m
     sceneDict = Default.sceneDict.copy()
     sceneDict['nRows'] = 5
+
+    # 3 clones are needed towards sun for periodic boundary conditions
+    # make this depending on sim time to save computation duration
+    n_apv_system_clones_in_x: int = 1  # for azimuth = 180: cloned towards east
+    n_apv_system_clones_in_negative_x: int = 1  # towards west
 
     scene_camera_dicts = Default.scene_camera_dicts.copy()
     scene_camera_dicts['top_down']['horizontal_view_angle'] = 80
@@ -161,8 +217,10 @@ class APV_Morchenich_EastWest(Default):
                  'nMods': 1,  # (10+1)*5,
                  'nRows': 7,
                  }
-    apv_system_clones_distance = 0
-    n_post_x: int = 6  # number of posts
+
+    mountingStructureDict = Default.mountingStructureDict.copy()
+    mountingStructureDict['n_post_x'] = 6
+    mountingStructureDict['module_to_post_distance_x'] = 0
 
     scene_camera_dicts = Default.scene_camera_dicts.copy()
     scene_camera_dicts['top_down']['horizontal_view_angle'] = 60
@@ -172,9 +230,9 @@ class APV_Morchenich_EastWest(Default):
     # north shift is needed for winter to get
     # periodic boundary conditions in this setup (geometry etc)
 
-    # TODO x,y for scan margin is rotated,
-    # but for shift not, that is confusing. Should be consistent!
-    # ground_scan_shift_x = Default.moduleDict['x']/2
+    # TODO for ground_scan_margin x,y is rotated,
+    # but for ground_scan_shift not, that is confusing. Should be consistent!
+
     # y reduction (negative margin)
     x_pitch = moduleDict['x']*11/55
     # 11*(Default.moduleDict['x']+Default.moduleDict['xgap'])
@@ -204,6 +262,13 @@ class APV_Syst_InclinedTables_Juelich(Default):
                   'numpanels': 5
                   }
 
+    mountingStructureDict = {
+        'material': 'Metal_Aluminum_Anodized',
+        'post_thickness': 0.15,  # mounting structure post thickness [m]
+        'n_post_x': 3,  # number of posts along x (along row) [-]
+        'module_to_post_distance_x': 0
+    }
+
     mounting_structure_type: Default.mounting_structure_type = \
         'declined_tables'
     add_glass_box = True
@@ -220,8 +285,10 @@ class APV_Syst_InclinedTables_Juelich(Default):
                                    }
 
 
-class SimpleForCheckerBoard(Default):
+class SimpleSingleCheckerBoard(Default):
     # as for Perna2019
+
+    module_form: Default.module_form = 'cell_level_checker_board'
 
     sceneDict = {'tilt': 36.6,
                  'pitch': 7.0,  # "row width"
@@ -239,5 +306,4 @@ class SimpleForCheckerBoard(Default):
                   'numpanels': 1
                   }
 
-    module_form: Default.module_form = 'cell_level_checker_board'
     mounting_structure_type: Default.mounting_structure_type = 'none'

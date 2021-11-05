@@ -18,7 +18,7 @@ if __name__ == '__main__':
         apv.settings.apv_systems.Default()
     APV_SystSettings.mounting_structure_type = 'none'
 
-    weather_file = apv.settings.user_pathes.bifacial_radiance_files_folder / \
+    weather_file = apv.settings.user_paths.bifacial_radiance_files_folder / \
         Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
 
     brObj = apv.br_wrapper.BR_Wrapper(

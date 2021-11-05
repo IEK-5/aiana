@@ -9,7 +9,7 @@ from apv.classes.sim_datetime import SimDT
 import apv
 from apv.resources import pv_modules
 import apv.utils
-import apv.settings.user_pathes as UserPaths
+import apv.settings.user_paths as UserPaths
 from apv.utils import files_interface as fi
 import os
 import pandas as pd

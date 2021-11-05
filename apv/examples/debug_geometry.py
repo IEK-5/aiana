@@ -71,7 +71,7 @@ if __name__ == '__main__':
     APV_SystSettings.ground_scan_shift_x = 0  # -32
     APV_SystSettings.ground_scan_shift_y = 0  # -32
 
-    weather_file = apv.settings.user_pathes.bifacial_radiance_files_folder / \
+    weather_file = apv.settings.user_paths.bifacial_radiance_files_folder / \
         Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
 
     brObj = apv.br_wrapper.BR_Wrapper(

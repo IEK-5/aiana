@@ -17,7 +17,7 @@ import inspect
 import apv
 from apv.settings.apv_systems import Default as SystSettings
 
-import apv.settings.user_pathes as user_pathes
+import apv.settings.user_paths as user_paths
 from pathlib import Path
 
 
@@ -44,6 +44,7 @@ class GeometriesHandler:
         # short cuts:
         self.mod = self.APV_SystSettings.moduleDict
         self.scn = self.APV_SystSettings.sceneDict
+        self.mount = self.APV_SystSettings.mountingStructureDict
 
         self.singleRow_length_x = float()
         self.singleRow_length_y = float()
@@ -90,7 +91,13 @@ class GeometriesHandler:
         self.singleRow_footprint_y = self.singleRow_length_y*np.cos(
             self.scn['tilt']*np.pi/180)
 
-        # for now no array translation in x
+        # TODO better name?
+        self.clone_distance_x = self.singleRow_footprint_x + 2*self.mount[
+            'module_to_post_distance_x']
+
+        self.post_distance_x = self.clone_distance_x/(self.mount['n_post_x']-1)
+
+        # for now no array translation in x #TODO add clones here
         self.allRows_footprint_x = self.singleRow_footprint_x
 
         # pitch is from row center to row center. Therefore on each side
@@ -150,6 +157,9 @@ class GeometriesHandler:
         self.sw_modCorner_azi0_y = (
             -self.allRows_footprint_y/2 + self.center_offset_azi0_y)
 
+        self.post_start_x = self.sw_modCorner_azi0_x - self.mount[
+            "module_to_post_distance_x"]
+
         # south west corners of the ground scan area
         s_x = self.APV_SystSettings.ground_scan_shift_x
         s_y = self.APV_SystSettings.ground_scan_shift_y
@@ -164,19 +174,17 @@ class GeometriesHandler:
         self.sw_corner_scan_y = -self.y_field/2 + self.center_offset_y + s_y
 
     def get_customObject_cloning_rad_txt(self, APV_SystSettings: SystSettings):
-        shift_x_per_system = (APV_SystSettings.apv_system_clones_distance
-                              + self.singleRow_length_x)
 
         shift_x_array_start = \
             -APV_SystSettings.n_apv_system_clones_in_negative_x\
-            * shift_x_per_system
+            * self.clone_distance_x
 
         n_sets_x = APV_SystSettings.n_apv_system_clones_in_x + 1 + \
             APV_SystSettings.n_apv_system_clones_in_negative_x
 
         rz = 180 - APV_SystSettings.sceneDict["azimuth"]
         return (f'!xform -rz {rz} -t {shift_x_array_start} 0 0 '
-                f'-a {n_sets_x} -t {shift_x_per_system} 0 0')
+                f'-a {n_sets_x} -t {self.clone_distance_x} 0 0')
 
     def framed_single_axes_mount(self) -> str:
         """Creates Aluminum posts and mounting structure
@@ -188,14 +196,8 @@ class GeometriesHandler:
 
         s_beam = 0.15  # beam thickness
         d_beam = 0.5  # beam distance
-        s_post = self.APV_SystSettings.s_post  # post thickness
-        n_post_x = self.APV_SystSettings.n_post_x
 
-        h_post = self.scn["hub_height"] + 0.2  # post height
-
-        beamlength_x = (self.allRows_footprint_x
-                        + self.APV_SystSettings.apv_system_clones_distance)
-        clone_distance_x = beamlength_x/(n_post_x-1)
+        beamlength_x = self.post_distance_x
 
         if self.APV_SystSettings.enlarge_beams_for_periodic_shadows:
             beamlength_x = self.allRows_footprint_x * 1.2
@@ -204,25 +206,26 @@ class GeometriesHandler:
         else:
             beamlength_y = self.scn['pitch']*(self.scn['nRows']-1)
 
-        x_start = self.sw_modCorner_azi0_x - 2*s_post
         y_start = self.sw_modCorner_azi0_y + self.singleRow_footprint_y/2
+        h_post = self.scn["hub_height"] + 0.2
 
         # create posts
-        text = (f'!genbox {material} post {s_post} {s_post} {h_post}'
-                f' | xform -t {x_start} {y_start} 0 \
-                -a {n_post_x} -t {clone_distance_x} 0 0 \
-                -a {self.scn["nRows"]} -t 0 {self.scn["pitch"]} 0 '
-                )
+        text = self.post_array(h_post, y_start)
+
         # create horizontal beams in y direction
-        text += (f'\n!genbox {material} post {s_beam} {beamlength_y} {s_beam} \
-            | xform -t {x_start} {y_start} {h_post - s_beam - 0.4} \
-            -a {n_post_x} -t {clone_distance_x} 0 0 -a 2 -t 0 0 {-d_beam} ')
+        text += (
+            f'\n!genbox {material} post {s_beam} {beamlength_y} {s_beam} \
+            | xform -t {self.post_start_x} {y_start} {h_post - s_beam - 0.4} \
+            -a {self.mount["n_post_x"]} -t {self.post_distance_x} \
+            0 0 -a 2 -t 0 0 {-d_beam} '
+        )
         # create horizontal beams in x direction
-        text += (f'\n!genbox {material} post {beamlength_x} {s_beam} {s_beam} \
-                | xform -t {x_start} {y_start} {h_post - s_beam - 0.2} \
-                -a {self.scn["nRows"]} -t 0 {self.scn["pitch"]} 0 \
-                -a 2 -t 0 0 {-d_beam} '
-                 )
+        text += (
+            f'\n!genbox {material} post {beamlength_x} {s_beam} {s_beam} \
+            | xform -t {self.post_start_x} {y_start} {h_post - s_beam - 0.2} \
+            -a {self.scn["nRows"]} -t 0 {self.scn["pitch"]} 0 \
+            -a 2 -t 0 0 {-d_beam} '
+        )
         return text
 
     def groundscan_area(self) -> str:
@@ -253,41 +256,24 @@ class GeometriesHandler:
         origin y: nRow uneven: y-center of the center row
                 nRow even: y_center of the the row south to the system center
         """
-
-        scn = self.scn
-        # define these: ####
-        inner_table_post_distance_y = 3.4  # *table_footprint_y/4.8296
-        # table_footprint_y/4.8296 = ca. 1 for given setup
-        post_count_x = 3  # in x (east -> west for azi=180)
-        material = 'Metal_Aluminum_Anodized'
-        s_post = 0.15  # post thickness
-        # #########
+        inner_table_post_distance_y = 3.4
 
         # post starts in y:
         lower_post_start_y = self.sw_modCorner_azi0_y + (
             self.singleRow_footprint_y - inner_table_post_distance_y)/2
-
         higher_post_start_y = lower_post_start_y + inner_table_post_distance_y
 
         height_shift = inner_table_post_distance_y*np.sin(
-            scn['tilt']*np.pi/180)/2
-        h_lower_post = scn["hub_height"] - height_shift  # lower post height
-        h_higher_post = scn["hub_height"] + height_shift  # higher post height
-
-        post_distance_x = self.singleRow_footprint_x / (post_count_x-1)
-        # create lower posts
-        text = (
-            f'! genbox {material} post {s_post} {s_post} {h_lower_post}'
-            f' | xform -t {self.sw_modCorner_azi0_x} {lower_post_start_y} 0 '
-            f'-a {post_count_x} -t {post_distance_x} 0 0 '
-            f'-a {scn["nRows"]} -t 0 {scn["pitch"]} 0 ')
+            self.scn['tilt']*np.pi/180)/2
 
         # create lower posts
-        text += (
-            f'\n! genbox {material} post {s_post} {s_post} {h_higher_post}'
-            f' | xform -t {self.sw_modCorner_azi0_x} {higher_post_start_y} 0 '
-            f'-a {post_count_x} -t {post_distance_x} 0 0 '
-            f'-a {scn["nRows"]} -t 0 {scn["pitch"]} 0 ')
+        text = self.post_array(
+            self.scn["hub_height"] - height_shift,  # lower post height
+            lower_post_start_y)
+        # add higher posts
+        text += '\n'+self.post_array(
+            self.scn["hub_height"] + height_shift,  # higher post height
+            higher_post_start_y)
 
         if add_glass_box:
             t_y = (self.sw_modCorner_azi0_y + self.allRows_footprint_y
@@ -299,6 +285,19 @@ class GeometriesHandler:
             text += (f'\n! genbox stock_glass glass_wall {t_x} 0.005 5'
                      f' | xform -t {self.sw_modCorner_azi0_x} {t_y} 0')
 
+        return text
+
+    def post_array(self, post_height, post_start_y):
+        """ creats an array of posts for each row using
+        APV_Systsettings.mountingStructureDict """
+
+        s = self.mount['post_thickness']
+        text = (
+            f'!genbox {self.mount["material"]} post {s} {s} {post_height}'
+            f' | xform -t {self.post_start_x} {post_start_y} 0 '
+            f'-a {self.mount["n_post_x"]} -t {self.post_distance_x} 0 0 '
+            f'-a {self.scn["nRows"]} -t 0 {self.scn["pitch"]} 0 '
+        )
         return text
 
     def make_checked_module_text(self) -> str:

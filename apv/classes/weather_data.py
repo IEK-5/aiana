@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Literal
 import numpy as np
 import apv
-import apv.settings.user_pathes as user_pathes
+import apv.settings.user_paths as user_paths
 from pvlib import location
 from apv.settings.simulation import Simulation
 from apv.classes.sim_datetime import SimDT
@@ -199,7 +199,7 @@ class WeatherData:
                     'skin_temperature'  # temperature on the surface
                 ],
             },
-            os.path.join(user_pathes.data_download_folder, file_name+'.nc')
+            os.path.join(user_paths.data_download_folder, file_name+'.nc')
         )
 
     def download_insolation_data(
@@ -236,7 +236,7 @@ class WeatherData:
                      f'_lon-{location.longitude}'
                      f'_time_step-{time_step_str}')
 
-        file_path: Path = user_pathes.data_download_folder/Path(
+        file_path: Path = user_paths.data_download_folder/Path(
             file_name+'.csv')
 
         if file_path.exists() is False:
@@ -285,7 +285,7 @@ class WeatherData:
         time_step = self.SimSettings.time_step_in_minutes
         file_name = str(source_file_path).split('\\')[-1].replace(
             '1minute', f'{time_step}minute')
-        folder_path = user_pathes.bifacial_radiance_files_folder / Path(
+        folder_path = user_paths.bifacial_radiance_files_folder / Path(
             'satellite_weatherData')
 
         downsampled_data_file_path = folder_path/file_name
@@ -362,7 +362,7 @@ class WeatherData:
             start="2019-01-01", periods=len(df_tmy), freq=freq, tz='utc')
 
         df_tmy.Name = 'TMY_'+df.Name
-        tmy_file_path = user_pathes.bifacial_radiance_files_folder / Path(
+        tmy_file_path = user_paths.bifacial_radiance_files_folder / Path(
             'satellite_weatherData', df_tmy.Name)
 
         df_tmy.to_csv(tmy_file_path, index=False, header=False, sep=' ',

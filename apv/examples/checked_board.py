@@ -13,7 +13,7 @@ if __name__ == '__main__':
     SimSettings = apv.settings.simulation.Simulation()
     # APV_SystSettings = apv.settings.apv_systems.Default()
     APV_SystSettings = \
-        apv.settings.apv_systems.SimpleForCheckerBoard()
+        apv.settings.apv_systems.SimpleSingleCheckerBoard()
 
     # ### often changed settings:  ####
     # SimSettings.only_ground_scan = False
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     # APV_SystSettings.sceneDict['nRows'] = 3
     # APV_SystSettings.sceneDict['nMods'] = 6
 
-    weather_file = apv.settings.user_pathes.bifacial_radiance_files_folder / \
+    weather_file = apv.settings.user_paths.bifacial_radiance_files_folder / \
         Path('EPWs/USA_CA_Fresno.Air.Terminal.723890_TMY3.epw')
     # TODO load TMY mit ads für den standort wenn Mods methode drin
 

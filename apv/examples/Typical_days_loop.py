@@ -8,7 +8,7 @@ if __name__ == '__main__':
     from apv.classes.sim_datetime import SimDT
     from apv.classes.geometries_handler import GeometriesHandler
     from apv.settings.apv_systems import Default as SystSettings
-    from apv.settings import user_pathes
+    from apv.settings import user_paths
 
     imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.settings.apv_systems)
@@ -25,7 +25,7 @@ if __name__ == '__main__':
     #########################################
 
     # ### APV_SystSettings:  ####
-    APV_SystSettings = apv.settings.apv_systems.APV_Morchenich_Std_or_Checkerboard()
+    APV_SystSettings = apv.settings.apv_systems.APV_Morchenich_Checkerboard()
     APV_SystSettings.module_form = 'std'
     # APV_SystSettings = apv.settings.apv_systems.APV_Morchenich_EastWest()
     # APV_SystSettings.module_form = 'none'
@@ -83,7 +83,7 @@ if __name__ == '__main__':
             + '_step-' + str(SimSettings.time_step_in_minutes)+'min',
             str(month)
         )
-        brObj.results_subfolder = user_pathes.results_folder / subfolder
+        brObj.results_subfolder = user_paths.results_folder / subfolder
 
         # for hour in hours:
         #     if APV_SystSettings.module_form in [
@@ -138,7 +138,7 @@ if __name__ == '__main__':
         #                 for cm_unit in ['radiation', 'shadow_depth']:
         #                     brObj.plot_ground_heatmap(cm_unit=cm_unit)
 
-        results_subfolder_cum = user_pathes.results_folder / Path(
+        results_subfolder_cum = user_paths.results_folder / Path(
             subfolder.parent, 'cumulative_hours_in_typ_day_of_month')
 
         apv.utils.files_interface.make_dirs_if_not_there(results_subfolder_cum)
@@ -190,7 +190,7 @@ if __name__ == '__main__':
 # #
 """ for unit...
     for month...
-        results_subfolder = user_pathes.results_folder / Path(
+        results_subfolder = user_paths.results_folder / Path(
             SimSettings.sim_name,
             APV_SystSettings.module_form
             + '_res-' + str(SimSettings.spatial_resolution),

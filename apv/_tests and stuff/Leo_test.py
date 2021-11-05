@@ -6,7 +6,7 @@ from apv.utils import files_interface
 import apv.utils.files_interface as fi
 from apv.classes.geometries_handler import GeometriesHandler
 import re
-import apv.settings.user_pathes as user_pathes
+import apv.settings.user_paths as user_paths
 from typing import Literal
 from datetime import datetime as dt
 import hjson
@@ -47,7 +47,7 @@ download_file_path = weatherObj.download_insolation_data(
 source_file_path = download_file_path
 
 file_name = 'TMY_'+str(source_file_path).split('\\')[-1]
-tmy_folder_path = user_pathes.bifacial_radiance_files_folder / Path(
+tmy_folder_path = user_paths.bifacial_radiance_files_folder / Path(
     'satellite_weatherData')
 
 tmy_file_path = tmy_folder_path/file_name
@@ -164,13 +164,13 @@ solar_position.zenith[0]
 
 # #
 fi.df_from_file_or_folder(
-    user_pathes.bifacial_radiance_files_folder/Path(
+    user_paths.bifacial_radiance_files_folder/Path(
         'satellite_weatherData/TMY_nearJuelichGermany.csv'
         # TODO make it automatic with mohds method
     ), names=['ghi', 'dhi'], delimiter=' '
 )
 # #
-rad_mat_file: Path = user_pathes.bifacial_radiance_files_folder / Path(
+rad_mat_file: Path = user_paths.bifacial_radiance_files_folder / Path(
     'materials/ground2.rad')
 
 mat_name = 'grass'
@@ -443,7 +443,7 @@ data = hjson.loads(text)
 
 
 # #
-str(apv.settings.user_pathes.data_download_folder)
+str(apv.settings.user_paths.data_download_folder)
 
 # #
 

@@ -24,7 +24,7 @@ number of code lines 2.11.2021
 31	apv_main.py
 25	examples/declined_tables2.py
 19	utils/browse_PVlib_modules.py
-15	settings/user_pathes.py
+15	settings/user_paths.py
 10	resources/locations.py
 5	utils/init.py
 4	classes/init.py

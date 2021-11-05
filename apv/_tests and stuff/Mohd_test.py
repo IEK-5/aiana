@@ -5,7 +5,7 @@ from apv.settings import apv_systems
 from apv.settings.apv_systems import Default as SystSettings
 from apv.utils.files_interface import save_fig, df_from_file_or_folder
 import pandas as pd
-import apv.settings.user_pathes as user_pathes
+import apv.settings.user_paths as user_paths
 from pathlib import Path
 from datetime import datetime as dt
 import numpy as np
@@ -127,7 +127,7 @@ print(number_of_hours)
 
 # #
 results_folder = os.path.join(
-    user_pathes.results_folder, f'{SimSettings.sim_name}',
+    user_paths.results_folder, f'{SimSettings.sim_name}',
     f'{SystSettings.module_form}')
 
 # #
@@ -136,7 +136,7 @@ results_folder
 # #
 source_file = \
     'TMY_insolation-data_2005-01-01_to_2021-01-01_lat-50.86351_lon-6.52946_time_step-1hour.csv'
-path = user_pathes.bifacial_radiance_files_folder / Path(
+path = user_paths.bifacial_radiance_files_folder / Path(
     'satellite_weatherData/' + source_file)
 ads_TMY = df_from_file_or_folder(str(path), header=None, delimiter=' ')
 ads_TMY.columns = names = ['ghi', 'dhi']

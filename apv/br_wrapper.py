@@ -9,15 +9,24 @@ TODO
 - aufräumen, dokumentieren, codeinterne TODOs sichten
 - apv evaluation angucken und verstehen (Leo)
 
-- typical day of month optional in settings integrieren
+- typical day of month (dummy day 15) optional in settings integrieren
 (evt. dann doch nicht ein string für datum-uhrzeit
 sondern year, month, day, hour, minute separat
 angeben?)
-- wedge plots integrieren
+
 - wieder aufräumen, dokumentieren
 
-- clones for azi <> 180°
-- panel sensors?
+- gendaylitmxt für kumulativen sky? Aber damit ermittlung von shadow duration
+eh nicht möglich...
+
+- clones for azi <> 0, 180°
+- module sensors?
+
+- slice of edges in scan field for azi <> 0, 180°? (different line scans,
+    might be really difficult with pivot table later)
+
+- east west: ohne east-west-beams, da sie langanhaltende schatten bewirken?
+
 
 ------------
 - longterm:
@@ -39,7 +48,7 @@ from apv.classes.weather_data import WeatherData
 from apv.classes.APV_evaluation import APV_Evaluation
 from apv.classes.sim_datetime import SimDT
 
-import apv.settings.user_pathes as user_pathes
+import apv.settings.user_paths as user_paths
 from apv.settings import apv_systems
 import apv
 from typing import Iterator, Literal
@@ -135,7 +144,7 @@ class BR_Wrapper:
 
         # create a bifacial_radiance object
         self.radObj = br.RadianceObj(
-            self.file_name, str(user_pathes.bifacial_radiance_files_folder)
+            self.file_name, str(user_paths.bifacial_radiance_files_folder)
         )
         self.radObj.setGround(self.SimSettings.ground_albedo)
         self.create_sky(dni_single=dni_singleValue, dhi_single=dhi_singleValue)
@@ -146,7 +155,7 @@ class BR_Wrapper:
     def set_up_file_names_and_paths(self):
 
         if self.results_subfolder is None:
-            self.results_subfolder = user_pathes.results_folder / Path(
+            self.results_subfolder = user_paths.results_folder / Path(
                 self.SimSettings.sim_name,
                 self.APV_SystSettings.module_form
                 + '_res-' + str(self.SimSettings.spatial_resolution)+'m'
@@ -164,9 +173,9 @@ class BR_Wrapper:
             'ground_results' + '_' + self.file_name + '.csv')
 
         # check folder existence
-        fi.make_dirs_if_not_there([user_pathes.bifacial_radiance_files_folder,
-                                   user_pathes.data_download_folder,
-                                   user_pathes.results_folder,
+        fi.make_dirs_if_not_there([user_paths.bifacial_radiance_files_folder,
+                                   user_paths.data_download_folder,
+                                   user_paths.results_folder,
                                    self.results_subfolder,
                                    self.csv_parent_folder]
                                   )
@@ -228,7 +237,7 @@ class BR_Wrapper:
         R: float = 0, G: float = 0, B: float = 0,
         specularity: float = 0, roughness: float = 0,
         transmissivity: float = 0, transmitted_specularity: float = 0,
-        rad_mat_file: Path = user_pathes.bifacial_radiance_files_folder / Path(
+        rad_mat_file: Path = user_paths.bifacial_radiance_files_folder / Path(
             'materials/ground.rad')
     ):
         """type trans = translucent plastic
@@ -283,13 +292,7 @@ class BR_Wrapper:
             # https://curry.eas.gatech.edu/Courses/6140/ency/Chapter9/Ency_Atmos/Reflectance_Albedo_Surface.pdf
             roughness=0.3)
 
-    def create_geometries(self, APV_SystSettings: SystSettings):
-        """creates pv modules and mounting structure (optional)"""
-
-        ghObj: GeometriesHandler = GeometriesHandler(
-            self.SimSettings, APV_SystSettings, self.debug_mode)
-        ghObj._set_init_variables()
-
+    def apply_BRs_makeModule(self, ghObj: GeometriesHandler):
         # # create PV module
         # this is a bit nasty because we use self.radObj.makeModule()
         # to create std or cell_level module, whereby in this case
@@ -304,54 +307,64 @@ class BR_Wrapper:
             'EW_fixed': ghObj.make_EW_module_text,
             'cell_level_EW_fixed': ghObj.make_cell_level_EW_module_text,
         }
-
-        if APV_SystSettings.module_form in ['std', 'cell_level', 'none']:
+        module_form = ghObj.APV_SystSettings.module_form
+        if module_form in ['std', 'cell_level', 'none']:
             # pass dict value without calling
-            module_text = module_text_dict[APV_SystSettings.module_form]
+            module_text = module_text_dict[module_form]
         else:
             # pass dict value being a ghObj method with calling
-            module_text = module_text_dict[APV_SystSettings.module_form]()
+            module_text = module_text_dict[module_form]()
 
-        if APV_SystSettings.module_form == 'cell_level':
+        if module_form == 'cell_level':
             # then use bifacial radiance by passing cellLevelModuleParams
-            cellLevelModuleParams = APV_SystSettings.cellLevelModuleParams
+            cellParams = ghObj.APV_SystSettings.cellLevelModuleParams
         else:
-            cellLevelModuleParams = None
+            cellParams = None
 
         self.radObj.makeModule(
-            name=APV_SystSettings.module_name,
-            **APV_SystSettings.moduleDict,
-            cellLevelModuleParams=cellLevelModuleParams,
+            name=ghObj.APV_SystSettings.module_name,
+            **ghObj.APV_SystSettings.moduleDict,
+            cellLevelModuleParams=cellParams,
             text=module_text,
-            glass=APV_SystSettings.glass_modules,
+            glass=ghObj.APV_SystSettings.glass_modules,
         )
 
-        # make scene
-        self.scene = self.radObj.makeScene(
-            moduletype=APV_SystSettings.module_name,
-            sceneDict=APV_SystSettings.sceneDict)
+    def add_mounting_structure_to_radObj(self, ghObj: GeometriesHandler):
 
         rad_text = ''
-        structure_type = APV_SystSettings.mounting_structure_type
+        structure_type = ghObj.APV_SystSettings.mounting_structure_type
         # create mounting structure as custom object:
         if structure_type == 'declined_tables':
             rad_text = ghObj.declined_tables_mount(
-                add_glass_box=APV_SystSettings.add_glass_box)
+                add_glass_box=ghObj.APV_SystSettings.add_glass_box)
         elif structure_type == 'framed_single_axes':
             rad_text = ghObj.framed_single_axes_mount()
-        if APV_SystSettings.extra_customObject_rad_text is not None:
-            rad_text += APV_SystSettings.extra_customObject_rad_text
+        if ghObj.APV_SystSettings.extra_customObject_rad_text is not None:
+            rad_text += ghObj.APV_SystSettings.extra_customObject_rad_text
 
         if rad_text != '':
-
             # add mounting structure to the radObj with rotation
             self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
                 radfile=self.scene.radfiles,
                 customObject=self.radObj.makeCustomObject(
                     'structure', rad_text),
                 text=self.geomObj.get_customObject_cloning_rad_txt(
-                    APV_SystSettings)
+                    ghObj.APV_SystSettings)
             )
+
+    def create_geometries(self, APV_SystSettings: SystSettings):
+        """creates pv modules and mounting structure (optional)"""
+
+        ghObj: GeometriesHandler = GeometriesHandler(
+            self.SimSettings, APV_SystSettings, self.debug_mode)
+
+        self.apply_BRs_makeModule(ghObj)
+        # make scene
+        self.scene = self.radObj.makeScene(
+            moduletype=APV_SystSettings.module_name,
+            sceneDict=APV_SystSettings.sceneDict)
+
+        self.add_mounting_structure_to_radObj(ghObj)
 
         if APV_SystSettings.n_apv_system_clones_in_x > 1 \
                 or APV_SystSettings.n_apv_system_clones_in_negative_x > 1:
@@ -367,7 +380,7 @@ class BR_Wrapper:
             haupt set gescant.
             """
 
-            # was passiert hier: um alle module kopieren zu können, muss
+            # was hier passiert: um alle module kopieren zu können, muss
             # module + scene erstellung in einem schritt erfolgen, damit ein
             # file anschließend als ganzes (ohne interne file weiterleitung)
             # kopiert werden kann. Dazu nehme ich die rad_text
@@ -435,7 +448,7 @@ class BR_Wrapper:
         for key in scd:
             scd[key] = str(scd[key]) + ' '
 
-        view_fp = user_pathes.bifacial_radiance_files_folder / Path(
+        view_fp = user_paths.bifacial_radiance_files_folder / Path(
             'views/'+view_name+'.vp')
 
         if view_type == 'parallel':
@@ -530,7 +543,7 @@ class BR_Wrapper:
         """
 
         # clear temporary line scan results from bifacial_results_folder
-        temp_results: Path = user_pathes.bifacial_radiance_files_folder / Path(
+        temp_results: Path = user_paths.bifacial_radiance_files_folder / Path(
             'results')
         fi.clear_folder_content(temp_results)
 
@@ -560,7 +573,7 @@ class BR_Wrapper:
     def merge_line_scans(self):
         """merge results to create one complete ground DataFrame
         """
-        temp_results: Path = user_pathes.bifacial_radiance_files_folder / Path(
+        temp_results: Path = user_paths.bifacial_radiance_files_folder / Path(
             'results')
         df: pd.DataFrame = fi.df_from_file_or_folder(
             temp_results, append_all_in_folder=True,
@@ -598,7 +611,7 @@ class BR_Wrapper:
                 str(self.csv_file_path))
 
         if cm_unit is None:
-            cm_unit = self.SimSettings.cm_unit
+            cm_unit = self.SimSettings.cm_quantity
 
         if cumulative is None:
             cumulative = self.SimSettings.cumulative

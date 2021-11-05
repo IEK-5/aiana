@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
-import apv.settings.user_pathes as user_pathes
+import apv.settings.user_paths as user_paths
 
 
 # #
