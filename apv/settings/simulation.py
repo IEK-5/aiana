@@ -25,7 +25,7 @@ class Simulation:
     sim_year: int or Literal['TMY'] = 'TMY'  # or e.g. 2020
     # TMY = typical meterological year; here: mean data from 2005 to 2020
 
-    use_typical_day_per_month_for_shadow_depth_calculation = False
+    use_typDay_perMonth_for_shadowDepthCalculation = False
 
     sim_date_time = '06-15_20:00'  # used as second part of the .oct file name
     time_step_in_minutes: int = 60  # only 1,2,3,6,10,12,15,20,30,60,120
@@ -59,7 +59,6 @@ class Simulation:
 
     ##################
     # less important / not fully implemented at the moment
-    # TODO implement 'module' scan_target
     scan_target: Literal['ground', 'module'] = 'ground'
     # sky generation type:
     sky_gen_mode: Literal['gendaylit'

@@ -6,7 +6,11 @@ to presets in settings.py
 TODO
 
 ---------------------
+# module clone does not work anymore...
+
+- remove apv system settings from br wrapper and access it via geomObj
 - aufräumen, dokumentieren, codeinterne TODOs sichten
+
 - apv evaluation angucken und verstehen (Leo)
 
 - typical day of month (dummy day 15) optional in settings integrieren
@@ -14,28 +18,37 @@ TODO
 sondern year, month, day, hour, minute separat
 angeben?)
 
-- wieder aufräumen, dokumentieren
+- geometry_hanlder klassen attribute gruppieren?
 
-- gendaylitmxt für kumulativen sky? Aber damit ermittlung von shadow duration
-eh nicht möglich...
+- clones and periodic boundary conditions for azi <> 0, 180°
 
-- clones for azi <> 0, 180°
-- module sensors?
+- east west: ohne east-west-beams, da sie langanhaltende schatten bewirken oder
+würde man die brauchen zur Aussteifung des Parks?
 
-- slice of edges in scan field for azi <> 0, 180°? (different line scans,
+-----------
+- slice-off edges in scan field for azi <> 0, 180°? (different line scans,
     might be really difficult with pivot table later)
 
-- east west: ohne east-west-beams, da sie langanhaltende schatten bewirken?
+(- gendaylitmxt für kumulativen sky? Aber damit ermittlung von shadow duration
+eh nicht möglich...)
 
 
 ------------
-- longterm:
-add diffusive glass to be used optional in checker board empty slots.
+longterm:
+- GPU 28x faster rtrace https://nljones.github.io/Accelerad/index.html
+- implement 'module' scan_target ?
+- implement era5 data (apv_evaluation: yield & weather_data: solar position)
+- add diffusive glass to be used optional in checker board empty slots.
 ref: Miskin2019 and
 https://www.pv-magazine.com/2020/07/23/special-solar-panels-for-agrivoltaics/
 
 (-bei azi 180°:
 wedgeplot x-achse: y-position im field, y-achse: GHI, monat 1-12 untereinander)
+
+- estimate costs of double sized checker boards for same electrical yield with
+ improved shadow values and compare to std
+- also compare normal sized with double sized checker board shadow maps"
+
 
 '''
 # import needed packages
@@ -94,7 +107,7 @@ class BR_Wrapper:
             self,
             SimSettings: Simulation,
             APV_SystSettings: SystSettings,
-            geometryObj: GeometriesHandler = None,
+            geomObj: GeometriesHandler = None,
             results_subfolder: Path = None,
             weatherData=None,
             # weather_file=None,  # to optionally skip epw download
@@ -103,8 +116,11 @@ class BR_Wrapper:
         self.SimSettings = SimSettings
         self.APV_SystSettings = APV_SystSettings
 
-        self.geomObj = geometryObj or GeometriesHandler(
-            SimSettings, APV_SystSettings, debug_mode)
+        if geomObj is None:
+            self.geomObj = GeometriesHandler(APV_SystSettings, debug_mode)
+        else:
+            self.geomObj = geomObj
+
         self.simDT: SimDT = None
 
         self.evalObj: APV_Evaluation = APV_Evaluation(
@@ -180,8 +196,10 @@ class BR_Wrapper:
                                    self.csv_parent_folder]
                                   )
 
-    def create_sky(self, dni_single=None, dhi_single=None):
+    def create_sky(self, dni_single=None, dhi_single=None, tracked=False):
         """
+        We z-rotate the sky instead of the panel for an easier easier setup of
+        the mounting structure and the scan points.
         """
 
         # if self.SimSettings.sky_gen_mode == 'gendaylit':
@@ -191,6 +209,19 @@ class BR_Wrapper:
             dni_single = self.weatherData.dni
         if dhi_single is None:
             dhi_single = self.weatherData.dhi
+
+        if tracked:
+            correction_angle = 90  # copy from Leonhard, ISE for later
+            # maybe - 90 as i changed formula from
+            # sunaz - scene - correc
+            # to sunaz - (scene - correc)
+        else:
+            correction_angle = 180  # this will make north into the top in rvu
+
+        # we want modules face always to south in rvu (azi = 180°)
+        # if panel azi is e.g. 200°, we rotate sky by -20°
+        sunaz_modified = self.weatherData.sunaz\
+            - (self.APV_SystSettings.sceneDict["azimuth"] - correction_angle)
 
         if dni_single == 0 and dhi_single == 0:
             sys.exit("""DNI and DHI are 0 within the last hour until the \
@@ -204,31 +235,8 @@ class BR_Wrapper:
                 possible without light. Please choose a different time.""")
 
         # gendaylit using Perez models for direct and diffuse components
-        self.radObj.gendaylit2manual(
-            dni_single, dhi_single,
-            self.weatherData.sunalt, self.weatherData.sunaz)
-
-        """
-        # gencumskyself.met_data
-        if self.SimSettings.sky_gen_mode == 'gencumsky':
-            # from (year,month,day,hour)
-            startdt = dt.strptime(self.SimSettings.startdt, '%m-%d_%Hh')
-            # to (year,month,day,hour)
-            enddt = dt.strptime(self.SimSettings.enddt, '%m-%d_%Hh')
-
-            if self.SimSettings.irradiance_data_source == 'EPW':
-                epwfile = str(self.weather_file_br_epw)
-            elif self.SimSettings.irradiance_data_source == 'ADS_satellite':
-                epwfile = 'satellite_weatherData/TMY_nearJuelichGermany.csv'
-                # TODO make it automatic with mohds method
-
-            self.radObj.genCumSky(epwfile=epwfile,
-                                  startdt=startdt,
-                                  enddt=enddt)
-
-            self.oct_file_name = self.radObj.name \
-                + '_' + 'Cumulative'
-        """
+        self.radObj.gendaylit2manual(dni_single, dhi_single,
+                                     self.weatherData.sunalt, sunaz_modified)
 
     def makeCustomMaterial(
         self,
@@ -329,95 +337,51 @@ class BR_Wrapper:
             glass=ghObj.APV_SystSettings.glass_modules,
         )
 
-    def add_mounting_structure_to_radObj(self, ghObj: GeometriesHandler):
-
-        rad_text = ''
-        structure_type = ghObj.APV_SystSettings.mounting_structure_type
-        # create mounting structure as custom object:
-        if structure_type == 'declined_tables':
-            rad_text = ghObj.declined_tables_mount(
-                add_glass_box=ghObj.APV_SystSettings.add_glass_box)
-        elif structure_type == 'framed_single_axes':
-            rad_text = ghObj.framed_single_axes_mount()
-        if ghObj.APV_SystSettings.extra_customObject_rad_text is not None:
-            rad_text += ghObj.APV_SystSettings.extra_customObject_rad_text
-
-        if rad_text != '':
-            # add mounting structure to the radObj with rotation
-            self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
-                radfile=self.scene.radfiles,
-                customObject=self.radObj.makeCustomObject(
-                    'structure', rad_text),
-                text=self.geomObj.get_customObject_cloning_rad_txt(
-                    ghObj.APV_SystSettings)
-            )
-
     def create_geometries(self, APV_SystSettings: SystSettings):
         """creates pv modules and mounting structure (optional)"""
 
-        ghObj: GeometriesHandler = GeometriesHandler(
-            self.SimSettings, APV_SystSettings, self.debug_mode)
-
+        ghObj = GeometriesHandler(APV_SystSettings, self.debug_mode)
         self.apply_BRs_makeModule(ghObj)
         # make scene
+        # set azimuth to 0
+        sceneDict = APV_SystSettings.sceneDict.copy()
+        sceneDict['azimuth'] = 180  # always to bottom in rvu,
+        # rotating sky instead
         self.scene = self.radObj.makeScene(
             moduletype=APV_SystSettings.module_name,
-            sceneDict=APV_SystSettings.sceneDict)
+            sceneDict=sceneDict)
 
-        self.add_mounting_structure_to_radObj(ghObj)
-
-        if APV_SystSettings.n_apv_system_clones_in_x > 1 \
-                or APV_SystSettings.n_apv_system_clones_in_negative_x > 1:
-            """ TODO cleaner code and slight speed optimization:
-            Return concat of matfiles, radfiles and skyfiles
-
-            filelist = self.radObj.materialfiles + self.radObj.skyfiles \
-                + radfiles <<- ersetzen mit eigener liste ohne erstes set
-            um eigene liste zu erstellen, makeCustomobject und appendtoscene
-            in eine eigene Methode zusammenführen mit besserer Namensgebung.
-
-            und im moment wird standardmäßig auch nur der boden unter dem
-            haupt set gescant.
-            """
-
-            # was hier passiert: um alle module kopieren zu können, muss
-            # module + scene erstellung in einem schritt erfolgen, damit ein
-            # file anschließend als ganzes (ohne interne file weiterleitung)
-            # kopiert werden kann. Dazu nehme ich die rad_text
-            # aus br und modifiziere sie.
-            modules_text = (
-                self.radObj.moduleDict['text']  # module text
-                # (only "numpanels" considered)
-                + self.scene.text.replace(  # all modules in first set
-                    '!xform', '|xform').replace(
-                    f' objects\\{self.APV_SystSettings.module_name}.rad', ''))
-
-            self.radObj.appendtoScene(
-                radfile=self.scene.radfiles,
-                customObject=self.radObj.makeCustomObject(
-                    'copied_modules', modules_text),
-                # cloning all modules from first set into all sets
-                text=self.geomObj.get_customObject_cloning_rad_txt(
-                    APV_SystSettings)
-            )
-
-        # add ground scan area visualization to the radObj without rotation
-        if APV_SystSettings.add_groundScanArea_as_object_to_scene:
-            ground_rad_text = ghObj.groundscan_area()
-
-            self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
-                radfile=self.scene.radfiles,
-                customObject=self.radObj.makeCustomObject(
-                    'scan_area', ground_rad_text),
-                text='!xform '  # with text = '' (default) it does not work!
-                # all scene objects are stored in
-                # bifacial_radiance_files/objects/... e.g.
-                # SUNFARMING_C_3.81425_rtr_10.00000_tilt_20.00000_10modsx3...
-                # within this file different custom .rad files are concatenated
-                # by !xform object/customObjectName.rad
-            )
-
+        self.appendtoScene_condensedVersion(
+            customObjects=ghObj.customObjects,
+            extra_radtext_dict=ghObj.radtext_to_apply_on_a_custom_object)
         self.radObj.makeOct(octname=self.oct_file_name)
+
+    def appendtoScene_condensedVersion(
+            self, customObjects: dict,
+            extra_radtext_dict: dict):
+        """
+        customObjects: key: file-name, value: rad_text
+        """
+        for key in customObjects:
+            rad_file_path = f'objects/{key}.rad'
+            with open(rad_file_path, 'wb') as f:
+                f.write(customObjects[key]().encode('ascii'))
+                # TODO group text method and extra operation in code in one place
+                # per object. but its very nested, how can it be done nicer?
+            # write single object rad_file_pathes in a grouping rad_file
+            # with an optional radiance text operation being applied on the
+            # single object as a sub group:
+            if key in extra_radtext_dict:
+                extra_radtext = extra_radtext_dict[key]
+            else:
+                extra_radtext = "!xform "
+
+            with open(self.scene.radfiles, 'a+') as f:
+                f.write(f'\n{extra_radtext}{rad_file_path}')
+
+            self.radObj.radfiles.append(rad_file_path)
+
+        print("\nCreated custom object", rad_file_path)
 
     def view_scene(
         self,
@@ -489,8 +453,8 @@ class BR_Wrapper:
             sensorsy += 1
 
         self.ygrid: list[float] = np.arange(
-            self.geomObj.sw_corner_scan_y,
-            (self.geomObj.sw_corner_scan_y + self.geomObj.y_field
+            self.geomObj.scan_area_anchor_y,
+            (self.geomObj.scan_area_anchor_y + self.geomObj.y_field
              + self.SimSettings.spatial_resolution),
             self.SimSettings.spatial_resolution)
 
@@ -512,7 +476,7 @@ class BR_Wrapper:
         """
         self.groundscan = self.frontscan
 
-        self.groundscan['xstart'] = self.geomObj.sw_corner_scan_x
+        self.groundscan['xstart'] = self.geomObj.scan_area_anchor_x
         self.groundscan['xinc'] = self.SimSettings.spatial_resolution
         self.groundscan['zstart'] = 0.05
         self.groundscan['zinc'] = 0

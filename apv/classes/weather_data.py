@@ -81,8 +81,6 @@ class WeatherData:
         else:
             df_irr = self.df_irradiance
 
-        # TODO wont work with y year like this,
-        # year is not in sim_dt_utc included
         self.ghi = df_irr.loc[simDT.sim_dt_utc, 'ghi_Wm-2']
         self.dhi = df_irr.loc[simDT.sim_dt_utc, 'dhi_Wm-2']
 

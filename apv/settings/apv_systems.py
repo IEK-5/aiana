@@ -1,9 +1,12 @@
 
 from typing import Literal
+from apv.settings import user_paths
+from pathlib import Path
+import pandas as pd
 """
     sceneDict [from BR (bifacial_radiance package)]:
         tilt: panel tilt [degree]
-        pitch: distance between two adjacent module-rows [m]
+        pitch: y-distance between two adjacent module-row-centers [m]
         hub_height: vert. distance: ground to modules [m]
         azimuth: panel face direction [degree]
         nMods: modules per row (along x in moduleDict) [-]
@@ -71,6 +74,12 @@ class Default:
                   'numpanels': 2
                   }
 
+    moduleSpecs: pd.Series = pd.read_csv(
+        user_paths.apv_package / Path(
+            'resources/pv_modules/Sanyo240_moduleSpecs_guestimate.txt'),
+        delimiter='\t'
+    ).T[0]
+
     cellLevelModuleParams = {
         'numcellsx': 6,  # has to be an even number at the moment
         'numcellsy': 12,  # has to be an even number at the moment
@@ -100,11 +109,13 @@ class Default:
     mounting_structure_type: Literal[
         'none', 'declined_tables', 'framed_single_axes'] = 'framed_single_axes'
 
-    # number of apv system clones in x direction
+    # NOTE number of apv system clones in x direction
     # (needed for periodic shadows without border effects, where the sun can
     # shine on the ground from the side in the morning and evening):
+
     n_apv_system_clones_in_x: int = 0  # for azimuth = 180: cloned towards east
     n_apv_system_clones_in_negative_x: int = 0  # towards west
+    # TODO make something like a sceneDict_enhanced?
 
     # for 'framed_single_axes':
     enlarge_beams_for_periodic_shadows: bool = False
@@ -152,15 +163,17 @@ class Default:
 
     # ### ground scan area settings
 
-    # to see in render preview where the scan will be, should be False for real
-    # simulation at the moment:
-    add_groundScanArea_as_object_to_scene: bool = False
-
-    # the area is placed below the foot print of the apv system, so that the
-    # modules to ground projection are just inside
+    # NOTE the scan area is placed below the foot print of the apv system,
+    # so that the modules projected to groud (foot print) are just inside of it
     # (all rows, but not the system clones)
 
-    # one-sided margins [m] can be added to enlarge the field
+    add_groundScanArea_as_object_to_scene: bool = False
+    # NOTE the above can be set to True to see the ground in render preview
+    # (works only for low GHI). But should be set to False for the
+    # ray tracing simulation, since albedo is not applied correctly yet and the
+    # edge of the ground-tile object will make a darker line in the heatmap.
+
+    # NOTE one-sided margins [m] can be added to enlarge the field
     # (or to reduce by negative values)
     ground_scan_margin_x: float = 0
     ground_scan_margin_y: float = 0
@@ -170,10 +183,6 @@ class Default:
 
     # round up to full meters (nice numbers in heatmaps)
     round_up_field_dimensions: bool = False
-    # ###
-
-    extra_customObject_rad_text: str = None
-
 
 # Other presets inheriting from Default
 class APV_Morchenich_Checkerboard(Default):

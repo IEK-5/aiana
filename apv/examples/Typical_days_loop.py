@@ -18,7 +18,7 @@ if __name__ == '__main__':
     SimSettings = apv.settings.simulation.Simulation()
     # SimSettings.sim_name = 'APV_Morschenich_only_one_neighborset'
     SimSettings.sim_name = 'APV_Morschenich'
-    SimSettings.use_typical_day_per_month_for_shadow_depth_calculation = True
+    SimSettings.use_typDay_perMonth_for_shadowDepthCalculation = True
     SimSettings.spatial_resolution = 0.25
     SimSettings.time_step_in_minutes = 6  # 6
     # SimSettings.use_multi_processing = False
@@ -26,13 +26,13 @@ if __name__ == '__main__':
 
     # ### APV_SystSettings:  ####
     APV_SystSettings = apv.settings.apv_systems.APV_Morchenich_Checkerboard()
-    APV_SystSettings.module_form = 'std'
+    APV_SystSettings.module_form = 'cell_level'
     # APV_SystSettings = apv.settings.apv_systems.APV_Morchenich_EastWest()
     # APV_SystSettings.module_form = 'none'
     APV_SystSettings.add_groundScanArea_as_object_to_scene = True
 
-    def adjust_APVclone_position(APV_SystSettings: SystSettings, hour
-                                 ) -> SystSettings:
+    def adjust_APVclone_count(APV_SystSettings: SystSettings, hour
+                              ) -> SystSettings:
         # To reduce sim time
         if hour <= 12:
             APV_SystSettings.n_apv_system_clones_in_x = 3  # old: 2, new: 3,
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     ###########################################################################
     setup_br_and_simulate = True
     ###########################################################################
-    months = range(1, 13)
+    months = [11]  # range(1, 13)
     hours = range(0, 24, 1)  #
     minutes = range(0, 60, SimSettings.time_step_in_minutes)  # [0]  #
     appended_data = []
@@ -85,58 +85,58 @@ if __name__ == '__main__':
         )
         brObj.results_subfolder = user_paths.results_folder / subfolder
 
-        # for hour in hours:
-        #     if APV_SystSettings.module_form in [
-        #             'std', 'cell_level_checker_board']:
-        #         APV_SystSettings = adjust_APVclone_position(
-        #             APV_SystSettings, hour
-        #         )
-        #     geomObj = GeometriesHandler(SimSettings, APV_SystSettings)
-        #     # TODO syst cloning should be called also in geometries handler
-        #     # and not in br_wrapper
-        #     for minute in minutes:
-        #         # for optical reasons only:
-        #         min_str = str(minute)
-        #         if minute < 10:
-        #             min_str = "0"+min_str
+        for hour in hours:
+            if APV_SystSettings.module_form in [
+                    'std', 'cell_level', 'cell_level_checker_board']:
+                APV_SystSettings = adjust_APVclone_count(
+                    APV_SystSettings, hour
+                )
+            geomObj = GeometriesHandler(APV_SystSettings)
+            # TODO syst cloning should be called also in geometries handler
+            # and not in br_wrapper
+            for minute in minutes:
+                # for optical reasons only:
+                min_str = str(minute)
+                if minute < 10:
+                    min_str = "0"+min_str
 
-        #         SimSettings.sim_date_time = f'{month}-{day}_{hour}:{min_str}'
-        #         simDT = SimDT(SimSettings)
+                SimSettings.sim_date_time = f'{month}-{day}_{hour}:{min_str}'
+                simDT = SimDT(SimSettings)
 
-        #         hour_utc = simDT.sim_dt_utc.hour
-        #         ghi = df_typic_day_of_month['ghi_Wm-2'].loc[
-        #             month, hour_utc, minute]
-        #         dhi = df_typic_day_of_month['dhi_Wm-2'].loc[
-        #             month, hour_utc, minute]
+                hour_utc = simDT.sim_dt_utc.hour
+                ghi = df_typic_day_of_month['ghi_Wm-2'].loc[
+                    month, hour_utc, minute]
+                dhi = df_typic_day_of_month['dhi_Wm-2'].loc[
+                    month, hour_utc, minute]
 
-        #         dni = ghi-dhi  # (as ground has tilt 0)
-        #         weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(simDT)
+                dni = ghi-dhi  # (as ground has tilt 0)
+                weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(simDT)
 
-        #         if (weatherData.sunalt < 0):
-        #             print(f'Sun alitude is negative ({weatherData.sunalt}).')
-        #         # elif (ghi < cumulative_GHI * 0.02) or (ghi > 50):
-        #         elif ghi < min(cumulative_GHI * 0.02, 50):
+                if (weatherData.sunalt < 0):
+                    print(f'Sun alitude is negative ({weatherData.sunalt}).')
+                # elif (ghi < cumulative_GHI * 0.02) or (ghi > 50):
+                elif ghi < min(cumulative_GHI * 0.02, 50):
 
-        #             print(f'GHI too low ({ghi} Wh/m²).')
-        #             if sun_shines is True:
-        #                 SimSettings.enddt = SimSettings.sim_date_time
-        #                 sun_shines = False
-        #         else:
-        #             if sun_shines is False:
-        #                 SimSettings.startdt = SimSettings.sim_date_time
-        #                 sun_shines = True
+                    print(f'GHI too low ({ghi} Wh/m²).')
+                    if sun_shines is True:
+                        SimSettings.enddt = SimSettings.sim_date_time
+                        sun_shines = False
+                else:
+                    if sun_shines is False:
+                        SimSettings.startdt = SimSettings.sim_date_time
+                        sun_shines = True
 
-        #             brObj.SimSettings = SimSettings
-        #             if setup_br_and_simulate:
-        #                 brObj.setup_br(
-        #                     dni_singleValue=dni, dhi_singleValue=dhi)
-        #                 # brObj.view_scene(
-        #                 # view_name='top_down', view_type='parallel')
-        #                 ########
-        #                 brObj.run_raytracing_simulation()
-        #                 ########
-        #                 for cm_unit in ['radiation', 'shadow_depth']:
-        #                     brObj.plot_ground_heatmap(cm_unit=cm_unit)
+                    brObj.SimSettings = SimSettings
+                    if setup_br_and_simulate:
+                        brObj.setup_br(
+                            dni_singleValue=dni, dhi_singleValue=dhi)
+                        brObj.view_scene(
+                            view_name='top_down', view_type='parallel')
+                        ########
+                        # brObj.run_raytracing_simulation()
+                        ########
+                        for cm_unit in ['radiation', 'shadow_depth']:
+                            brObj.plot_ground_heatmap(cm_unit=cm_unit)
 
         results_subfolder_cum = user_paths.results_folder / Path(
             subfolder.parent, 'cumulative_hours_in_typ_day_of_month')
@@ -150,7 +150,8 @@ if __name__ == '__main__':
         # brObj.evalObj.SimSettings = SimSettings  # wahrscheinlich unnötig
 
         # df_merged = brObj.evalObj.cumulate_gendaylit_results(
-        #     brObj.results_subfolder / Path('data'), cum_csv_path, SimSettings)
+        #     brObj.results_subfolder / Path('data'), cum_csv_path, SimSettings
+        # )
         df_merged = apv.utils.files_interface.df_from_file_or_folder(
             cum_csv_path)
         # for cm_unit in ['radiation', 'shadow_depth', 'DLI']:

@@ -165,13 +165,12 @@ def Ridge_plot(data, seperate_by='Month', column='ShadowDepth_cum',
     return fig, axes
 
 
-# TODO brauchen wir nicht mehr, oder? Da man Pfostenschatten sieht.
+# snippet (not ready) for drawing module position into heatmap,
+# probably not needed anymore since we can see the post position as dark pixel
 """ def add_module_line(ax):
     ''' adds lines in heatmap to indicate PV modules location.
-
-
     '''
-    # NOT READY! TODO insert geometry formulas for x1,y1,x2,y2
+    # insert geometry formulas for x1,y1,x2,y2
     sceneDict = APV_SystSettings.sceneDict
     moduleDict = APV_SystSettings.moduleDict
     # Field Geometry

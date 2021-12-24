@@ -6,7 +6,7 @@ from apv.settings.simulation import Simulation
 
 class SimDT:
     """
-    #TODO simulation seettings time string hierhin verschieben einmalig
+    #TODO simulation settings time string hierhin verschieben einmalig
     zum start und dann nur hier drin ändern, damit nicht alle settings
     mit immer übergeben werden müssen, wenn es eigentlich nur die sim zeit ist
     """

@@ -48,7 +48,7 @@ if __name__ == '__main__':
     # APV_SystSettings.sceneDict['nMods'] = 4
     # APV_SystSettings.sceneDict['nRows'] = 4
     # APV_SystSettings.sceneDict['pitch'] = 4
-    # APV_SystSettings.sceneDict['azimuth'] = 200
+    APV_SystSettings.sceneDict['azimuth'] = 90
     # APV_SystSettings.moduleDict['y'] = 0.5
     # APV_SystSettings.mounting_structure_type = 'none'
     APV_SystSettings.module_form = 'std'
@@ -78,7 +78,7 @@ if __name__ == '__main__':
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings,
         # weather_file=weather_file,  # downloading automatically without this,
-        debug_mode=False
+        debug_mode=True
     )
 
     evalObj = apv.classes.APV_evaluation.APV_Evaluation(
@@ -86,7 +86,8 @@ if __name__ == '__main__':
         APV_SystSettings=APV_SystSettings
     )
 
-    SimSettings.sim_date_time = '6-21_15h'
+    SimSettings.sim_date_time = '6-21_08:00'
+    # SimSettings.sim_date_time = '6-21_15:00'
     brObj.setup_br()
     # evalObj.evaluate_APV(SimSettings=SimSettings)
     # #
@@ -94,11 +95,12 @@ if __name__ == '__main__':
         view_name='top_down',
         view_type='parallel'
     )
-    # #
+# #
+if __name__ == '__main__':
     imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.br_wrapper)
 
-    for azimuth in [225]:
+    for azimuth in [0, 90, 180, 270]:
         # for azimuth in range(180, 361, 30):
 
         APV_SystSettings.sceneDict['azimuth'] = azimuth

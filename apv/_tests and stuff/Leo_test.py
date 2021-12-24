@@ -36,7 +36,42 @@ import honeybee_radiance_command as hrc
 # #
 # import this
 
+class MyClass:
+    def __init__(self, input_value: float):
+        self.input = input_value
+        self._results = None
 
+    @property
+    def results(self):
+        if self._results is None:
+            raise AttributeError('results is None')
+        return self._results
+
+    def generate_results(self):
+        # Imagine some calculations here or something
+        self._results = 2*self.input_value
+
+
+MyObj = MyClass(2)
+MyObj.results
+# #
+MyObj.generate_results()
+MyObj.results
+
+
+# #
+class MyClass:
+    def __init__(self, name, score):
+        self.name = name
+        self.score = score
+        self.grade = None
+
+
+MyObj = MyClass('leo', 1337)
+MyObj.__dict__
+
+
+# #
 SimSettings = apv.settings.simulation.Simulation()
 simdt = SimDT(SimSettings)
 weatherObj = WeatherData(SimSettings)
@@ -166,7 +201,6 @@ solar_position.zenith[0]
 fi.df_from_file_or_folder(
     user_paths.bifacial_radiance_files_folder/Path(
         'satellite_weatherData/TMY_nearJuelichGermany.csv'
-        # TODO make it automatic with mohds method
     ), names=['ghi', 'dhi'], delimiter=' '
 )
 # #
@@ -205,11 +239,6 @@ data[:del_line_start] + data[del_line_to+1:]
 
 
 # #
-if any([mat_name in line for line in data]):
-    print(f'material {mat_name} already exists')
-    # TODO: better: delete 4 lines to "overwrite"
-# #
-
 
 class test(apv.settings.apv_systems.Default):
 

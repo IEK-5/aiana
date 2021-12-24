@@ -27,6 +27,19 @@ def create_parameters_permutated_df(parameters, exclude=[]) -> pd.DataFrame:
 
 
 def get_attribute_names(class_or_object, exclude=[]):
+    """geht so viel einfacher:
+    class MyClass:
+    def __init__(self,name,score):
+        self.name = name
+        self.score = score
+        self.grade = None
+
+    MyObj = MyClass('leo', 1337)
+    list(MyObj.__dict__)
+
+
+
+    """
     # create list from parameters object:
     attribute_list = []
     for attribute in dir(class_or_object):

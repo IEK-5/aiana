@@ -12,90 +12,82 @@
     """
 
 import numpy as np
-from typing import Literal
-import inspect
-import apv
 from apv.settings.apv_systems import Default as SystSettings
-
-import apv.settings.user_paths as user_paths
-from pathlib import Path
+import pandas as pd
 
 
 class GeometriesHandler:
     """
-    x_field (int): lengths of the groundscan area in x direction
-    according to scene
-    y_field (int): lengths of the groundscan area in y direction
+    to create the radiance text string for the oct file builder
 
-    """  # TODO shift explanation in line comments to docstring
+    azimuth is handled here completely as being zero with x=y=0 in bottom left
+    (south-west-corner for azimuth = 180° = default = south-oriented)
 
-    def __init__(
-            self,
-            SimSettings: apv.settings.simulation.Simulation,
-            APV_SystSettings: apv.settings.apv_systems.Default,
-            debug_mode=False
-    ):
-        self.SimSettings: apv.settings.simulation.Simulation = SimSettings
-        self.APV_SystSettings: apv.settings.apv_systems.Default = \
-            APV_SystSettings
+    real azimuth will be handled by rotating the sky in br._wrapper.create_sky()
+    """
+    singleRow_length_x: float
+    singleRow_length_y: float
+    # footprint dimensions = dimensions of a vertical projection to ground
+    singleRow_footprint_x: float
+    singleRow_footprint_y: float
+
+    allRows_footprint_x: float
+    allRows_footprint_y: float
+
+    x_field: int  # lengths of the groundscan area in x direction
+    y_field: int
+
+    # shifts from apv- and groundscan_field-center towards origin (x=y=0):
+    center_offset_x: float
+    center_offset_y: float
+
+    # south west corners of all modules used later
+    # as mounting structure anchor/"array start":
+    scan_area_anchor_x: float
+    scan_area_anchor_y: float
+
+    clone_distance_x: float
+    post_start_x: float
+    post_distance_x: float
+
+    customObjects: dict  # key: single rad file-name, value: rad_text
+
+    def __init__(self, APV_SystSettings: SystSettings, debug_mode=False):
+        self.APV_SystSettings = APV_SystSettings
         self.debug_mode = debug_mode
 
-        self.APV_SystSettings = APV_SystSettings
         # short cuts:
-        self.mod = self.APV_SystSettings.moduleDict
-        self.scn = self.APV_SystSettings.sceneDict
-        self.mount = self.APV_SystSettings.mountingStructureDict
+        self.mod = APV_SystSettings.moduleDict
+        self.scn = APV_SystSettings.sceneDict
+        self.mount = APV_SystSettings.mountingStructureDict
 
-        self.singleRow_length_x = float()
-        self.singleRow_length_y = float()
-        # footprint dimensions = dimensions of a vertical projection to ground
-        self.singleRow_footprint_x = float()
-        self.singleRow_footprint_y = float()
+        self._set_singleRow_lengths_and_footprints()
+        self._set_x_y_field()  # TODO rename to GroundScanLength_x_y ?
+        self._set_APVSystCenter_to_origin_offsets()
+        self._set_x_y_coordinates_of_modCorner_and_scanArea_anchors()
 
-        self.allRows_footprint_x = float()
-        self.allRows_footprint_y = float()
+        modPostDist = self.mount['module_to_post_distance_x']
+        # array cloning distance in x (in y called 'pitch' by BR)
+        self.clone_distance_x = self.singleRow_footprint_x + 2*modPostDist
+        # post start and distance used for building mounting structure
+        self.post_start_x = self.sw_modCorner_x - modPostDist
+        self.post_distance_x = self.clone_distance_x/(self.mount['n_post_x']-1)
+        self.customObjects = self._create_customObjectsDict()
+        self.radtext_to_apply_on_a_custom_object = {
+            'north_arrow': f'!xform -rz {self.scn["azimuth"]-180} -t 10 10 0 '}
 
-        self.x_field = int()
-        self.y_field = int()
+    def _set_singleRow_lengths_and_footprints(self):
 
-        # shifts from apv- and groundscan_field-center towards origin (x=y=0):
-        # for azimuth = 0:
-        self.center_offset_azi0_x = float()
-        self.center_offset_azi0_y = float()
-        # for azimuth from scenedict:
-        self.center_offset_x = float()
-        self.center_offset_y = float()
-
-        # south west corners of all modules at
-        # azimuth = 0, used as mounting structure anchor later:
-        self.sw_modCorner_azi0_x = float()
-        self.sw_modCorner_azi0_y = float()
-
-        self._set_init_variables()
-
-    def _set_init_variables(self):
-
-        self.singleRow_length_x = (
-            self.mod['x']*self.scn['nMods']
+        self.singleRow_length_x = self.mod['x']*self.scn['nMods'] \
             + self.mod['xgap']*(self.scn['nMods']-1)
-        )
 
-        self.singleRow_length_y = (
-            self.mod['y']*self.mod['numpanels']
+        self.singleRow_length_y = self.mod['y']*self.mod['numpanels'] \
             + self.mod['ygap']*(self.mod['numpanels']-1)
-        )
 
-        # for now no tilt in x
-        self.singleRow_footprint_x = self.singleRow_length_x
-
+        # footprints
+        self.singleRow_footprint_x = self.singleRow_length_x  # no x-tilt yet
         self.singleRow_footprint_y = self.singleRow_length_y*np.cos(
             self.scn['tilt']*np.pi/180)
-
-        # TODO better name?
-        self.clone_distance_x = self.singleRow_footprint_x + 2*self.mount[
-            'module_to_post_distance_x']
-
-        self.post_distance_x = self.clone_distance_x/(self.mount['n_post_x']-1)
 
         # for now no array translation in x #TODO add clones here
         self.allRows_footprint_x = self.singleRow_footprint_x
@@ -106,72 +98,39 @@ class GeometriesHandler:
             self.singleRow_footprint_y+self.scn['pitch']*(self.scn['nRows']-1)
         )
 
-        # ### ground scan dimensions (x_field, y_field)
-        # margins:
-        m_x = self.APV_SystSettings.ground_scan_margin_x
-        m_y = self.APV_SystSettings.ground_scan_margin_y
-
-        # field:
-        x_field0 = self.allRows_footprint_x + 2*m_x
-        y_field0 = self.allRows_footprint_y + 2*m_y
-
-        # make it larger if not azimuth = 0 or 180 to cover footprint within
-        # scan field aligned to north and parallel to x and y axes:
-        azi_rad = self.scn['azimuth']*np.pi/180
-        # e.g. for azimuth = 90° x and y field dimensions are switched
-        x_field = abs(np.sin(azi_rad))*y_field0 + abs(np.cos(azi_rad))*x_field0
-        # switch cos and sin for y
-        y_field = abs(np.cos(azi_rad))*y_field0 + abs(np.sin(azi_rad))*x_field0
+        # ### ground scan dimensions x_field, y_field
+    def _set_x_y_field(self):
+        self.x_field = self.allRows_footprint_x \
+            + 2*self.APV_SystSettings.ground_scan_margin_x
+        self.y_field = self.allRows_footprint_y \
+            + 2*self.APV_SystSettings.ground_scan_margin_y
 
         # round up (ceiling)
         if self.APV_SystSettings.round_up_field_dimensions:
-            x_field = np.ceil(x_field)
-            y_field = np.ceil(y_field)
+            self.x_field = np.ceil(self.x_field)
+            self.y_field = np.ceil(self.y_field)
 
-        # write to self attribute
-        self.x_field = x_field
-        self.y_field = y_field
-
-        # ## center offsets
-        self.center_offset_azi0_x = 0
-        self.center_offset_azi0_y = 0
+    def _set_APVSystCenter_to_origin_offsets(self):
+        self.center_offset_x = 0
+        self.center_offset_y = 0
 
         if self.scn['nMods'] % 2 == 0:  # even
-            self.center_offset_azi0_x = (self.mod['x']+self.mod['xgap'])/2
+            self.center_offset_x = (self.mod['x']+self.mod['xgap'])/2
         if self.scn['nRows'] % 2 == 0:  # even
-            self.center_offset_azi0_y = self.scn['pitch']/2
+            self.center_offset_y = self.scn['pitch']/2
 
-        self.center_offset_x = -(
-            self.center_offset_azi0_x*np.cos(azi_rad)
-            + self.center_offset_azi0_y*np.sin(azi_rad)
-        )
-        self.center_offset_y = -(
-            self.center_offset_azi0_y*np.cos(azi_rad)
-            - self.center_offset_azi0_x*np.sin(azi_rad)
-        )
-
-        # south west corners of the modules with azimuth = 0
-        self.sw_modCorner_azi0_x = (
-            -self.allRows_footprint_x/2 + self.center_offset_azi0_x)
-
-        self.sw_modCorner_azi0_y = (
-            -self.allRows_footprint_y/2 + self.center_offset_azi0_y)
-
-        self.post_start_x = self.sw_modCorner_azi0_x - self.mount[
-            "module_to_post_distance_x"]
+    def _set_x_y_coordinates_of_modCorner_and_scanArea_anchors(self):
+        # south west corners before rotation
+        self.sw_modCorner_x = (
+            -self.allRows_footprint_x/2 + self.center_offset_x)
+        self.sw_modCorner_y = (
+            -self.allRows_footprint_y/2 + self.center_offset_y)
 
         # south west corners of the ground scan area
-        s_x = self.APV_SystSettings.ground_scan_shift_x
-        s_y = self.APV_SystSettings.ground_scan_shift_y
-
-        # #TODO if self.APV_SystSettings.n_sets_x > 1:
-        # statt n_sets_x --> schöner name für "Anzahl geclonter Sets für
-        # periodische Randbedingungen
-        # in einer Richtung (-x oder +x)" mit "Set" = Struktur + Module?
-        # aber eigentlich will man später vllt alle clone scannen können?
-
-        self.sw_corner_scan_x = -self.x_field/2 + self.center_offset_x + s_x
-        self.sw_corner_scan_y = -self.y_field/2 + self.center_offset_y + s_y
+        self.scan_area_anchor_x = -self.x_field/2 + self.center_offset_x \
+            + self.APV_SystSettings.ground_scan_shift_x
+        self.scan_area_anchor_y = -self.y_field/2 + self.center_offset_y \
+            + self.APV_SystSettings.ground_scan_shift_y
 
     def get_customObject_cloning_rad_txt(self, APV_SystSettings: SystSettings):
 
@@ -179,11 +138,15 @@ class GeometriesHandler:
             -APV_SystSettings.n_apv_system_clones_in_negative_x\
             * self.clone_distance_x
 
+        # #TODO if self.APV_SystSettings.n_sets_x > 1:
+        # statt n_sets_x --> schöner name für "Anzahl geclonter Sets für
+        # periodische Randbedingungen
+        # in einer Richtung (-x oder +x)" mit "Set" = Struktur + Module?
+        # aber eigentlich will man später vllt alle clone scannen können?
         n_sets_x = APV_SystSettings.n_apv_system_clones_in_x + 1 + \
             APV_SystSettings.n_apv_system_clones_in_negative_x
 
-        rz = 180 - APV_SystSettings.sceneDict["azimuth"]
-        return (f'!xform -rz {rz} -t {shift_x_array_start} 0 0 '
+        return (f'!xform -t {shift_x_array_start} 0 0 '
                 f'-a {n_sets_x} -t {self.clone_distance_x} 0 0')
 
     def framed_single_axes_mount(self) -> str:
@@ -206,7 +169,7 @@ class GeometriesHandler:
         else:
             beamlength_y = self.scn['pitch']*(self.scn['nRows']-1)
 
-        y_start = self.sw_modCorner_azi0_y + self.singleRow_footprint_y/2
+        y_start = self.sw_modCorner_y + self.singleRow_footprint_y/2
         h_post = self.scn["hub_height"] + 0.2
 
         # create posts
@@ -231,22 +194,23 @@ class GeometriesHandler:
     def groundscan_area(self) -> str:
         text = (
             f'!genbox grass field {self.x_field} {self.y_field} 0.00001'
-            f' | xform -t {self.sw_corner_scan_x} {self.sw_corner_scan_y} 0'
+            f' | xform -t {self.scan_area_anchor_x} {self.scan_area_anchor_y} 0'
         )
 
         if self.debug_mode:
+            rz = 180 - self.scn['azimuth']
             text += (
                 # mark origin
-                f'\n!genbox black post {0.5} {0.5} 10'
-                f'\n!genbox white_EPDM post {0.2} {0.2} 10'
-                # mark field center
-                f'\n!genbox black post {0.3} {0.3} 8 | xform '
-                f'-t {self.center_offset_x} {self.center_offset_y} 0'
-                # mark system edge
-                f'\n!genbox black post {0.2} {0.2} 8 | xform '
-                f'-t {self.sw_corner_scan_x} {self.sw_corner_scan_y} 0'
-            )
+                f'\n!genbox black post 0.5 0.5 10'
+                f'\n!genbox white_EPDM post 0.2 0.2 10'
 
+                # mark field center
+                f'\n!genbox black post {0.3} {0.3} 8 '
+                f'| xform -t {self.center_offset_x} {self.center_offset_y} 0'
+                # mark system edge
+                f'\n!genbox black post {0.2} {0.2} 8 '
+                f'| xform -t {self.scan_area_anchor_x} {self.scan_area_anchor_y} 0'
+            )
         return text
 
     def declined_tables_mount(self, add_glass_box=False) -> str:
@@ -259,7 +223,7 @@ class GeometriesHandler:
         inner_table_post_distance_y = 3.4
 
         # post starts in y:
-        lower_post_start_y = self.sw_modCorner_azi0_y + (
+        lower_post_start_y = self.sw_modCorner_y + (
             self.singleRow_footprint_y - inner_table_post_distance_y)/2
         higher_post_start_y = lower_post_start_y + inner_table_post_distance_y
 
@@ -276,18 +240,19 @@ class GeometriesHandler:
             higher_post_start_y)
 
         if add_glass_box:
-            t_y = (self.sw_modCorner_azi0_y + self.allRows_footprint_y
+            t_y = (self.sw_modCorner_y + self.allRows_footprint_y
                    + self.APV_SystSettings.glass_box_to_APV_distance)
             # variable cannot be found because not in default()
             # but in declined tables apv system settings
 
             t_x = self.allRows_footprint_x
             text += (f'\n! genbox stock_glass glass_wall {t_x} 0.005 5'
-                     f' | xform -t {self.sw_modCorner_azi0_x} {t_y} 0')
+                     f' | xform -t {self.sw_modCorner_x} {t_y} 0')
 
         return text
 
-    def post_array(self, post_height, post_start_y):
+    def post_array(
+            self, post_height: float, post_start_y: float) -> str:
         """ creats an array of posts for each row using
         APV_Systsettings.mountingStructureDict """
 
@@ -347,14 +312,6 @@ class GeometriesHandler:
 
         # copy module in y direction
         text += '-a {} -t 0 {} 0'.format(mod['numpanels'], y+mod['ygap'])
-
-        # OPACITY CALCULATION
-        packagingfactor = np.round(
-            (c['xcell']*c['ycell']*c['numcellsx']*c['numcellsy'])/(
-                x*y), 2
-        )
-        print("This is a Cell-Level detailed module with Packaging " +
-              "Factor of {} %".format(packagingfactor))
 
         return text
 
@@ -420,15 +377,88 @@ class GeometriesHandler:
                                           c['xcellgap'])
         text += '-a {} -t 0 {} 0 '.format(c['numcellsy'], c['ycell'] +
                                           c['ycellgap'])
-        text += '-a {} -t 0 {} 0 -rx {}'.format(Ny, y+ygap, rotation_angle)
-
-        # OPACITY CALCULATION
-        packagingfactor = np.round((c['xcell']*c['ycell']*c['numcellsx'] *
-                                    c['numcellsy'])/(x*y), 2)
-        print("This is a Cell-Level detailed module with Packaging " +
-              "Factor of {} %".format(packagingfactor))
+        text += '-a {} -t 0 {} 0s -rx {}'.format(Ny, y+ygap, rotation_angle)
 
         return text
+
+    def north_arrow(self) -> str:
+        text = (
+            f'\n!genbox black peak 1 1 0.001 | xform -t -0.5 -0.5 0 -rz 45'
+            f'\n !genbox black base 1.4 1.4 0.001 | xform -t -0.7 -1.4 0'
+        )
+        return text
+        # f'| genbox black post 0.5 2 0.001 '
+        # f'| xform -t -0.5 -0.5 0 -rz {rz+angle} -t 10 {10+shift} 0'
+        # )
+
+    def _create_customObjectsDict(self) -> dict:
+        customObjects = {'north_arrow': self.north_arrow}
+
+        # scan area
+        if self.APV_SystSettings.add_groundScanArea_as_object_to_scene:
+            customObjects['scan_area'] = self.groundscan_area
+
+        # mounting structure
+        structure_type = self.APV_SystSettings.mounting_structure_type
+        if structure_type == 'declined_tables':
+            customObjects['structure'] = self.declined_tables_mount
+        elif structure_type == 'framed_single_axes':
+            customObjects['structure'] = self.framed_single_axes_mount
+
+        return customObjects
+
+        '''
+        if APV_SystSettings.n_apv_system_clones_in_x > 1 \
+                or APV_SystSettings.n_apv_system_clones_in_negative_x > 1:
+            """ TODO cleaner code and slight speed optimization:
+        Return concat of matfiles, radfiles and skyfiles
+
+        filelist = self.radObj.materialfiles + self.radObj.skyfiles \
+            + radfiles << - ersetzen mit eigener liste ohne erstes set
+        um eigene liste zu erstellen, makeCustomobject und appendtoscene
+        in eine eigene Methode zusammenführen mit besserer Namensgebung.
+
+        """
+
+            # was hier passiert: um alle module kopieren zu können, muss
+            # module + scene erstellung in einem schritt erfolgen, damit ein
+            # file anschließend als ganzes (ohne interne file weiterleitung)
+            # kopiert werden kann. Dazu nehme ich die rad_text
+            # aus br und modifiziere sie.
+            modules_text = (
+                self.radObj.moduleDict['text']  # module text
+                # (only "numpanels" considered)
+                + self.scene.text.replace(  # all modules in first set
+                    '!xform', '|xform').replace(
+                    f' objects\\{self.APV_SystSettings.module_name}.rad', ''))
+
+            self.radObj.appendtoScene(
+                radfile=self.scene.radfiles,
+                customObject=self.radObj.makeCustomObject(
+                    'copied_modules', modules_text),
+                # cloning all modules from first set into all sets
+                text=self.geomObj.get_customObject_cloning_rad_txt(
+                    APV_SystSettings)
+            )
+
+        # add ground scan area visualization to the radObj without rotation
+
+            """
+        ground_rad_text = ghObj.groundscan_area()
+
+        self.radObj.appendtoScene(  # '\n' + text + ' ' + customObject
+            radfile=self.scene.radfiles,
+            customObject=self.radObj.makeCustomObject(
+                'scan_area', ground_rad_text),
+            text='!xform '  # with text = '' (default) it does not work!
+            # all scene objects are stored in
+            # bifacial_radiance_files/objects/... e.g.
+            # SUNFARMING_C_3.81425_rtr_10.00000_tilt_20.00000_10modsx3...
+            # within this file different custom .rad files are concatenated
+            # by !xform object/customObjectName.rad
+        )
+        """
+        '''
 
 
 """ def add_box_to_radiance_text(

@@ -1,3 +1,13 @@
+#
+uml flow charts: (unified modeling language)
+https://en.wikipedia.org/wiki/Unified_Modeling_Language
+
+#
+for later: doc strings --> sphinx docu:
+https://www.sphinx-doc.org/en/master/usage/extensions/example_google.html
+
+
+
 EPW Docs:
         https://www.nrel.gov/docs/fy08osti/43156.pdf
         https://bigladdersoftware.com/epx/docs/8-2/auxiliary-programs/epw-csv-format-inout.html

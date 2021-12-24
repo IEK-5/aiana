@@ -1,23 +1,18 @@
 ''' Uses PVlib to forecast energy yield according to system settings.
 '''
 # #
-from apv.settings.apv_systems import Default
-from apv.settings.simulation import Simulation
-import sys
-from apv.classes.weather_data import WeatherData
-from apv.classes.sim_datetime import SimDT
-import apv
-from apv.resources import pv_modules
-import apv.utils
-import apv.settings.user_paths as UserPaths
-from apv.utils import files_interface as fi
 import os
 import pandas as pd
 from pathlib import Path
-from pandas.core.frame import DataFrame
 import pvlib
-import numpy as np
 # import pvfactors
+import apv
+from apv.settings.apv_systems import Default as APV_System
+from apv.settings.simulation import Simulation
+from apv.classes.weather_data import WeatherData
+from apv.classes.sim_datetime import SimDT
+import apv.settings.user_paths as UserPaths
+from apv.utils import files_interface as fi
 
 
 # #
@@ -39,14 +34,13 @@ class APV_Evaluation:
 
     def __init__(
             self,
-            SimSettings=apv.settings.simulation.Simulation(),
-            APV_SystSettings=apv.settings.apv_systems.Default(),
+            SimSettings: Simulation,
+            APV_SystSettings: APV_System,
             weatherData=None,
             debug_mode=False
     ):
-        self.SimSettings: apv.settings.simulation.Simulation = SimSettings
-        self.APV_SystSettings: apv.settings.apv_systems.Default = \
-            APV_SystSettings
+        self.SimSettings = SimSettings
+        self.APV_SystSettings = APV_SystSettings
         if weatherData is None:
             self.weatherData = WeatherData(self.SimSettings)
         else:
@@ -58,7 +52,7 @@ class APV_Evaluation:
         self.tmydata = pd.DataFrame()
         self.irrad_data = pd.DataFrame()
 
-    def evaluate_APV(self, SimSettings):
+    def evaluate_APV(self, SimSettings: Simulation):
         """manages estimate_energy according to settings and returns
         final estimates for complete system.
 
@@ -152,16 +146,20 @@ class APV_Evaluation:
                         * self.APV_SystSettings.sceneDict['nRows'] \
                         * self.APV_SystSettings.moduleDict['numpanels'] \
                         / 1000
-                    self.df_energy_results.loc[t] = (energy['p_mp'], system_energy)
+                    self.df_energy_results.loc[t] = (
+                        energy['p_mp'], system_energy)
             # Save csv file containing date and total energy for system
             path = os.path.join(eval_res_path, self.csv_file_name)
             self.df_energy_results.to_csv(path)
             total = self.df_energy_results['kWh System'].sum()
             print(f'### TOTAL ENERGY:{total:.2f} kWh per system')
 
-    def estimate_energy(self, SimSettings: Simulation, APV_SystSettings,
+    def estimate_energy(self, SimSettings: Simulation,
+                        APV_SystSettings: APV_System,
                         time, timeindex,
-                        tmydata, irrad_data, sur_azimuth_manual=None):
+                        tmydata: pd.DataFrame, irrad_data: pd.DataFrame,
+                        sur_azimuth_manual=None,
+                        ):
         """Use PVlib mathematical model to estimate energy yield. simulation
         steps are as follows:
         1-
@@ -169,7 +167,8 @@ class APV_Evaluation:
 
         Args:
             SimSettings (Simulation): needed for geographic location location
-            APV_SystSettings : inherited APV settings
+            APV_SystSettings: inherited APV settings
+            pv_module: (pd.Series): as in pvlib
             time ([timestampt UTC]): needed to shift solar position 30m and
                 to get extra-terristerial irradiation
             timeindex ([type]): to determine tmydata and irrad_data for hour
@@ -185,21 +184,16 @@ class APV_Evaluation:
 
         # TODO ADD Bifacial factor
         # TODO Make temperature and wind from CDS
-        # TODO add module series as argument - see cell 194
         """
 
         sDict = self.APV_SystSettings.sceneDict
-        # read PV module specs
-        input_folder = Path.cwd().parent
-        input_folder = os.path.abspath(os.path.join(os.path.dirname(
-            pv_modules.__file__), 'Sanyo240_moduleSpecs_guestimate.txt'))
-        pv_module: pd.Series = pd.read_csv(input_folder, delimiter='\t').T[0]
         surface_azimuth = sur_azimuth_manual or sDict['azimuth']
 
         # Solar position with 30 minuts shift since time is right-labeled
         sol_pos = SimSettings.apv_location.get_solarposition(
             time-pd.Timedelta('30min'),
-            temperature=tmydata.temp_air.iloc[timeindex-1])  # SEE NOTE 1 above
+            temperature=tmydata['temp_air'].iloc[timeindex-1])
+        # SEE NOTE 1 above
 
         # DNI Extraterrestrial from Day_of_year
         dni_extra = pvlib.irradiance.get_extra_radiation(time)
@@ -228,9 +222,9 @@ class APV_Evaluation:
             surface_azimuth=surface_azimuth,
             solar_zenith=sol_pos['apparent_zenith'],
             solar_azimuth=sol_pos['azimuth'],
-            dni=irrad_data.dni.iloc[timeindex],
-            ghi=irrad_data.ghi.iloc[timeindex],
-            dhi=irrad_data.dhi.iloc[timeindex], dni_extra=dni_extra,
+            dni=irrad_data['dni'].iloc[timeindex],
+            ghi=irrad_data['ghi'].iloc[timeindex],
+            dhi=irrad_data['dhi'].iloc[timeindex], dni_extra=dni_extra,
             model='isotropic')
 
         print(total_irr)
@@ -240,19 +234,20 @@ class APV_Evaluation:
             .TEMPERATURE_MODEL_PARAMETERS['sapm']['open_rack_glass_glass']
         tcell = pvlib.temperature.sapm_cell(
             total_irr['poa_global'],
-            temp_air=tmydata.temp_air.iloc[timeindex-1],  # SEE NOTE 1 above
-            wind_speed=tmydata.wind_speed.iloc[timeindex-1],  # See NOTE 1
+            temp_air=tmydata['temp_air'].iloc[timeindex-1],  # SEE NOTE 1 above
+            wind_speed=tmydata['wind_speed'].iloc[timeindex-1],  # See NOTE 1
             **temperature_model_parameters)
 
         # Effective Irradiation on array
         effective_irr = pvlib.pvsystem.sapm_effective_irradiance(
             total_irr['poa_direct'], total_irr['poa_diffuse'],
-            air_mass_abs, aoi, pv_module)
+            air_mass_abs, aoi, self.APV_SystSettings.moduleSpecs)
 
         print('effective Irradiation:\n', effective_irr)
 
         # Energy generated
-        dc = pvlib.pvsystem.sapm(effective_irr, tcell, pv_module)
+        dc = pvlib.pvsystem.sapm(
+            effective_irr, tcell, self.APV_SystSettings.moduleSpecs)
         total_energy = dc.sum()
         # TODO define inverter
         # ac = pvlib.inverter.sandia(dc['v_mp'], dc['p_mp'], inverter)
@@ -283,17 +278,18 @@ class APV_Evaluation:
             if file.endswith(".csv"):
                 epw_csv = os.path.join(
                     UserPaths.bifacial_radiance_files_folder, 'EPWs/', file)
-        self.irrad_data = pd.read_csv(
+        self.irrad_data: pd.DataFrame = pd.read_csv(
             epw_csv, sep=' ')
         self.irrad_data.columns = ['ghi', 'dhi']
-        self.irrad_data['dni'] = self.irrad_data.ghi - self.irrad_data.dhi
+        self.irrad_data['dni'] = self.irrad_data['ghi']-self.irrad_data['dhi']
         print(self.irrad_data.head(10))
         # Overwrite irradiation data only with ADS data
         if SimSettings.irradiance_data_source == 'ADS_satellite':
 
             self.irrad_data['ghi'] = self.weatherData.df_irradiance_tmy['GHI']
             self.irrad_data['dhi'] = self.weatherData.df_irradiance_tmy['DHI']
-            self.irrad_data['dni'] = self.irrad_data['ghi'] - self.irrad_data['dhi']
+            self.irrad_data['dni'] = self.irrad_data['ghi'] \
+                - self.irrad_data['dhi']
 
     def cumulate_gendaylit_results(
             self,
@@ -339,7 +335,7 @@ class APV_Evaluation:
 
     @staticmethod
     def monthly_avg_std(
-        data, column, group_by
+        data: pd.DataFrame, column, group_by
     ):
         """From appended data, creates a dataframe of average and std of
         each month
@@ -380,24 +376,25 @@ class APV_Evaluation:
 
     def add_shadowdepth(self, df, SimSettings: Simulation, cumulative=False):
         """Shadow Depth is loss of incident solar energy in comparison
-        with a non intersected irradiation; if 90% of irradiation available after
-        being intersected by objects then the shadow depth is 10% [1][2].
+        with a non intersected irradiation; if 90% of irradiation available
+        after being intersected by objects then the shadow depth is 10% [1][2].
 
         [1] Miskin, Caleb K.; Li, Yiru; Perna, Allison; Ellis, Ryan G.; Grubbs,
         Elizabeth K.; Bermel, Peter; Agrawal, Rakesh (2019): Sustainable
         co-production of food and solar power to relax land-use constraints. In
         Nat Sustain 2 (10), pp. 972–980. DOI: 10.1038/s41893-019-0388-x.
 
-        [2] Perna, Allison; Grubbs, Elizabeth K.; Agrawal, Rakesh; Bermel, Peter
-        (2019): Design Considerations for Agrophotovoltaic Systems: Maintaining PV
-        Area with Increased Crop Yield. DOI: 10.1109/PVSC40753.2019.8981324
+        [2] Perna, Allison; Grubbs, Elizabeth K.; Agrawal, Rakesh; Bermel,
+        Peter (2019): Design Considerations for Agrophotovoltaic Systems:
+        Maintaining PV Area with Increased Crop Yield.
+        DOI: 10.1109/PVSC40753.2019.8981324
 
         Args:
             df (DataFrame): The DataFrame with W.m^-2 values
             SimSettings : self.SimSettings should be given.
 
-            cumulative (bool, optional): used only if cumulative data were used.
-            Gencumsky turns this automaticaly to True. Defaults to False.
+            cumulative (bool, optional): used only if cumulative data were
+            used. Gencumsky turns this automaticaly to True. Defaults to False.
 
         Returns:
             [type]: [description]
@@ -409,14 +406,16 @@ class APV_Evaluation:
             df['ShadowDepth'] = 100 - ((df['Wm2']/self.weatherData.ghi)*100)
 
         elif SimSettings.sky_gen_mode == 'gencumsky' or cumulative:
-            if SimSettings.use_typical_day_per_month_for_shadow_depth_calculation:
+            if SimSettings.use_typDay_perMonth_for_shadowDepthCalculation:
                 month = int(SimSettings.sim_date_time.split('-')[0])
-                cumulative_GHI = self.weatherData.df_irradiance_typ_day_per_month.loc[
-                    (month), 'ghi_Whm-2'].sum()
+                cumulative_GHI = \
+                    self.weatherData.df_irradiance_typ_day_per_month.loc[
+                        (month), 'ghi_Whm-2'].sum()
             else:
                 cumulative_GHI = self.weatherData.df_irradiance_tmy.loc[
                     simDT.startdt_utc:simDT.enddt_utc,
-                    # +1 is not needed for inclusive end with .loc, only with .iloc
+                    # +1 is not needed for inclusive end with .loc,
+                    # only with .iloc
                     'ghi_Wm-2'].sum()
 
             df['ShadowDepth_cum'] = 100 - ((df['Whm2']/cumulative_GHI)*100)
@@ -429,12 +428,14 @@ class APV_Evaluation:
         if not cumulative:
 
             if cm_unit == 'radiation':
-                unit_parameters = {'z': 'Wm2', 'colormap': 'inferno',
-                                   'z_label': 'Irradiance on Ground [W m$^{-2}$]'}
+                unit_parameters = {
+                    'z': 'Wm2', 'colormap': 'inferno',
+                    'z_label': 'Irradiance on Ground [W m$^{-2}$]'}
 
             elif cm_unit == 'shadow_depth':
-                unit_parameters = {'z': 'ShadowDepth',  'colormap': 'viridis_r',
-                                   'z_label': 'shadow_depth [%]'}
+                unit_parameters = {
+                    'z': 'ShadowDepth',  'colormap': 'viridis_r',
+                    'z_label': 'shadow_depth [%]'}
 
             elif cm_unit == 'PAR':
                 unit_parameters = {
@@ -448,21 +449,24 @@ class APV_Evaluation:
             if cm_unit == 'radiation':
                 unit_parameters = {
                     'z': 'Whm2',  'colormap': 'inferno',
-                    'z_label': 'Cumulative Irradiation on Ground [Wh m$^{-2}$]'}
+                    'z_label': 'Cumulative Irradiation on Ground [Wh m$^{-2}$]'
+                }
 
             elif cm_unit == 'shadow_depth':
-                unit_parameters = {'z': 'ShadowDepth_cum',  'colormap': 'viridis_r',
-                                   'z_label': 'Cumulative Shadow Depth [%]'}
+                unit_parameters = {
+                    'z': 'ShadowDepth_cum', 'colormap': 'viridis_r',
+                    'z_label': 'Cumulative Shadow Depth [%]'}
 
             elif cm_unit == 'PAR':  # TODO unit changes also to *h ?
                 unit_parameters = {
                     'z': 'PARGround_cum', 'colormap': 'YlOrBr',
-                    'z_label': 'Cumulative PAR [μmol quanta.m$^{-2}\cdot s^{-1}$]'}
+                    'z_label':
+                    r'Cumulative PAR [μmol quanta.m$^{-2}\cdot s^{-1}$]'}
 
             elif cm_unit == 'DLI':
                 unit_parameters = {
                     'z': 'DLI', 'colormap': 'YlOrBr',
-                    'z_label': 'DLI [mol quanta.m$^{-2}\cdot day^{-1}$]'}
+                    'z_label': r'DLI [mol quanta.m$^{-2}\cdot day^{-1}$]'}
             else:
                 print('cm_unit has to be radiation, shadow_depth or PAR')
         return unit_parameters
