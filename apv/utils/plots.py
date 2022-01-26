@@ -4,6 +4,8 @@ import pandas as pd
 from pandas.core.frame import DataFrame
 import seaborn as sns
 import joypy
+import apv
+from scipy import stats
 
 
 def plot_heatmap(
@@ -193,6 +195,80 @@ def Ridge_plot(data, seperate_by='Month', column='ShadowDepth_cum',
     ax.plot([x1, x2], [5, 15], color='b', linestyle='-', linewidth=2)
     # ax.plot([20, 20], [0, 20])
     return """
+
+
+def comparing_plot_sns(
+        df: pd.Series, x: str, y: str, unit=' [-]', z='none',
+        scatter_alpha=0.4, scatter_size=0.1,
+        xy_min='default', xy_max='default'):
+
+    df = df.dropna()
+    if xy_max == 'default':
+        xy_max = max(df[x].max(), df[y].max())
+    else:
+        xy_max = xy_max
+
+    if xy_min == 'default':
+        xy_min = min(df[x].min(), df[y].min())
+    else:
+        xy_min = xy_min
+
+    # linear regression #############
+    slope, intercept, r, p_value, std_err = stats.linregress(df[x], df[y])
+
+    # plotting ##############
+    sns.set_theme(style='darkgrid')
+    sns.set_context(
+        {'font.family': 'STIXGeneral',
+         'mathtext.fontset': 'stix',
+         'font.size': 12})
+    # set up joint grid data
+    g = sns.JointGrid(data=df, x=x, y=y, size=5)
+
+    # add 45° reference line
+    g.ax_joint.plot(
+        (xy_min, xy_max), (xy_min, xy_max), 'w', linewidth=1, zorder=1)
+    # add reg plot to main plot area with line_kws for customizations
+    g.plot_joint(
+        sns.regplot,
+        line_kws={'color': 'k',
+                  'alpha': 0.9,
+                  'label': ('slope: {0:.2f}, '
+                            'intercept: {1:.2f}, '
+                            'R$^2$: {2:.2f}'
+                            ).format(slope, intercept, r**2)},
+        scatter_kws={'alpha': scatter_alpha, 's': scatter_size,
+                     'zorder': 2
+                     })
+
+    # ####################################
+    # RMSE and MBE
+    mbe, rel_mbe, rmse, rel_rmse = apv.utils.evaluation.calc_RMSE_MBE(
+        df[x], df[y])
+
+    # add text annotation
+    g.ax_joint.text(
+        xy_min+0.05*xy_max, xy_max*0.95,
+        ('MBE: {0:.2f}{1}\nRMSE: {2:.2f}{1}\n'
+         'rel. MBE: {3:.2f}\nrel. RMSE: {4:.2f}\n'
+         '(rel. to (max-min)/2)'
+         ).format(mbe, unit, rmse, rel_mbe, rel_rmse),
+        horizontalalignment='left', verticalalignment='top',
+        size='medium', color='black', backgroundcolor="w",
+        fontsize=11
+        # weight='semibold'
+    )
+    # ####################################
+
+    # add histograms to top and right side of the plot
+    g.plot_marginals(sns.histplot)
+
+    # plot legend
+    g.ax_joint.legend(loc='lower right')
+    g.ax_joint.set_xlim(xy_min, xy_max)
+    g.ax_joint.set_ylim(xy_min, xy_max)
+
+    return g
 
 
 def plotStyle(

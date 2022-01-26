@@ -7,7 +7,7 @@ import pandas as pd
     sceneDict [from BR (bifacial_radiance package)]:
         tilt: panel tilt [degree]
         pitch: y-distance between two adjacent module-row-centers [m]
-        hub_height: vert. distance: ground to modules [m]
+        hub_height: vert. distance: ground to modules center (axis) [m]
         azimuth: panel face direction [degree]
         nMods: modules per row (along x in moduleDict) [-]
         nRows: number of rows [-]
@@ -184,7 +184,13 @@ class Default:
     # round up to full meters (nice numbers in heatmaps)
     round_up_field_dimensions: bool = False
 
+    # only for declined tables mounting structure:
+    add_glass_box = False
+    add_airrails = False
+
 # Other presets inheriting from Default
+
+
 class APV_Morchenich_Checkerboard(Default):
     module_form: Default.module_form = 'cell_level_checker_board'
     # set gap in std module form = 1m
@@ -251,6 +257,47 @@ class APV_Morchenich_EastWest(Default):
     ground_scan_shift_y = -Default.moduleDict['x']/2 + x_pitch
 
     enlarge_beams_for_periodic_shadows: bool = True
+
+
+class APV_Syst_InclinedTables_S_Morschenich(Default):
+
+    sceneDict = {'tilt': 20,  # 18.34,
+                 'pitch': 7.46,
+                 'hub_height': 3.8,
+                 'azimuth': 180,
+                 'nMods': 48,  # 24,
+                 'nRows': 4,
+                 }
+
+    moduleDict = {'x': 0.77,
+                  'y': 3.03,  # 0.998,
+                  'xgap': 0.11,
+                  'ygap': 0,
+                  'zgap': 0,  # 0.046,
+                  'numpanels': 1
+                  }
+
+    mountingStructureDict = {
+        'material': 'Metal_Aluminum_Anodized',
+        'post_thickness': 0.12,  # mounting structure post thickness [m]
+        'n_post_x': 11,  # number of posts along x (along row) [-]
+        'module_to_post_distance_x': 0,
+        'inner_table_post_distance_y': 1.36  # 3 posts
+    }
+
+    mounting_structure_type: Default.mounting_structure_type = \
+        'declined_tables'
+    add_airrails = True
+    scene_camera_dicts = Default.scene_camera_dicts.copy()
+    scene_camera_dicts['total'] = {'cam_pos_x': -29,   # depth
+                                   'cam_pos_y': 14,   # left / right
+                                   'cam_pos_z': 5.5,     # height
+                                   'view_direction_x': 0.9863,
+                                   'view_direction_y': -0.1567,
+                                   'view_direction_z': -0.0509,
+                                   'horizontal_view_angle': 60,  # [degree]
+                                   'vertical_view_angle': 40  # [degree]
+                                   }
 
 
 class APV_Syst_InclinedTables_Juelich(Default):

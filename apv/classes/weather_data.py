@@ -83,9 +83,8 @@ class WeatherData:
 
         self.ghi = df_irr.loc[simDT.sim_dt_utc, 'ghi_Wm-2']
         self.dhi = df_irr.loc[simDT.sim_dt_utc, 'dhi_Wm-2']
-
-        # for sky to untilted ground cos(tilt) = 1 and GHI = DNI + DHI
-        self.dni = self.ghi - self.dhi
+        self.dni = df_irr.loc[simDT.sim_dt_utc, 'dni_Wm-2']
+        # whereby for sky to untilted ground cos(tilt) = 1 and GHI = DNI + DHI
 
         # sun position
         # 30 seconds rounding error should not matter for sunposition
@@ -270,6 +269,8 @@ class WeatherData:
             self, source_file_path: Path,
             debug_mode=False) -> pd.DataFrame:
         """
+        ! will only re-calculate if file does not exist already
+
         - set index to observation end
         - add global and diffusive horizontal irradiance in W/m²
         - add Month, Day... columns to use pivot_table() later
@@ -327,18 +328,33 @@ class WeatherData:
         time_step_in_hours = time_step/60
         df.loc[:, 'ghi_Wm-2'] = df['GHI']/time_step_in_hours
         df.loc[:, 'dhi_Wm-2'] = df['DHI']/time_step_in_hours
-        df.rename(columns={'GHI': 'ghi_Whm-2'}, inplace=True)
+        df.loc[:, 'dni_Wm-2'] = df['BHI']/time_step_in_hours
+
+        # not enough RAM for this test:
+        # df.loc[:, 'dni_calced_Wm-2'] = pvlib.irradiance.dni(
+        #     df.loc[:, 'ghi_Wm-2'], df.loc[:, 'dhi_Wm-2'],
+        #     self.SimSettings.apv_location.get_solarposition(
+        #         times=df.index)
+        # )
+
+        df.rename(columns={'GHI': 'ghi_Whm-2',
+                           'DHI': 'dhi_Whm-2',
+                           'BHI': 'dni_Whm-2'
+                           },
+                  inplace=True)
 
         # this values are a power per area at the end of the observation period
 
         df.to_csv(
             downsampled_data_file_path, sep=' ',
-            columns=['ghi_Wm-2', 'dhi_Wm-2', 'ghi_Whm-2']
+            columns=['ghi_Wm-2', 'ghi_Whm-2',
+                     'dhi_Wm-2', 'dhi_Whm-2',
+                     'dni_Wm-2', 'dni_Whm-2']
         )
         df.Name = file_name
         return df
 
-    def df_irradiance_to_TMY(self, df: pd.DataFrame):
+    def df_irradiance_to_TMY(self, df: pd.DataFrame, aggfunc='mean'):
 
         # filter out 29th Feb
         mask = (df.index.is_leap_year) & (df.index.dayofyear == 60)
@@ -353,13 +369,19 @@ class WeatherData:
         df_tmy = pd.pivot_table(
             df,
             index=['month', 'day', 'hour', 'minute'],
-            values=['ghi_Wm-2', 'dhi_Wm-2', 'ghi_Whm-2'])
+            values=['ghi_Wm-2', 'ghi_Whm-2',
+                    'dhi_Wm-2', 'dhi_Whm-2',
+                    'dni_Wm-2', 'dni_Whm-2'],
+            aggfunc=aggfunc)
 
         freq = f"{self.SimSettings.time_step_in_minutes}min"
         df_tmy.index = pd.date_range(
             start="2019-01-01", periods=len(df_tmy), freq=freq, tz='utc')
 
-        df_tmy.Name = 'TMY_'+df.Name
+        aggfunc_str = ''
+        if aggfunc != 'mean':
+            aggfunc_str = aggfunc+'_'
+        df_tmy.Name = f'TMY_{aggfunc_str}'+df.Name
         tmy_file_path = user_paths.bifacial_radiance_files_folder / Path(
             'satellite_weatherData', df_tmy.Name)
 

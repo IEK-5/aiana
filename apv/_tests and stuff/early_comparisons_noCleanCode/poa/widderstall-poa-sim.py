@@ -58,7 +58,8 @@ def sim_poa(df, timezone):
     return df
 
 
-def sim_and_plot_poa_for_different_tz(df_ws, timezones: list, xy_max=1200):
+def sim_and_plot_poa_for_different_tz(df_ws,  # ws = widderstall
+                                      timezones: list, xy_max=1200):
 
     apv.tools.plots.plotStyle(
         fig_width_in_mm=220, width_to_height_ratio=1, marker_size_in_pt=1)

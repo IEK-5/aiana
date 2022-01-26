@@ -10,7 +10,7 @@ if __name__ == '__main__':
     imp.reload(apv.br_wrapper)
 
     SimSettings = apv.settings.simulation.Simulation()
-    SimSettings.sim_name = 'unit_testing'
+    SimSettings.sim_name = 'functionality'
 
     # #
     APV_SystSettings = apv_systems.SimpleSingleCheckerBoard()
@@ -42,11 +42,11 @@ if __name__ == '__main__':
     imp.reload(apv.br_wrapper)
 
     SimSettings = apv.settings.simulation.Simulation()
-    SimSettings.sim_name = 'unit_testing'
+    SimSettings.sim_name = 'c'
 
     for APV_SystSettings in [
-        apv_systems.Default(),
         apv_systems.APV_Morchenich_Checkerboard(),
+        apv_systems.Default(),
         apv_systems.APV_Morchenich_EastWest(),
         apv_systems.APV_Syst_InclinedTables_Juelich(),
         apv_systems.SimpleSingleCheckerBoard(),
@@ -63,3 +63,8 @@ if __name__ == '__main__':
         brObj.view_scene()
 
 # #
+# - simulations test (niedrige auflösung)
+
+# - plot test
+
+# - evaluation test

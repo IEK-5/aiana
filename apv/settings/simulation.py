@@ -12,6 +12,10 @@ class Simulation:
     # Spatial resolution between virtual radiation sensors
     spatial_resolution = 0.1  # [m]
 
+    sim_year: int or Literal['TMY'] = 'TMY'  # or e.g. 2020
+    # TMY = typical meterological year; here: mean data from 2005 to 2020
+    # TMY_irradiance: Literal['min', 'mean', 'max'] = 'mean'
+
     use_multi_processing = True
 
     # location
@@ -21,9 +25,6 @@ class Simulation:
 
     # time settings (as local time of the timezone defined in apv_location.tz)
     # currently only as typical meterological year
-
-    sim_year: int or Literal['TMY'] = 'TMY'  # or e.g. 2020
-    # TMY = typical meterological year; here: mean data from 2005 to 2020
 
     use_typDay_perMonth_for_shadowDepthCalculation = False
 

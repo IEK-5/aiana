@@ -29,10 +29,11 @@ https://floyd.lbl.gov/radiance/gendaylit.1.html
 
 and ads satellite returns irradiation as output
 
-irradiation = energy per area (Wh/m2)
-irradiance = power per area (W/m2)
+irradiation = energy per area (Wh/m²)
+irradiance = power per area (W/m²)
 insolation moslty = irradiation, but is a vague term, should be avoided
 
+stupid eselsbrücke: irradiation is longer as is Wh/m²
 
 source: https://www.researchgate.net/post/What-is-the-difference-between-insolation-and-solar-irradiance
 
