@@ -2,6 +2,7 @@
 '''
 # #
 import os
+import sys
 import pandas as pd
 from pathlib import Path
 import pvlib
@@ -295,7 +296,7 @@ class APV_Evaluation:
             self,
             file_folder_to_merge, merged_csv_path, SimSettings: Simulation):
 
-        # load all single hour results and append
+        # load all single results and append
         df = apv.utils.files_interface.df_from_file_or_folder(
             file_folder_to_merge, append_all_in_folder=True, index_col=0)
 
@@ -307,7 +308,7 @@ class APV_Evaluation:
             values=['Wm2', 'PARGround'],
             aggfunc='sum')
 
-        # TODO nicer way?
+        # TODO nicer way?  currently it results in two x and two y columns!
         df_merged2 = pd.pivot_table(
             df, index=['xy'],
             values=['x', 'y'],
@@ -329,7 +330,7 @@ class APV_Evaluation:
             df=df_merged, SimSettings=SimSettings, cumulative=True)
 
         df_merged.to_csv(merged_csv_path)
-        print(f'Cumulating hours completed!\n',
+        print(f'Cumulating completed!\n',
               'NOTE: Shadow_depth was recalculated for cumulative data\n')
         return df_merged
 
@@ -379,6 +380,8 @@ class APV_Evaluation:
         with a non intersected irradiation; if 90% of irradiation available
         after being intersected by objects then the shadow depth is 10% [1][2].
 
+        if clouds are considered as objects, one should compare to clearSky ghi
+
         [1] Miskin, Caleb K.; Li, Yiru; Perna, Allison; Ellis, Ryan G.; Grubbs,
         Elizabeth K.; Bermel, Peter; Agrawal, Rakesh (2019): Sustainable
         co-production of food and solar power to relax land-use constraints. In
@@ -403,72 +406,80 @@ class APV_Evaluation:
         self.weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(simDT)
 
         if SimSettings.sky_gen_mode == 'gendaylit' and not cumulative:
-            df['ShadowDepth'] = 100 - ((df['Wm2']/self.weatherData.ghi)*100)
+            # instant shadow depth
+            df['ShadowDepth'] = 100 - (
+                (df['Wm2']/self.weatherData.ghi_clearsky)*100)
 
         elif SimSettings.sky_gen_mode == 'gencumsky' or cumulative:
+            # cumulated shadow depth
             if SimSettings.use_typDay_perMonth_for_shadowDepthCalculation:
                 month = int(SimSettings.sim_date_time.split('-')[0])
                 cumulative_GHI = \
                     self.weatherData.df_irradiance_typ_day_per_month.loc[
-                        (month), 'ghi_Whm-2'].sum()
+                        (month), 'ghi_clearSky_Whm-2'].sum()
             else:
-                cumulative_GHI = self.weatherData.df_irradiance_tmy.loc[
+                cumulative_GHI = self.weatherData.df_irr.loc[
                     simDT.startdt_utc:simDT.enddt_utc,
                     # +1 is not needed for inclusive end with .loc,
                     # only with .iloc
-                    'ghi_Wm-2'].sum()
+                    'ghi_clearSky_Whm-2'].sum()
 
             df['ShadowDepth_cum'] = 100 - ((df['Whm2']/cumulative_GHI)*100)
+            print(SimSettings.TMY_irradiance_aggfunc, 'cum clearSky ghi: ',
+                  cumulative_GHI)
         return df
 
     @staticmethod
-    def get_label_and_cm_input(cm_unit, cumulative):
+    def get_label_and_cm_input(cm_unit, cumulative,
+                               df_col_limits: pd.DataFrame = None):
         """for the heatmap"""
 
-        if not cumulative:
-
-            if cm_unit == 'radiation':
-                unit_parameters = {
-                    'z': 'Wm2', 'colormap': 'inferno',
-                    'z_label': 'Irradiance on Ground [W m$^{-2}$]'}
-
-            elif cm_unit == 'shadow_depth':
-                unit_parameters = {
-                    'z': 'ShadowDepth',  'colormap': 'viridis_r',
-                    'z_label': 'shadow_depth [%]'}
-
-            elif cm_unit == 'PAR':
-                unit_parameters = {
-                    'z': 'PARGround', 'colormap': 'YlOrBr',
-                    'z_label': 'PAR [μmol quanta.m$^{-2}$.s$^{-1}$]'}
+        # #################################### #
+        if cm_unit == 'radiation':
+            input_dict = {'colormap': 'inferno'}
+            if cumulative:
+                dict_up = {'z': 'Whm2', 'z_label':
+                           'Cumulative Irradiation on Ground [Wh m$^{-2}$]'}
             else:
-                print('cm_unit has to be radiation, shadow_depth or PAR')
-
-        elif cumulative:
-
-            if cm_unit == 'radiation':
-                unit_parameters = {
-                    'z': 'Whm2',  'colormap': 'inferno',
-                    'z_label': 'Cumulative Irradiation on Ground [Wh m$^{-2}$]'
-                }
-
-            elif cm_unit == 'shadow_depth':
-                unit_parameters = {
-                    'z': 'ShadowDepth_cum', 'colormap': 'viridis_r',
-                    'z_label': 'Cumulative Shadow Depth [%]'}
-
-            elif cm_unit == 'PAR':  # TODO unit changes also to *h ?
-                unit_parameters = {
-                    'z': 'PARGround_cum', 'colormap': 'YlOrBr',
-                    'z_label':
-                    r'Cumulative PAR [μmol quanta.m$^{-2}\cdot s^{-1}$]'}
-
-            elif cm_unit == 'DLI':
-                unit_parameters = {
-                    'z': 'DLI', 'colormap': 'YlOrBr',
-                    'z_label': r'DLI [mol quanta.m$^{-2}\cdot day^{-1}$]'}
+                dict_up = {'z': 'Wm2', 'z_label':
+                           'Irradiance on Ground [W m$^{-2}$]'}
+        # #################################### #
+        elif cm_unit == 'shadow_depth':
+            input_dict = {'colormap': 'viridis_r'}
+            if cumulative:
+                dict_up = {'z': 'ShadowDepth_cum', 'z_label':
+                           'Cumulative Shadow Depth [%]'}
             else:
-                print('cm_unit has to be radiation, shadow_depth or PAR')
-        return unit_parameters
+                dict_up = {'z': 'ShadowDepth', 'z_label': 'Shadow Depth [%]'}
+        # #################################### #
+        elif cm_unit == 'PAR':  # TODO unit changes also to *h ?
+            input_dict = {'colormap': 'YlOrBr_r'}
+            if cumulative:
+                dict_up = {'z': 'PARGround_cum', 'z_label': 'Cumulative PAR'
+                           + r' [μmol quanta.m$^{-2}\cdot s^{-1}$]'}
+            else:
+                dict_up = {'z': 'PARGround', 'z_label':
+                           'PAR [μmol quanta.m$^{-2}$.s$^{-1}$]'}
+        # #################################### #
+        elif cm_unit == 'DLI':
+            input_dict = {'colormap': 'YlOrBr_r'}
+            if cumulative:
+                dict_up = {'z': 'DLI', 'z_label':
+                           r'DLI [mol quanta.m$^{-2}\cdot day^{-1}$]'}
+            else:
+                sys.exit('cm_unit = DLI is only for cumulative')
+        else:
+            sys.exit('cm_unit has to be radiation, shadow_depth, PAR or DLI')
+
+        input_dict.update(dict_up)
+
+        if df_col_limits is None:
+            input_dict['vmin'] = None
+            input_dict['vmax'] = None
+        else:
+            input_dict['vmin'] = df_col_limits.loc['min', input_dict['z']]
+            input_dict['vmax'] = df_col_limits.loc['max', input_dict['z']]
+
+        return input_dict
 
 # #

@@ -14,7 +14,10 @@ class Simulation:
 
     sim_year: int or Literal['TMY'] = 'TMY'  # or e.g. 2020
     # TMY = typical meterological year; here: mean data from 2005 to 2020
-    # TMY_irradiance: Literal['min', 'mean', 'max'] = 'mean'
+
+    TMY_irradiance_aggfunc: Literal['min', 'mean', 'max'] = 'mean'
+    # also used as aggregation function for satelite watherdata pivoting to TMY
+    # min: extreme cloudy day, max: complete could-free sunny day
 
     use_multi_processing = True
 

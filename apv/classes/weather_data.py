@@ -29,37 +29,30 @@ class WeatherData:
 
     def __init__(self, SimSettings: Simulation, debug_mode=False):
         self.SimSettings = SimSettings
+        self.debug_mode = debug_mode
         self.simDT = SimDT(SimSettings)
 
         self.credentials = self.load_API_credentials()
         self.ghi: float = None
+        self.ghi_clearsky: float = None
         self.dhi: float = None
         self.dni: float = None
         self.sunalt: float = None
         self.sunaz: float = None
 
-        # download data for longest full year time span available
-        download_file_path = self.download_insolation_data(
-            self.SimSettings.apv_location,
-            '2005-01-01/2021-01-01',
-            1  # always 1 minute, will be resampled coarser later
-        )
+        self.set_self_variables()
 
-        # datetime index
-        self.df_irradiance = self.load_and_process_insolation_data(
-            download_file_path, debug_mode
-        )
-        # make TMY data (W/m2)
-        # datetime index
-        self.df_irradiance_tmy = self.df_irradiance_to_TMY(
-            self.df_irradiance
-        )
+        if self.SimSettings.sim_year == 'TMY':
+            # sim year is set to dummy non leap year 2019,
+            # but with irradiance values averaged
 
-        # make TMY typcal day per month data (W/m2)
-        # #multi-index (month, hour...)
-        self.df_irradiance_typ_day_per_month = self.typical_day_of_month(
-            self.df_irradiance_tmy
-        )
+            self.df_irr = self.df_irradiance_to_TMY()
+            # make TMY typcal day per month data (W/m2)
+            # #multi-index (month, hour...)
+            self.df_irradiance_typ_day_per_month = \
+                self.typical_day_of_month(self.df_irr)
+        else:
+            self.df_irr = self.load_and_process_insolation_data()
 
         self.set_dhi_dni_ghi_and_sunpos_to_simDT(self.simDT)
         # dfs:
@@ -72,18 +65,37 @@ class WeatherData:
         # x,y für gencumsky
         # x,y für die klasse für ghi, dhi at simDT
 
+    def set_self_variables(self):
+
+        self.tmy_column_names: list = [
+            'ghi_Wm-2', 'ghi_Whm-2',
+            'dhi_Wm-2', 'dhi_Whm-2',
+            'dni_Wm-2', 'dni_Whm-2',
+            'ghi_clearSky_Wm-2', 'ghi_clearSky_Whm-2'
+        ]
+        # download data for longest full year time span available
+        self.download_file_path = self.download_insolation_data(
+            self.SimSettings.apv_location,
+            '2005-01-01/2022-01-01',
+            1  # always 1 minute, will be resampled coarser later
+        )
+
+        # resampled data file path
+        self.time_step = self.SimSettings.time_step_in_minutes
+        self.fn_resampled = str(self.download_file_path).split(
+            '\\')[-1].replace('1minute', f'{self.time_step}minute')
+        self.weather_folder_path = user_paths.bifacial_radiance_files_folder \
+            / Path('satellite_weatherData')
+        self.resampled_insolation_data_path: Path = \
+            self.weather_folder_path/self.fn_resampled
+
     def set_dhi_dni_ghi_and_sunpos_to_simDT(self, simDT: SimDT):
 
-        if self.SimSettings.sim_year == 'TMY':
-            # sim year is set to dummy non leap year 2019,
-            # but with irradiance values averaged
-            df_irr = self.df_irradiance_tmy
-        else:
-            df_irr = self.df_irradiance
-
-        self.ghi = df_irr.loc[simDT.sim_dt_utc, 'ghi_Wm-2']
-        self.dhi = df_irr.loc[simDT.sim_dt_utc, 'dhi_Wm-2']
-        self.dni = df_irr.loc[simDT.sim_dt_utc, 'dni_Wm-2']
+        self.ghi = self.df_irr.loc[simDT.sim_dt_utc, 'ghi_Wm-2']
+        self.dhi = self.df_irr.loc[simDT.sim_dt_utc, 'dhi_Wm-2']
+        self.dni = self.df_irr.loc[simDT.sim_dt_utc, 'dni_Wm-2']
+        self.ghi_clearsky = self.df_irr.loc[
+            simDT.sim_dt_utc, 'ghi_clearSky_Wm-2']
         # whereby for sky to untilted ground cos(tilt) = 1 and GHI = DNI + DHI
 
         # sun position
@@ -265,11 +277,10 @@ class WeatherData:
     def wind_and_T_data_to_TMY(self, source_file_path):
         return
 
-    def load_and_process_insolation_data(
-            self, source_file_path: Path,
-            debug_mode=False) -> pd.DataFrame:
+    def load_and_process_insolation_data(self) -> pd.DataFrame:
         """
-        ! will only re-calculate if file does not exist already
+        ! will only re-calculate if file does not exist already or
+        debug_mode=True !
 
         - set index to observation end
         - add global and diffusive horizontal irradiance in W/m²
@@ -281,28 +292,25 @@ class WeatherData:
 
         ...
         """
-        time_step = self.SimSettings.time_step_in_minutes
-        file_name = str(source_file_path).split('\\')[-1].replace(
-            '1minute', f'{time_step}minute')
-        folder_path = user_paths.bifacial_radiance_files_folder / Path(
-            'satellite_weatherData')
-
-        downsampled_data_file_path = folder_path/file_name
-
-        if downsampled_data_file_path.exists() and not debug_mode:
+        # check if already there:
+        if self.resampled_insolation_data_path.exists()\
+                and not self.debug_mode:
             df = apv.utils.files_interface.df_from_file_or_folder(
-                downsampled_data_file_path, delimiter=' ', index_col=0)
+                self.resampled_insolation_data_path, delimiter=' ', index_col=0
+            )
             df.set_index(
                 pd.to_datetime(df.index, utc=True),  # "right-labeled" as inBR
                 inplace=True
             )
-            df.Name = file_name
+            df.Name = self.fn_resampled
             return df
 
         # else:
-        apv.utils.files_interface.make_dirs_if_not_there(folder_path)
-        print(f'reading {source_file_path}...')
-        df: pd.DataFrame = pd.read_csv(source_file_path, skiprows=42, sep=';')
+        apv.utils.files_interface.make_dirs_if_not_there(
+            self.weather_folder_path)
+        print(f'reading {self.download_file_path}...')
+        df: pd.DataFrame = pd.read_csv(
+            self.download_file_path, skiprows=42, sep=';')
 
         df.drop(columns=['TOA', 'Reliability'], inplace=True)
 
@@ -314,21 +322,23 @@ class WeatherData:
             inplace=True
         )
 
-        if time_step > 1:
+        if self.time_step > 1:
             # downsample_1min_insolation_data
-            print(f'coarsening time resolution from 1 to {time_step} minutes.')
+            print(f'coarsening time resolution from 1 '
+                  f'to {self.time_step} minutes.')
             df = df.resample(
-                f'{time_step}min',
+                f'{self.time_step}min',
                 closed='right',
                 label='right',
                 kind='timestamp'
             ).sum()
 
         # GHI and DHI are in Wh/m²
-        time_step_in_hours = time_step/60
+        time_step_in_hours = self.time_step/60
         df.loc[:, 'ghi_Wm-2'] = df['GHI']/time_step_in_hours
         df.loc[:, 'dhi_Wm-2'] = df['DHI']/time_step_in_hours
         df.loc[:, 'dni_Wm-2'] = df['BHI']/time_step_in_hours
+        df.loc[:, 'ghi_clearSky_Wm-2'] = df['Clear sky GHI']/time_step_in_hours
 
         # not enough RAM for this test:
         # df.loc[:, 'dni_calced_Wm-2'] = pvlib.irradiance.dni(
@@ -339,55 +349,54 @@ class WeatherData:
 
         df.rename(columns={'GHI': 'ghi_Whm-2',
                            'DHI': 'dhi_Whm-2',
-                           'BHI': 'dni_Whm-2'
+                           'BHI': 'dni_Whm-2',
+                           'Clear sky GHI': 'ghi_clearSky_Whm-2'
                            },
                   inplace=True)
 
         # this values are a power per area at the end of the observation period
 
-        df.to_csv(
-            downsampled_data_file_path, sep=' ',
-            columns=['ghi_Wm-2', 'ghi_Whm-2',
-                     'dhi_Wm-2', 'dhi_Whm-2',
-                     'dni_Wm-2', 'dni_Whm-2']
-        )
-        df.Name = file_name
+        df.to_csv(self.resampled_insolation_data_path, sep=' ',
+                  columns=self.tmy_column_names)
+        df.Name = self.fn_resampled
         return df
 
-    def df_irradiance_to_TMY(self, df: pd.DataFrame, aggfunc='mean'):
+    def df_irradiance_to_TMY(self):
 
-        # filter out 29th Feb
-        mask = (df.index.is_leap_year) & (df.index.dayofyear == 60)
-        df.loc[:] = df[~mask]
-        # .loc[:] prevents creating new df object, which would loose .Name
-
-        df.loc[:, 'month'] = df.index.month
-        df.loc[:, 'day'] = df.index.day
-        df.loc[:, 'hour'] = df.index.hour
-        df.loc[:, 'minute'] = df.index.minute
-
-        df_tmy = pd.pivot_table(
-            df,
-            index=['month', 'day', 'hour', 'minute'],
-            values=['ghi_Wm-2', 'ghi_Whm-2',
-                    'dhi_Wm-2', 'dhi_Whm-2',
-                    'dni_Wm-2', 'dni_Whm-2'],
-            aggfunc=aggfunc)
-
-        freq = f"{self.SimSettings.time_step_in_minutes}min"
-        df_tmy.index = pd.date_range(
-            start="2019-01-01", periods=len(df_tmy), freq=freq, tz='utc')
-
-        aggfunc_str = ''
-        if aggfunc != 'mean':
-            aggfunc_str = aggfunc+'_'
-        df_tmy.Name = f'TMY_{aggfunc_str}'+df.Name
+        aggfunc = self.SimSettings.TMY_irradiance_aggfunc
+        df_tmy_name: str = f'TMY_{aggfunc}_{self.fn_resampled}'
         tmy_file_path = user_paths.bifacial_radiance_files_folder / Path(
-            'satellite_weatherData', df_tmy.Name)
+            'satellite_weatherData', df_tmy_name)
 
-        df_tmy.to_csv(tmy_file_path, index=False, header=False, sep=' ',
-                      columns=['ghi_Wm-2', 'dhi_Wm-2', 'ghi_Whm-2']
-                      )
+        if tmy_file_path.exists() and not self.debug_mode:
+            df_tmy = apv.utils.files_interface.df_from_file_or_folder(
+                tmy_file_path, delimiter=' ', index_col=0)
+            df_tmy = df_tmy.set_index(pd.to_datetime(df_tmy.index, utc=True))
+        else:
+            df = self.load_and_process_insolation_data()
+            # filter out 29th Feb
+            mask = (df.index.is_leap_year) & (df.index.dayofyear == 60)
+            df.loc[:] = df[~mask]
+            # .loc[:] prevents creating new df object, which would loose .Name
+
+            df.loc[:, 'month'] = df.index.month
+            df.loc[:, 'day'] = df.index.day
+            df.loc[:, 'hour'] = df.index.hour
+            df.loc[:, 'minute'] = df.index.minute
+
+            df_tmy = pd.pivot_table(
+                df,
+                index=['month', 'day', 'hour', 'minute'],
+                values=self.tmy_column_names,
+                aggfunc=self.SimSettings.TMY_irradiance_aggfunc)
+
+            freq = f"{self.SimSettings.time_step_in_minutes}min"
+            df_tmy.index = pd.date_range(
+                start="2019-01-01", periods=len(df_tmy), freq=freq, tz='utc')
+
+            df_tmy.to_csv(tmy_file_path, sep=' ')
+
+        df_tmy.Name = df_tmy_name
         return df_tmy
 
     """
@@ -423,7 +432,10 @@ class WeatherData:
         return df_tmy """
 
     def typical_day_of_month(self, df):
-        """Extract from TMY irradiation data 3 typical representative days
+        """
+        df is meant for self.df_irradiance_tmy
+
+        Extract from TMY irradiation data 3 typical representative days
         of each month: day 1 is when daily GHI itegral is minimum, day 2 is
         when daily GHI integral is maximum, and day 3 is the day that is most
         close to the daily average GHI of the month.
@@ -440,8 +452,9 @@ class WeatherData:
         df_typ_day_per_month = pd.pivot_table(
             df,
             index=['month', 'hour', 'minute'],  # no day ->all days are grouped
-            values=['ghi_Wm-2', 'dhi_Wm-2', 'ghi_Whm-2'],
-            aggfunc='mean')
+            values=self.tmy_column_names,
+            aggfunc='mean')  # mean from the TMY made
+        # itself with aggfunc min or mean or max
 
         return df_typ_day_per_month
 

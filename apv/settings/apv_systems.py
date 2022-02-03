@@ -262,7 +262,7 @@ class APV_Morchenich_EastWest(Default):
 class APV_Syst_InclinedTables_S_Morschenich(Default):
 
     sceneDict = {'tilt': 20,  # 18.34,
-                 'pitch': 7.46,
+                 'pitch': 7.32,  # 7.46 was a mistake for first 3 sim
                  'hub_height': 3.8,
                  'azimuth': 180,
                  'nMods': 48,  # 24,
@@ -282,7 +282,7 @@ class APV_Syst_InclinedTables_S_Morschenich(Default):
         'post_thickness': 0.12,  # mounting structure post thickness [m]
         'n_post_x': 11,  # number of posts along x (along row) [-]
         'module_to_post_distance_x': 0,
-        'inner_table_post_distance_y': 1.36  # 3 posts
+        'inner_table_post_distance_y': 1.35  # 3 posts, (2.82-0.12)/2
     }
 
     mounting_structure_type: Default.mounting_structure_type = \

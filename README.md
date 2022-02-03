@@ -114,3 +114,13 @@ replace this function in bifacial_radiance.main.py:
             self._saveResults(frontDict, backDict, 'irr_%s.csv' % (name))
 
         return frontDict, backDict
+
+
+
+and replace
+    cmd = "rtrace -i -ab 2 -aa .1 -ar 256 -ad 2048 -as 256 -h -oovs " + octfile
+with
+    cmd = "rtrace -i -ab 2 -aa .1 -ar 256 -ad 1024 -as 256 -h -oovs " + octfile
+
+in main.py (also in BR)
+(due to http://designbuilder.co.uk/helpv3.0/Content/Daylighting%20Calculation%20Options.htm#Ambient4)

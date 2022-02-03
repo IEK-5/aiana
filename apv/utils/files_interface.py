@@ -11,6 +11,8 @@ import os as os
 from pathlib import Path
 import xarray as xr
 import apv
+from apv.settings.simulation import Simulation as Simsettings
+from apv.settings.apv_systems import Default as SystSettings
 path_main = apv.settings.user_paths.root
 
 
@@ -164,3 +166,24 @@ def save_fig(
                     dpi=dpi, transparent=transparent)
         print('saved fig ' + file_path)
     return
+
+
+def create_results_folder_path(
+        simsettings: Simsettings, APV_SystSettings: SystSettings):
+
+    results_folder_path: Path = apv.settings.user_paths.results_folder / Path(
+        simsettings.sim_name,
+        APV_SystSettings.module_form
+        + f'_res-{simsettings.spatial_resolution}m'
+        + f'_step-{simsettings.time_step_in_minutes}min'
+        + f'_TMY_aggfunc-{simsettings.TMY_irradiance_aggfunc}'
+    )
+    return results_folder_path
+
+
+def get_min_max_of_cols_in_several_csv_files(csv_files: list):
+
+    dfs = (df_from_file_or_folder(file) for file in csv_files)
+    df = pd.concat(dfs)
+
+    return df.agg([min, max])

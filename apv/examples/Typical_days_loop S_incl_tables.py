@@ -1,14 +1,23 @@
 # #
+# 1. max
+# 2. ost mean
+# 3. north mean,
+# 4. south mean
+# #
+"""dont do test code outside of if __name__=='__main__'
+or it will make problems with multi processing
+"""
 if __name__ == '__main__':
+    from apv.utils import files_interface
+    import pytictoc
     from pathlib import Path
-    import pandas as pd
     import importlib as imp
     import apv
-    from apv.classes.weather_data import WeatherData
+    import os
+    from typing import Literal
     from apv.classes.sim_datetime import SimDT
     from apv.classes.geometries_handler import GeometriesHandler
-    from apv.settings.apv_systems import Default as SystSettings
-    from apv.settings import user_paths
+    import apv.utils.files_interface as fi
 
     imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.settings.apv_systems)
@@ -16,13 +25,21 @@ if __name__ == '__main__':
 
     # ############ SIM SETTINGS #############
     SimSettings = apv.settings.simulation.Simulation()
-    # SimSettings.sim_name = 'APV_Morschenich_only_one_neighborset'
-    SimSettings.sim_name = 'APV_Morschenich_S_inclinedTables'
+    # SimSettings.sim_name = 'APV_Morschenich_S_inclinedTables'
+
+    position: Literal['north', 'center', 'south', 'east'] = 'center'
+    plots_shifts_xy = {'north': [0, 1], 'center': [0, 0],
+                       'south': [0, -1], 'east': [3, 0]}
+
+    SimSettings.sim_name = f'APV_Morschenich_S_inclinedTables'
+
     SimSettings.use_typDay_perMonth_for_shadowDepthCalculation = True
     SimSettings.spatial_resolution = 0.1
     SimSettings.time_step_in_minutes = 5  # 6
     # SimSettings.use_multi_processing = False
     SimSettings.sim_date_time = '06-15_7:00'
+    SimSettings.TMY_irradiance_aggfunc = 'mean'
+    # only for view_scene, will be overwritten by for loops
     #########################################
 
     # ### APV_SystSettings:  ####
@@ -32,85 +49,81 @@ if __name__ == '__main__':
     # APV_SystSettings.module_form = 'none'
 
     # ================== comment this out fo real simulation ==================
-    APV_SystSettings.add_groundScanArea_as_object_to_scene = True
+    # APV_SystSettings.add_groundScanArea_as_object_to_scene = True
     # ================== =============== ================== ===============
 
     APV_SystSettings.add_airrails = True
     x_reduction = -((APV_SystSettings.moduleDict['x']
                      + APV_SystSettings.moduleDict['xgap'])
-                    * (APV_SystSettings.sceneDict['nMods']))/2+1  # =1m
+                    * (APV_SystSettings.sceneDict['nMods']))/2+2  # =2*2m=4m
     y_reduction = (-APV_SystSettings.sceneDict['pitch']
-                   - APV_SystSettings.moduleDict['y'])
+                   - APV_SystSettings.moduleDict['y']/2)
     APV_SystSettings.ground_scan_margin_x = x_reduction  # -3
     APV_SystSettings.ground_scan_margin_y = y_reduction  # -32
-    APV_SystSettings.ground_scan_shift_x = 0  # -32
-    APV_SystSettings.ground_scan_shift_y = 0  # APV_SystSettings.sceneDict['pitch']/2  # -32
+    APV_SystSettings.ground_scan_shift_x = 2 + plots_shifts_xy[position][0]*4  # -32
+    APV_SystSettings.ground_scan_shift_y = \
+        APV_SystSettings.sceneDict['pitch'] * plots_shifts_xy[position][1]\
+        + APV_SystSettings.mountingStructureDict['inner_table_post_distance_y']
 
-    brObj = apv.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings)
-    brObj.setup_br()
     # #
+    brObj = apv.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings,
+                                      # debug_mode=True
+                                      )
+    brObj.setup_br()
 
-    brObj.view_scene(  view_name='top_down', view_type='parallel'
-    )
+    # #
+    brObj.view_scene(view_name='top_down', view_type='parallel'
+                     )
 # #
 if __name__ == '__main__':
     ###########################################################################
     setup_br_and_simulate = True
     ###########################################################################
-    months = [6]  # range(1, 13)
-    hours = range(0, 24, 1)  #
-    minutes = range(0, 60, SimSettings.time_step_in_minutes)  # [0]  #
-    appended_data = []
+    months = [6]
+    # months = range(1, 13)
+    # hours = [19]
+    hours = range(19, 24, 1)
+    # minutes = [10]
+    minutes = range(0, 60, SimSettings.time_step_in_minutes)
     # minute 60 is and has to be exclusive
 
-    weatherData = WeatherData(SimSettings)
-    df_typic_day_of_month = weatherData.typical_day_of_month(
-        weatherData.df_irradiance)
+    sun_shines = False  # (for ghi filter (no relation to cloudy days))
 
-    brObj = apv.br_wrapper.BR_Wrapper(
-        SimSettings, APV_SystSettings,
-        weatherData=weatherData)
-
-    sun_shines = False  # (for ghi filter (also for cloudy days))
     for month in months:
         day = 15  # (int(df_all['day_nearest_to_mean'].loc[month]))
 
-        cumulative_GHI = weatherData.df_irradiance_typ_day_per_month.loc[
-            (month), 'ghi_Whm-2'].sum()
+        df_tdm = brObj.weatherData.df_irradiance_typ_day_per_month
+        cumulative_GHI = df_tdm.loc[(month), 'ghi_Whm-2'].sum()
 
-        subfolder: Path = Path(
-            SimSettings.sim_name,
-            APV_SystSettings.module_form
-            + '_res-' + str(SimSettings.spatial_resolution)+'m'
-            + '_step-' + str(SimSettings.time_step_in_minutes)+'min',
-            str(month)
-        )
-        brObj.results_subfolder = user_paths.results_folder / subfolder
+        brObj.results_subfolder = files_interface.create_results_folder_path(
+            SimSettings, APV_SystSettings
+        ) / f'month-{month}_{position}-position'
 
         for hour in hours:
             geomObj = GeometriesHandler(APV_SystSettings)
             # TODO syst cloning should be called also in geometries handler
             # and not in br_wrapper
-            for minute in minutes:
-                # for optical reasons only:
-                min_str = str(minute)
-                if minute < 10:
-                    min_str = "0"+min_str
 
-                SimSettings.sim_date_time = f'{month}-{day}_{hour}:{min_str}'
+            for minute in minutes:
+                # to measure elapsed time:
+                tictoc = pytictoc.TicToc()
+                tictoc.tic()
+                # set time with leading zeros for a correct file order
+                SimSettings.sim_date_time = \
+                    f'{month:02}-{day}_{hour:02}:{minute:02}'
                 simDT = SimDT(SimSettings)
 
+                # set sunpos
+                brObj.weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(simDT)
+
+                # get ghi, dhi, dni
                 hour_utc = simDT.sim_dt_utc.hour
-                ghi = df_typic_day_of_month['ghi_Wm-2'].loc[
-                    month, hour_utc, minute]
-                dhi = df_typic_day_of_month['dhi_Wm-2'].loc[
-                    month, hour_utc, minute]
-
+                ghi = df_tdm.loc[(month, hour_utc, minute), 'ghi_Wm-2']
+                dhi = df_tdm.loc[(month, hour_utc, minute), 'dhi_Wm-2']
                 dni = ghi-dhi  # (as ground has tilt 0)
-                weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(simDT)
 
-                if (weatherData.sunalt < 0):
-                    print(f'Sun alitude is negative ({weatherData.sunalt}).')
+                if (brObj.weatherData.sunalt < 0):
+                    print(f'Sun alitude < 0 ({brObj.weatherData.sunalt}).')
                 # elif (ghi < cumulative_GHI * 0.02) or (ghi > 50):
                 elif ghi < min(cumulative_GHI * 0.02, 50):
 
@@ -134,69 +147,97 @@ if __name__ == '__main__':
                         ########
                         for cm_unit in ['radiation', 'shadow_depth']:
                             brObj.plot_ground_heatmap(cm_unit=cm_unit)
+                tictoc.toc()
 
-        results_subfolder_cum = user_paths.results_folder / Path(
-            subfolder.parent, 'cumulative_hours_in_typ_day_of_month')
+# #
+# ======================================================
+# cumulate
+# ======================================================
+
+# #
+if __name__ == '__main__':
+    months = [6]
+    month = 6
+    for agg_func in ['min', 'mean', 'max']:  # ['min', 'mean', 'max']:  # month in months:
+
+        SimSettings.TMY_irradiance_aggfunc = agg_func
+        brObj = apv.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings,
+                                          # debug_mode=True
+                                          )
+        brObj.setup_br()
+
+        enddts = {
+            'min': '6-15_20:00', 'mean': '6-15_20:50', 'max': '6-15_21:00'}
+
+        brObj.results_subfolder = files_interface.create_results_folder_path(
+            SimSettings, APV_SystSettings
+        ) / f'month-{month}_{position}-position'
+
+        def get_date_time_str(file_name: str) -> str:
+            string_parts = file_name[:-4].replace('h', ':').split('_')
+            return f'{string_parts[2]}_{string_parts[3]}'
+
+        def set_startdt_and_enddt_based_on_files(folder_path: Path):
+            """for plot title"""
+            file_list = os.listdir(str(folder_path))
+            brObj.SimSettings.startdt = get_date_time_str(file_list[0])
+            # TODO add zero to single digit hours in file name
+            # get_date_time_str(file_list[-1]) + time_step_in_minutes...
+            brObj.SimSettings.enddt = enddts[agg_func]
+
+        set_startdt_and_enddt_based_on_files(brObj.results_subfolder / 'data')
+
+        ###########################################################################
+        appended_data = []
+
+        results_subfolder_cum = brObj.results_subfolder / 'cumulative'
 
         apv.utils.files_interface.make_dirs_if_not_there(results_subfolder_cum)
         cum_file_name = 'ground_results' + '_cumulative_' + str(month)
         cum_csv_path = results_subfolder_cum / Path(cum_file_name + '.csv')
 
-        # # TODO was muss wirklich neu gesetzt werden?
-        # # oder arbeiten wir lieber mit zwangsübergabe ohne default settings?
+        # TODO was muss wirklich neu gesetzt werden?
+        # oder arbeiten wir lieber mit zwangsübergabe ohne default settings?
         # brObj.evalObj.SimSettings = SimSettings  # wahrscheinlich unnötig
 
-        # df_merged = brObj.evalObj.cumulate_gendaylit_results(
-        #     brObj.results_subfolder / Path('data'), cum_csv_path, SimSettings
-        # )
-        df_merged = apv.utils.files_interface.df_from_file_or_folder(
-            cum_csv_path)
-        # for cm_unit in ['radiation', 'shadow_depth', 'DLI']:
-        #     brObj.plot_ground_heatmap(
-        #         df_merged, file_name=cum_file_name,
-        #         destination_folder=results_subfolder_cum,
-        #         cumulative=True,
-        #         cm_unit=cm_unit
-        #     )
+        #
+        if cum_csv_path.exists():  # and not debug_mode...
+            df_merged = apv.utils.files_interface.df_from_file_or_folder(
+                cum_csv_path)
+        else:  # cummulate:
+            # testing same times for ghi clear sky cum
+            SimSettings.startdt = '6-15_06:15'  # TODO why does this have no effect?!
+            SimSettings.enddt = '6-15_21:00'
+            df_merged = brObj.evalObj.cumulate_gendaylit_results(
+                brObj.results_subfolder / Path('data'),
+                cum_csv_path, SimSettings
+            )
 
-        # Merge monthly data for comparison plot plotting
-        df_merged['Month'] = month
-        appended_data.append(df_merged)
-    # Concatenate all monthly data
-    appended_data = pd.concat(appended_data)
-    # #
-    print(appended_data)
-    # #
-    # Create DataFrame of monthly average and std
-    avg_std_df = brObj.evalObj.monthly_avg_std(data=appended_data,
-                                               column='ShadowDepth_cum',
-                                               group_by='Month')
+        # min, max for equal color maps
+        csv_files = []
+        for agg_func2 in ['min', 'mean', 'max']:
+            csv_files += [str(cum_csv_path).replace(
+                f'aggfunc-{agg_func}', f'aggfunc-{agg_func2}')]
+        df_limits = fi.get_min_max_of_cols_in_several_csv_files(
+            csv_files).round(1)
 
-    print(avg_std_df)
-    # Create Ridge Plot
-    # #
-    fig, axes = apv.utils.plots.Ridge_plot(data=appended_data,
-                                           seperate_by='Month',
-                                           column='ShadowDepth_cum')
-    apv.utils.files_interface.save_fig(
-        fig=fig,
-        file_name=f'Ridgeplot_ShadowDepth2_{APV_SystSettings.module_form}_' +
-        f'{SimSettings.spatial_resolution}m_' +
-        f'{SimSettings.time_step_in_minutes}_min',
-        parent_folder_path=results_subfolder_cum.parent)
+        # plot
+        for cm_unit in ['shadow_depth',
+                        'radiation', 'DLI'
+                        ]:
+            brObj.plot_ground_heatmap(
+                df_merged, file_name=cum_file_name,
+                destination_folder=results_subfolder_cum,
+                cumulative=True,
+                cm_unit=cm_unit
+            )
+
+            brObj.plot_ground_heatmap(
+                df_merged, file_name=cum_file_name+'_equalColLimits',
+                destination_folder=results_subfolder_cum,
+                cumulative=True,
+                cm_unit=cm_unit,
+                df_col_limits=df_limits
+            )
 
 # #
-""" for unit...
-    for month...
-        results_subfolder = user_paths.results_folder / Path(
-            SimSettings.sim_name,
-            APV_SystSettings.module_form
-            + '_res-' + str(SimSettings.spatial_resolution),
-            str(month)
-        )
-        merged_csv_path = results_subfolder / Path(
-            'ground_results' + '_cumulative_' + str(month) + '.csv')
-        df_merged = apv.utils.files_interface.df_from_file_or_folder(
-                merged_csv_path)
-        brObj.plot_ground_heatmap(
-            df_merged, file_name='cumulative', cumulative=True) """

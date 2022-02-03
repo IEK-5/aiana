@@ -6,6 +6,7 @@ to presets in settings.py
 TODO
 
 ---------------------
+# simulation  methods into new simulation class
 # module clone does not work anymore...
 
 - remove apv system settings from br wrapper and access it via geomObj
@@ -53,7 +54,10 @@ wedgeplot x-achse: y-position im field, y-achse: GHI, monat 1-12 untereinander)
 '''
 # import needed packages
 
+from apv.utils import plotting
 from apv.utils import files_interface as fi
+from apv.utils import settings_adjuster as sa
+from apv.settings import user_paths
 from apv.settings.simulation import Simulation
 from apv.settings.apv_systems import Default as SystSettings
 from apv.classes.geometries_handler import GeometriesHandler
@@ -61,24 +65,15 @@ from apv.classes.weather_data import WeatherData
 from apv.classes.APV_evaluation import APV_Evaluation
 from apv.classes.sim_datetime import SimDT
 
-import apv.settings.user_paths as user_paths
-from apv.settings import apv_systems
-import apv
+import bifacial_radiance as br
 from typing import Iterator, Literal
-from datetime import datetime
-from typing import Literal
-from datetime import datetime as dt
-import subprocess
-# from pvlib import *
 import numpy as np
 import pandas as pd
-import os
 import sys
-import pytictoc
 from pathlib import Path
 from tqdm.auto import trange
 import concurrent.futures
-import bifacial_radiance as br
+import subprocess
 
 
 # #
@@ -107,7 +102,7 @@ class BR_Wrapper:
             self,
             SimSettings: Simulation,
             APV_SystSettings: SystSettings,
-            geomObj: GeometriesHandler = None,
+            ghObj: GeometriesHandler = None,
             results_subfolder: Path = None,
             weatherData=None,
             # weather_file=None,  # to optionally skip epw download
@@ -116,23 +111,23 @@ class BR_Wrapper:
         self.SimSettings = SimSettings
         self.APV_SystSettings = APV_SystSettings
 
-        if geomObj is None:
-            self.geomObj = GeometriesHandler(APV_SystSettings, debug_mode)
+        if ghObj is None:  # for self.set_up_AnalObj_and_groundscan()
+            self.ghObj = GeometriesHandler(APV_SystSettings, debug_mode)
         else:
-            self.geomObj = geomObj
+            self.ghObj = ghObj
+
+        if weatherData is None:
+            self.weatherData = WeatherData(self.SimSettings, debug_mode)
+        else:
+            self.weatherData = weatherData
 
         self.simDT: SimDT = None
 
         self.evalObj: APV_Evaluation = APV_Evaluation(
             SimSettings=SimSettings,
             APV_SystSettings=APV_SystSettings,
-            weatherData=weatherData
+            weatherData=self.weatherData
         )
-
-        if weatherData is None:
-            self.weatherData = WeatherData(self.SimSettings)
-        else:
-            self.weatherData = weatherData
 
         self.debug_mode = debug_mode
 
@@ -155,8 +150,7 @@ class BR_Wrapper:
         self.simDT = SimDT(self.SimSettings)
         self.set_up_file_names_and_paths()
         # adjust, e.g. add cell sizes
-        self.APV_SystSettings = apv.utils.settings_adjuster.adjust_settings(
-            self.APV_SystSettings)
+        self.APV_SystSettings = sa.adjust_settings(self.APV_SystSettings)
 
         # create a bifacial_radiance object
         self.radObj = br.RadianceObj(
@@ -171,29 +165,22 @@ class BR_Wrapper:
     def set_up_file_names_and_paths(self):
 
         if self.results_subfolder is None:
-            self.results_subfolder = user_paths.results_folder / Path(
-                self.SimSettings.sim_name,
-                self.APV_SystSettings.module_form
-                + '_res-' + str(self.SimSettings.spatial_resolution)+'m'
-                + '_step-' + str(self.SimSettings.time_step_in_minutes)+'min'
-            )
-        else:
-            self.results_subfolder = self.results_subfolder
+            self.results_subfolder = fi.create_results_folder_path(
+                self.SimSettings, self.APV_SystSettings)
 
         self.file_name = self.SimSettings.sim_date_time.replace(':', 'h')
         self.oct_file_name = self.SimSettings.sim_name \
             + '_' + self.APV_SystSettings.module_form + '_' + self.file_name
         # set csv file path for saving final merged results
-        self.csv_parent_folder: Path = self.results_subfolder / Path('data')
-        self.csv_file_path: Path = self.csv_parent_folder / Path(
-            'ground_results' + '_' + self.file_name + '.csv')
+        self.csv_parent_folder: Path = self.results_subfolder / 'data'
+        self.csv_file_path: Path = self.csv_parent_folder /\
+            f'ground_results_{self.file_name}.csv'
 
         # check folder existence
         fi.make_dirs_if_not_there([user_paths.bifacial_radiance_files_folder,
                                    user_paths.data_download_folder,
                                    user_paths.results_folder,
-                                   self.results_subfolder,
-                                   self.csv_parent_folder]
+                                   self.results_subfolder]
                                   )
 
     def create_sky(self, dni_single=None, dhi_single=None, tracked=False):
@@ -297,7 +284,8 @@ class BR_Wrapper:
             # self.SimSettings.ground_albedo,  # TODO
             # albedo hängt eigentlich auch von strahlungswinkel
             # und diffusen/direktem licht anteil ab
-            # https://curry.eas.gatech.edu/Courses/6140/ency/Chapter9/Ency_Atmos/Reflectance_Albedo_Surface.pdf
+            # https://curry.eas.gatech.edu/Courses/6140/ency/Chapter9 \
+            # /Ency_Atmos/Reflectance_Albedo_Surface.pdf
             roughness=0.3)
 
     def apply_BRs_makeModule(self, ghObj: GeometriesHandler):
@@ -340,8 +328,10 @@ class BR_Wrapper:
     def create_geometries(self, APV_SystSettings: SystSettings):
         """creates pv modules and mounting structure (optional)"""
 
-        ghObj = GeometriesHandler(APV_SystSettings, self.debug_mode)
-        self.apply_BRs_makeModule(ghObj)
+        if APV_SystSettings is not self.APV_SystSettings:
+            self.ghObj = GeometriesHandler(APV_SystSettings, self.debug_mode)
+
+        self.apply_BRs_makeModule(self.ghObj)
         # make scene
         # set azimuth to 0
         sceneDict = APV_SystSettings.sceneDict.copy()
@@ -351,9 +341,9 @@ class BR_Wrapper:
             moduletype=APV_SystSettings.module_name,
             sceneDict=sceneDict)
 
-        self.appendtoScene_condensedVersion(
-            customObjects=ghObj.customObjects,
-            extra_radtext_dict=ghObj.radtext_to_apply_on_a_custom_object)
+        self.appendtoScene_condensedVersion(  # mounting structure, ground, etc
+            customObjects=self.ghObj.customObjects,
+            extra_radtext_dict=self.ghObj.radtext_to_apply_on_a_custom_object)
         self.radObj.makeOct(octname=self.oct_file_name)
 
     def appendtoScene_condensedVersion(
@@ -366,8 +356,8 @@ class BR_Wrapper:
             rad_file_path = f'objects/{key}.rad'
             with open(rad_file_path, 'wb') as f:
                 f.write(customObjects[key]().encode('ascii'))
-                # TODO group text method and extra operation in code in one place
-                # per object. but its very nested, how can it be done nicer?
+            # TODO group text method and extra operation in code in one place
+            # per object. but its very nested, how can it be done nicer?
             # write single object rad_file_pathes in a grouping rad_file
             # with an optional radiance text operation being applied on the
             # single object as a sub group:
@@ -448,13 +438,13 @@ class BR_Wrapper:
 
         # number of sensors on ground against y-axis (along x-axis)
         sensorsy = np.round(
-            self.geomObj.x_field / self.SimSettings.spatial_resolution)
+            self.ghObj.x_field / self.SimSettings.spatial_resolution)
         if (sensorsy % 2) == 0:
             sensorsy += 1
 
         self.ygrid: list[float] = np.arange(
-            self.geomObj.scan_area_anchor_y,
-            (self.geomObj.scan_area_anchor_y + self.geomObj.y_field
+            self.ghObj.scan_area_anchor_y,
+            (self.ghObj.scan_area_anchor_y + self.ghObj.y_field
              + self.SimSettings.spatial_resolution),
             self.SimSettings.spatial_resolution)
 
@@ -476,7 +466,7 @@ class BR_Wrapper:
         """
         self.groundscan = self.frontscan
 
-        self.groundscan['xstart'] = self.geomObj.scan_area_anchor_x
+        self.groundscan['xstart'] = self.ghObj.scan_area_anchor_x
         self.groundscan['xinc'] = self.SimSettings.spatial_resolution
         self.groundscan['zstart'] = 0.05
         self.groundscan['zinc'] = 0
@@ -506,14 +496,14 @@ class BR_Wrapper:
         as per predefined resolution.
         """
 
+        if self.csv_file_path.exists() and not self.debug_mode:
+            print(f'\nSimulation result {self.csv_file_path} already there.\n')
+            return
+
         # clear temporary line scan results from bifacial_results_folder
         temp_results: Path = user_paths.bifacial_radiance_files_folder / Path(
             'results')
         fi.clear_folder_content(temp_results)
-
-        # to measure elapsed time:
-        tictoc = pytictoc.TicToc()
-        tictoc.tic()
 
         if self.SimSettings.use_multi_processing:
 
@@ -529,7 +519,6 @@ class BR_Wrapper:
             for i in trange(len(self.ygrid)):
                 self._run_line_scan(self.ygrid[i])
 
-        tictoc.toc()
         print('\n')
 
         self.merge_line_scans()
@@ -550,6 +539,8 @@ class BR_Wrapper:
         df = self.evalObj.add_shadowdepth(
             df=df, SimSettings=self.SimSettings, cumulative=False)
 
+        fi.make_dirs_if_not_there(self.csv_parent_folder)  # done here to avoid
+        # creating empty folders, if csv parent folder is changed from outside
         df.to_csv(self.csv_file_path)
         print(f'merged file saved in {self.csv_file_path}\n')
         self.df_ground_results = df
@@ -560,7 +551,8 @@ class BR_Wrapper:
         destination_folder: Path = None,
         file_name: str = None,
         cm_unit: str = None,
-        cumulative: bool = None
+        cumulative: bool = None,
+        df_col_limits: pd.DataFrame = None
     ):
         """plots the ground insolation as a heat map and saves it into
             the results/plots folder.
@@ -571,9 +563,7 @@ class BR_Wrapper:
             Defaults to None.
         """
         if df is None:
-            df = apv.utils.files_interface.df_from_file_or_folder(
-                str(self.csv_file_path))
-
+            df = fi.df_from_file_or_folder(str(self.csv_file_path))
         if cm_unit is None:
             cm_unit = self.SimSettings.cm_quantity
 
@@ -585,36 +575,47 @@ class BR_Wrapper:
         if ticklabels_skip_count_number < 2:
             ticklabels_skip_count_number = "auto"
 
+        if self.SimSettings.TMY_irradiance_aggfunc == 'min':
+            weather_description = 'max cloudy'
+        if self.SimSettings.TMY_irradiance_aggfunc == 'mean':
+            weather_description = 'mean cloudy'
+        if self.SimSettings.TMY_irradiance_aggfunc == 'max':
+            weather_description = 'clear sky'
+            # TODO take clear_sky values then?
+
+        title = (f'Weather: {weather_description}\n'
+                 f'Module Form: {self.APV_SystSettings.module_form}\n'
+                 f'Resolution: {self.SimSettings.spatial_resolution} m')
+        weather_description
         if self.SimSettings.sky_gen_mode == 'gendaylit' and not cumulative:
-            title = (f'Module Form: {self.APV_SystSettings.module_form}\n'
-                     f'Date & Time: {self.SimSettings.sim_date_time}\n'
-                     f'Resolution: {self.SimSettings.spatial_resolution} m')
+            title += f'\nDate & Time: {self.SimSettings.sim_date_time}'
         else:
-            title = (f'Module Form: {self.APV_SystSettings.module_form}\n'
-                     f'From: [{self.SimSettings.startdt}] '
-                     f'To: [{self.SimSettings.enddt}]\n'
-                     f'Resolution: {self.SimSettings.spatial_resolution} m')
+            title += (f'\nFrom: [{self.SimSettings.startdt}] '
+                      f'To: [{self.SimSettings.enddt}]')
 
         label_and_cm_input: dict = self.evalObj.get_label_and_cm_input(
-            cm_unit=cm_unit, cumulative=cumulative)
+            cm_unit=cm_unit, cumulative=cumulative,
+            df_col_limits=df_col_limits)
 
-        fig = apv.utils.plots.plot_heatmap(
-            df=df, x='x', y='y', z=label_and_cm_input['z'],
+        fig = plotting.plot_heatmap(
+            df=df, x='x', y='y', c=label_and_cm_input['z'],
             cm=label_and_cm_input['colormap'],
             x_label='x [m]', y_label='y [m]',
             z_label=label_and_cm_input['z_label'],
             plot_title=title,
-            ticklabels_skip_count_number=ticklabels_skip_count_number
+            ticklabels_skip_count_number=ticklabels_skip_count_number,
+            vmin=label_and_cm_input['vmin'],
+            vmax=label_and_cm_input['vmax'],
         )
 
-        fig.axes[1] = apv.utils.plots.add_north_arrow(
+        fig.axes[1] = plotting.add_north_arrow(
             fig.axes[1], self.APV_SystSettings.sceneDict['azimuth'])
         if file_name is None:
             file_name = self.file_name
 
         if destination_folder is None:
             destination_folder = self.results_subfolder
-        apv.utils.files_interface.save_fig(
+        fi.save_fig(
             fig,
             cm_unit+'_' + label_and_cm_input['z']+'_' + file_name,
             parent_folder_path=destination_folder,

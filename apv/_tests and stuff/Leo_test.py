@@ -32,6 +32,61 @@ import pytz
 from pandas.tseries.offsets import Minute
 import honeybee_radiance_command as hrc
 
+# #
+
+# #
+apv.utils.files_interface.df_from_file_or_folder(
+                    csv_files[0]).columns
+# #
+if __name__ == '__main__':
+    cum_csv_path
+    # #
+
+    # #
+    for agg_func in ['min']:
+            # colorbar limits
+            df_merged['']
+            v_mins_maxs = {'radiation': [0, 1], 'shadow_depth': 40, 'DLI': 0}
+
+            brObj.plot_ground_heatmap(
+                df_merged, file_name=cum_file_name+'_fixed_colbars',
+                destination_folder=results_subfolder_cum,
+                cumulative=True,
+                cm_unit=cm_unit
+            )
+
+        # #
+        df_merged
+        # #
+
+        # Merge monthly data for comparison plot plotting
+        df_merged['Month'] = month
+        appended_data.append(df_merged)
+    # Concatenate all monthly data
+    appended_data = pd.concat(appended_data)
+    # #
+    # print(appended_data)
+
+    # Create DataFrame of monthly average and std
+    avg_std_df = brObj.evalObj.monthly_avg_std(data=appended_data,
+                                               column='ShadowDepth_cum',
+                                               group_by='Month')
+
+    print(avg_std_df)
+    # Create Ridge Plot
+    # #
+    fig, axes = apv.utils.plots.Ridge_plot(data=appended_data,
+                                           seperate_by='Month',
+                                           column='ShadowDepth_cum')
+    apv.utils.files_interface.save_fig(
+        fig=fig,
+        file_name=f'Ridgeplot_ShadowDepth2_{APV_SystSettings.module_form}_' +
+        f'{SimSettings.spatial_resolution}m_' +
+        f'{SimSettings.time_step_in_minutes}_min',
+        parent_folder_path=results_subfolder_cum.parent)
+
+
+
 
 # #
 # import this

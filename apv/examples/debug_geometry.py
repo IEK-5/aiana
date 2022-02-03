@@ -21,7 +21,6 @@ if __name__ == '__main__':
 
     SimSettings.spatial_resolution = 5
     SimSettings.time_step_in_minutes = 10  # 6
-    # TODO csv file for e.g. 60 needs to be deleted to avoid key error
 
     SimSettings.sim_name = 'debug'
 
@@ -59,7 +58,6 @@ if __name__ == '__main__':
         APV_SystSettings.ground_scan_shift_y = \
             APV_SystSettings.mountingStructureDict[
                 'inner_table_post_distance_y']
-        brObj.geomObj.x_field = 4
         brObj.create_geometries(
             APV_SystSettings=APV_SystSettings
         )

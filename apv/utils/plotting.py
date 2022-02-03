@@ -12,13 +12,15 @@ def plot_heatmap(
         df: pd.DataFrame,
         x: str,
         y: str,
-        z: str,
+        c: str,
         x_label=None,
         y_label=None,
         z_label=None,
         plot_title='',
         cm='inferno',
-        ticklabels_skip_count_number="auto"
+        ticklabels_skip_count_number="auto",
+        vmin=None,
+        vmax=None,
 ) -> Figure:
     """Creates a Figure containing a seaborn heatmap
     (side note, relevant for adding drawings: its colored square patches
@@ -32,6 +34,7 @@ def plot_heatmap(
         x_label, y_label, z_label (str, optional): label overwrites.
         Defaults to None, which results in label = x, y, or z, respectivly.
         cm (str, optional): color map style. Defaults to 'inferno'.
+        vmin, vmax (float): color bar limits.
 
     Returns:
         Figure: matplotlib.figure.Figure object, which can be modified
@@ -39,7 +42,9 @@ def plot_heatmap(
     """
 
     # prepare and print heatmap-input data for inspection
-    data = df.pivot(y, x, z)
+    print(df.nunique())
+    data = df.pivot(y, x, c)
+
     print(data)
 
     # create a figure object, which is a top level container for subplots
@@ -55,7 +60,7 @@ def plot_heatmap(
     if y_label is None:
         y_label = y
     if z_label is None:
-        z_label = z
+        z_label = c
 
     sns.heatmap(
         data,
@@ -66,7 +71,8 @@ def plot_heatmap(
         xticklabels=ticklabels_skip_count_number,
         yticklabels=ticklabels_skip_count_number,
         cmap=cm,
-        cbar_kws={'label': z_label}
+        cbar_kws={'label': z_label},
+        vmin=vmin, vmax=vmax
     )
     # To resemble Radiance coordinates
     ax.invert_yaxis()

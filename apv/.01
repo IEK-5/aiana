@@ -1,0 +1,4 @@
+**************
+*** PID 34112: rvu -vf C:\Users\l.raumann\Documents\agri-PV\bifacial_radiance_files\views\total.vp -e .01 APV_Floating_std_06-15_20h00.oct
+
+rvu: system - cannot open octree file "APV_Floating_std_06-15_20h00.oct": No such file or directory
