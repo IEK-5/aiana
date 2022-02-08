@@ -294,7 +294,7 @@ class APV_Evaluation:
 
     def cumulate_gendaylit_results(
             self,
-            file_folder_to_merge, merged_csv_path, SimSettings: Simulation):
+            file_folder_to_merge, cum_csv_path, SimSettings: Simulation):
 
         # load all single results and append
         df = apv.utils.files_interface.df_from_file_or_folder(
@@ -329,7 +329,7 @@ class APV_Evaluation:
         df_merged = self.add_shadowdepth(
             df=df_merged, SimSettings=SimSettings, cumulative=True)
 
-        df_merged.to_csv(merged_csv_path)
+        df_merged.to_csv(cum_csv_path)
         print(f'Cumulating completed!\n',
               'NOTE: Shadow_depth was recalculated for cumulative data\n')
         return df_merged

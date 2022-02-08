@@ -6,7 +6,7 @@ to presets in settings.py
 TODO
 
 ---------------------
-# simulation  methods into new simulation class
+
 # module clone does not work anymore...
 
 - remove apv system settings from br wrapper and access it via geomObj
@@ -125,7 +125,7 @@ class BR_Wrapper:
 
         self.evalObj: APV_Evaluation = APV_Evaluation(
             SimSettings=SimSettings,
-            APV_SystSettings=APV_SystSettings,
+            APV_SystSettings=self.ghObj.APV_SystSettings,
             weatherData=self.weatherData
         )
 
@@ -561,6 +561,11 @@ class BR_Wrapper:
             df (pd.DataFrame): if None, a df is created
             from the csv file name stored in an instance of this class.
             Defaults to None.
+
+            df_col_limits (pd.DataFrame): with same columns as in df with a min
+            and max row (as e.g. returned by df_concatenated.agg([min, max]))
+            to be used as color bar limits.
+            Defaults to None.
         """
         if df is None:
             df = fi.df_from_file_or_folder(str(self.csv_file_path))
@@ -571,27 +576,10 @@ class BR_Wrapper:
             cumulative = self.SimSettings.cumulative
 
         ticklabels_skip_count_number = int(
-            4/self.SimSettings.spatial_resolution)
+            round(self.ghObj.x_field, 0)
+            / (8*self.SimSettings.spatial_resolution))
         if ticklabels_skip_count_number < 2:
             ticklabels_skip_count_number = "auto"
-
-        if self.SimSettings.TMY_irradiance_aggfunc == 'min':
-            weather_description = 'max cloudy'
-        if self.SimSettings.TMY_irradiance_aggfunc == 'mean':
-            weather_description = 'mean cloudy'
-        if self.SimSettings.TMY_irradiance_aggfunc == 'max':
-            weather_description = 'clear sky'
-            # TODO take clear_sky values then?
-
-        title = (f'Weather: {weather_description}\n'
-                 f'Module Form: {self.APV_SystSettings.module_form}\n'
-                 f'Resolution: {self.SimSettings.spatial_resolution} m')
-        weather_description
-        if self.SimSettings.sky_gen_mode == 'gendaylit' and not cumulative:
-            title += f'\nDate & Time: {self.SimSettings.sim_date_time}'
-        else:
-            title += (f'\nFrom: [{self.SimSettings.startdt}] '
-                      f'To: [{self.SimSettings.enddt}]')
 
         label_and_cm_input: dict = self.evalObj.get_label_and_cm_input(
             cm_unit=cm_unit, cumulative=cumulative,
@@ -602,7 +590,7 @@ class BR_Wrapper:
             cm=label_and_cm_input['colormap'],
             x_label='x [m]', y_label='y [m]',
             z_label=label_and_cm_input['z_label'],
-            plot_title=title,
+            plot_title=self.create_plot_title(cumulative),
             ticklabels_skip_count_number=ticklabels_skip_count_number,
             vmin=label_and_cm_input['vmin'],
             vmax=label_and_cm_input['vmax'],
@@ -617,9 +605,39 @@ class BR_Wrapper:
             destination_folder = self.results_subfolder
         fi.save_fig(
             fig,
-            cm_unit+'_' + label_and_cm_input['z']+'_' + file_name,
+            cm_unit+'_'+file_name,
             parent_folder_path=destination_folder,
             sub_folder_name='',
         )
 
+    def return_weather_description(self):
+        if self.SimSettings.TMY_irradiance_aggfunc == 'min':
+            return 'max cloudy'
+        if self.SimSettings.TMY_irradiance_aggfunc == 'mean':
+            return 'mean cloudy'
+        if self.SimSettings.TMY_irradiance_aggfunc == 'max':
+            return 'clear sky'  # TODO take clear_sky values then?
+
+    def create_plot_title(self, cumulative: bool, title_comps=None) -> str:
+        if title_comps is None:
+            title_comps = self.SimSettings.plot_title_components
+        title = ''
+        if 'weather' in title_comps:
+            title += f'Weather: {self.return_weather_description()}\n'
+        if 'agg_func' in title_comps:  # redundant to weather
+            title += (f'TMY aggregation function: '
+                      f'{self.SimSettings.TMY_irradiance_aggfunc}\n')
+        if 'module_form' in title_comps:
+            title += f'Module Form: {self.APV_SystSettings.module_form}\n'
+        if 'resolution' in title_comps:
+            title += f'Resolution: {self.SimSettings.spatial_resolution} m\n'
+        if 'position' in title_comps:
+            title += f'Scanned Position: {self.SimSettings.position}\n'
+        if 'datetime' in title_comps:
+            if self.SimSettings.sky_gen_mode == 'gendaylit' and not cumulative:
+                title += f'Date & Time: {self.SimSettings.sim_date_time}'
+            else:
+                title += (f'From: [{self.SimSettings.startdt}] '
+                          f'To: [{self.SimSettings.enddt}]')
+        return title
 # #

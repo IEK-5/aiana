@@ -61,6 +61,14 @@ class Simulation:
     cm_quantity: Literal[
         'radiation', 'PAR', 'shadow_depth', 'DLI'] = 'radiation'
 
+    plot_title_components: list = ['position', 'weather', 'datetime']
+    # all options: ['weather', 'module_form', 'resolution',
+    #                'position', 'agg_func', 'datetime']
+    position: Literal['north', 'center', 'south', 'east'] = 'south'
+    # to be used in scan field shifting, to shift scanned area within a system
+    plots_shifts_xy = {'north': [0, 1], 'center': [0, 0],
+                       'south': [0, -1], 'east': [3, 0]}
+
     ##################
     # less important / not fully implemented at the moment
     scan_target: Literal['ground', 'module'] = 'ground'

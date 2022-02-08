@@ -204,11 +204,11 @@ def Ridge_plot(data, seperate_by='Month', column='ShadowDepth_cum',
 
 
 def comparing_plot_sns(
-        df: pd.Series, x: str, y: str, unit=' [-]', z='none',
+        df: pd.Series, x: str, y: str, unit=' [-]', hue=None,
         scatter_alpha=0.4, scatter_size=0.1,
         xy_min='default', xy_max='default'):
 
-    df = df.dropna()
+    df = df.dropna(subset=[x, y])
     if xy_max == 'default':
         xy_max = max(df[x].max(), df[y].max())
     else:
@@ -234,17 +234,19 @@ def comparing_plot_sns(
     # add 45° reference line
     g.ax_joint.plot(
         (xy_min, xy_max), (xy_min, xy_max), 'w', linewidth=1, zorder=1)
+
+    # regression line and scatter plot: ###
     # add reg plot to main plot area with line_kws for customizations
     g.plot_joint(
         sns.regplot,
         line_kws={'color': 'k',
-                  'alpha': 0.9,
-                  'label': ('slope: {0:.2f}, '
-                            'intercept: {1:.2f}, '
-                            'R$^2$: {2:.2f}'
+                  'alpha': 0.5,
+                  'label': ('slope: {0:.3f}, '
+                            'intercept: {1:.3f}, '
+                            'R$^2$: {2:.3f}'
                             ).format(slope, intercept, r**2)},
         scatter_kws={'alpha': scatter_alpha, 's': scatter_size,
-                     'zorder': 2
+                     'zorder': 2,  # 'hue': hue
                      })
 
     # ####################################
@@ -254,9 +256,9 @@ def comparing_plot_sns(
 
     # add text annotation
     g.ax_joint.text(
-        xy_min+0.05*xy_max, xy_max*0.95,
-        ('MBE: {0:.2f}{1}\nRMSE: {2:.2f}{1}\n'
-         'rel. MBE: {3:.2f}\nrel. RMSE: {4:.2f}\n'
+        xy_min+0.5*(xy_max-xy_min), xy_max-0.5*(xy_max-xy_min),
+        ('MBE: {0:.3f}{1}\nRMSE: {2:.3f}{1}\n'
+         'rel. MBE: {3:.3f}\nrel. RMSE: {4:.3f}\n'
          '(rel. to (max-min)/2)'
          ).format(mbe, unit, rmse, rel_mbe, rel_rmse),
         horizontalalignment='left', verticalalignment='top',
@@ -306,4 +308,4 @@ def plotStyle(
     # exported plot real text, which editable in the svg in inkscape
 
 
-plotStyle(fig_width_in_mm=220, width_to_height_ratio=1, marker_size_in_pt=1)
+# plotStyle(fig_width_in_mm=220, width_to_height_ratio=1, marker_size_in_pt=1)
