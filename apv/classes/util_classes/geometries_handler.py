@@ -13,6 +13,7 @@
 
 import numpy as np
 from apv.settings.apv_systems import Default as SystSettings
+from apv.utils import settings_adjuster as sa
 import pandas as pd
 
 
@@ -25,6 +26,8 @@ class GeometriesHandler:
 
     real azimuth will be handled by rotating the sky in br._wrapper.create_sky()
     """
+    # BR_radObj:
+
     singleRow_length_x: float
     singleRow_length_y: float
     # footprint dimensions = dimensions of a vertical projection to ground
@@ -50,10 +53,10 @@ class GeometriesHandler:
     post_start_x: float
     post_distance_x: float
 
-    customObjects: dict  # key: single rad file-name, value: rad_text
-
     def __init__(self, APV_SystSettings: SystSettings, debug_mode=False):
-        self.APV_SystSettings = APV_SystSettings
+        # adjust, e.g. add cell sizes
+        self.APV_SystSettings = sa.adjust_settings(APV_SystSettings)
+
         self.debug_mode = debug_mode
 
         # short cuts:
@@ -72,9 +75,6 @@ class GeometriesHandler:
         # post start and distance used for building mounting structure
         self.post_start_x = self.sw_modCorner_x - modPostDist
         self.post_distance_x = self.clone_distance_x/(self.mount['n_post_x']-1)
-        self.customObjects = self._create_customObjectsDict()
-        self.radtext_to_apply_on_a_custom_object = {
-            'north_arrow': f'!xform -rz {self.scn["azimuth"]-180} -t 10 10 0 '}
 
     def _set_singleRow_lengths_and_footprints(self):
 
@@ -132,22 +132,27 @@ class GeometriesHandler:
         self.scan_area_anchor_y = -self.y_field/2 + self.center_offset_y \
             + self.APV_SystSettings.ground_scan_shift_y
 
-    def get_customObject_cloning_rad_txt(self, APV_SystSettings: SystSettings):
+    def get_rad_txt_for_cloning_of_the_apv_system(self) -> str:
+        """Usefull for periodic boundary conditions.
+        Returns:
+            (str): radiance text
+        """
 
         shift_x_array_start = \
-            -APV_SystSettings.n_apv_system_clones_in_negative_x\
+            -self.APV_SystSettings.n_apv_system_clones_in_negative_x \
             * self.clone_distance_x
 
-        # #TODO if self.APV_SystSettings.n_sets_x > 1:
-        # statt n_sets_x --> schöner name für "Anzahl geclonter Sets für
-        # periodische Randbedingungen
-        # in einer Richtung (-x oder +x)" mit "Set" = Struktur + Module?
-        # aber eigentlich will man später vllt alle clone scannen können?
-        n_sets_x = APV_SystSettings.n_apv_system_clones_in_x + 1 + \
-            APV_SystSettings.n_apv_system_clones_in_negative_x
+        # total count n of cloned system segments
+        # (segment = structure + modules without a gap in x direction)
+        n_system_segments_x = self.APV_SystSettings.n_apv_system_clones_in_x \
+            + 1 + self.APV_SystSettings.n_apv_system_clones_in_negative_x
 
-        return (f'!xform -t {shift_x_array_start} 0 0 '
-                f'-a {n_sets_x} -t {self.clone_distance_x} 0 0')
+        if n_system_segments_x > 1:
+            return (f'!xform -t {shift_x_array_start} 0 0 '
+                    f'-a {n_system_segments_x} -t {self.clone_distance_x} 0 0 '
+                    )
+        else:
+            return '!xform '
 
     def framed_single_axes_mount(self) -> str:
         """Creates Aluminum posts and mounting structure
@@ -259,7 +264,6 @@ class GeometriesHandler:
 
             n_rails = 8
             s_rail = 0.08
-            beams_height = 2.5
             s = self.mount['post_thickness']
             l_x = 20*2
             # inclined beams in parallel to y
@@ -278,7 +282,6 @@ class GeometriesHandler:
                 f'-a {n_rails} -t 0 0.5 -0.125 '
                 f'-a {self.scn["nRows"]-1} -t 0 {self.scn["pitch"]} 0 '
             )
-
         return text
 
     def post_array(
@@ -420,25 +423,6 @@ class GeometriesHandler:
         # f'| genbox black post 0.5 2 0.001 '
         # f'| xform -t -0.5 -0.5 0 -rz {rz+angle} -t 10 {10+shift} 0'
         # )
-
-    def _create_customObjectsDict(self) -> dict:
-        customObjects = {}
-        # north arrow
-        if self.debug_mode:
-            customObjects['north_arrow'] = self.north_arrow
-
-        # scan area
-        if self.APV_SystSettings.add_groundScanArea_as_object_to_scene:
-            customObjects['scan_area'] = self.groundscan_area
-
-        # mounting structure
-        structure_type = self.APV_SystSettings.mounting_structure_type
-        if structure_type == 'declined_tables':
-            customObjects['structure'] = self.declined_tables_mount
-        elif structure_type == 'framed_single_axes':
-            customObjects['structure'] = self.framed_single_axes_mount
-
-        return customObjects
 
         '''
         if APV_SystSettings.n_apv_system_clones_in_x > 1 \

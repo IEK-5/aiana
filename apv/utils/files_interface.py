@@ -5,15 +5,11 @@
 (all with suitable standard settings).
 """
 
+import xarray as xr
 from matplotlib.figure import Figure
 import pandas as pd
 import os as os
 from pathlib import Path
-import xarray as xr
-import apv
-from apv.settings.simulation import Simulation as Simsettings
-from apv.settings.apv_systems import Default as SystSettings
-path_main = apv.settings.user_paths.root
 
 
 def clear_folder_content(folder_path):
@@ -113,72 +109,44 @@ def df_from_nc(file_path: str) -> pd.DataFrame:
 
 def df_export(
         df: pd.DataFrame,
-        file_name: str,
-        rel_path='',
+        csv_file_path,
         float_format='%1.3e',
         sep='\t',
         index=True,
         header=True
 ) -> None:
     '''
+    saves into .csv file with customized default settings.
     header: to rename columns provide a list of strings here
     float_formats = '%1.2e' for scientific, '%1.2f for float with
     2 after comma digits'
     '''
-    desti_path = os.path.join(path_main, rel_path)
-    make_dirs_if_not_there(desti_path)
-    file_path = os.path.join(desti_path, file_name + '.csv')
     df.to_csv(
-        file_path, float_format=float_format,
+        csv_file_path, float_format=float_format,
         index=index, sep=sep, header=header)
-    print('exported df to ' + desti_path)
+    print('exported df to ' + csv_file_path)
     return
 
 
 def save_fig(
         fig: Figure,
-        file_name: str,
-        sub_folder_name='plots',
-        parent_folder_path=apv.settings.user_paths.results_folder,
-        file_formats=['.jpg'],
+        file_path: Path,
         dpi=300,
         transparent=False):
     """Saves a figure with certain default settings into
-    results_folder/sub_folder and makes directories if not existing.
+    results_folder/sub_folder and makes parent directories if not existing.
 
     Args:
         fig (matplotlib.figure.Figure): figure to be saved
-        file_name (str): file name without extension
-        sub_folder_name (str, optional): Defaults to 'plots'.
-        parent_folder_path ([type], optional):
-        Defaults to apv.settings.user_paths.results_folder.
-        file_formats (list, optional): list of formats. Defaults to ['.jpg'].
+        file_path (Path from pathlib): file path with extension
         dpi (int, optional): Resolution (dots per inch). Defaults to 300.
         transparent (bool, optional): Defaults to False.
     """
-
-    destination_folder = os.path.join(parent_folder_path, sub_folder_name)
-    make_dirs_if_not_there(destination_folder)
-
-    for file_format in file_formats:
-        file_path = os.path.join(destination_folder, file_name + file_format)
-        fig.savefig(file_path, bbox_inches='tight',
-                    dpi=dpi, transparent=transparent)
-        print('saved fig ' + file_path)
+    make_dirs_if_not_there(file_path.parent)
+    fig.savefig(file_path, bbox_inches='tight',
+                dpi=dpi, transparent=transparent)
+    print('saved fig ' + file_path)
     return
-
-
-def create_results_folder_path(
-        simsettings: Simsettings, APV_SystSettings: SystSettings):
-
-    results_folder_path: Path = apv.settings.user_paths.results_folder / Path(
-        simsettings.sim_name,
-        APV_SystSettings.module_form
-        + f'_res-{simsettings.spatial_resolution}m'
-        + f'_step-{simsettings.time_step_in_minutes}min'
-        + f'_TMY_aggfunc-{simsettings.TMY_irradiance_aggfunc}'
-    )
-    return results_folder_path
 
 
 def get_min_max_of_cols_in_several_csv_files(csv_files: list):
@@ -187,3 +155,9 @@ def get_min_max_of_cols_in_several_csv_files(csv_files: list):
     df = pd.concat(dfs)
 
     return df.agg([min, max])
+
+
+def write_to_txt_file(filepath: Path, text: str):
+    with open(filepath, 'w') as f:
+        f.writelines(text)
+        f.close()

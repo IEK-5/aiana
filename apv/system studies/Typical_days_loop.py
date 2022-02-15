@@ -5,14 +5,14 @@ if __name__ == '__main__':
     import importlib as imp
     import apv
     from apv.classes.weather_data import WeatherData
-    from apv.classes.sim_datetime import SimDT
+    from apv.classes.util_classes.sim_datetime import SimDT
     from apv.classes.geometries_handler import GeometriesHandler
     from apv.settings.apv_systems import Default as SystSettings
     from apv.settings import user_paths
 
     imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.settings.apv_systems)
-    imp.reload(apv.br_wrapper)
+    imp.reload(apv.classes.br_wrapper)
 
     # ############ SIM SETTINGS #############
     SimSettings = apv.settings.simulation.Simulation()
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     # APV_SystSettings.sceneDict["azimuth"] = 200
 
     # dummy for path part
-    # brObj = apv.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings)
+    # brObj = apv.classes.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings)
     # brObj.setup_br()
     # results_path_part: Path = brObj.results_subfolder
     # results_path_part
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     df_typic_day_of_month = weatherData.typical_day_of_month(
         weatherData.df_irradiance)
 
-    brObj = apv.br_wrapper.BR_Wrapper(
+    brObj = apv.classes.br_wrapper.BR_Wrapper(
         SimSettings, APV_SystSettings,
         weatherData=weatherData)
 

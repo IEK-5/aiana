@@ -4,8 +4,6 @@ from pvlib import location
 
 
 class Simulation:
-    sim_name = 'APV_Floating'  # also used as first part of the
-    # Radiance scene file name (.oct) and the output files
 
     ground_albedo = 0.25  # grass
 
@@ -31,7 +29,7 @@ class Simulation:
 
     use_typDay_perMonth_for_shadowDepthCalculation = False
 
-    sim_date_time = '06-15_20:00'  # used as second part of the .oct file name
+    sim_date_time: str = '06-15_13:00'  # used as second part of the .oct file name
     time_step_in_minutes: int = 60  # only 1,2,3,6,10,12,15,20,30,60,120
 
     """Important info

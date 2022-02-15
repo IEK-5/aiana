@@ -1,5 +1,5 @@
 # #
-from apv.classes.sim_datetime import SimDT
+from apv.classes.util_classes.sim_datetime import SimDT
 import pvlib
 from apv.classes.weather_data import WeatherData
 from apv.utils import files_interface

@@ -16,9 +16,9 @@ SimSettings.apv_location = pvlib.location.Location(
     51.2217, 6.7761, altitude=45, tz='Europe/Berlin')  # düsseldorf
 SimSettings.time_step_in_minutes = 60
 APV_SystSettings = apv.settings.apv_systems.Default()
-brObj = apv.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings,
-                                  # debug_mode=True
-                                  )
+brObj = apv.classes.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings,
+                                          # debug_mode=True
+                                          )
 brObj.setup_br()
 
 # #
@@ -51,7 +51,7 @@ df
 # #
 df_ghi_filters = pd.DataFrame()
 for month in range(1, 7):
-    for threshold in range(4,61):
+    for threshold in range(4, 61):
         df_month = df_all[df_all.index.month == month]
         df_filtered = df_month[df_month['ghi_Wm-2'] >= threshold]
         df_ghi_filters.loc[threshold, month] = \

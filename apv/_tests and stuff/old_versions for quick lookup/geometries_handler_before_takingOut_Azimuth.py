@@ -58,7 +58,7 @@ class GeometriesHandler:
     post_distance_x: float
 
     def __init__(self, APV_SystSettings: SystSettings, debug_mode=False):
-        self.APV_SystSettings = APV_SystSettings
+        self.settings.apv = APV_SystSettings
         self.debug_mode = debug_mode
 
         # short cuts:
@@ -106,9 +106,9 @@ class GeometriesHandler:
     def _set_x_y_field(self):
         # azimuth = 0:
         x_field0 = self.allRows_footprint_x \
-            + 2*self.APV_SystSettings.ground_scan_margin_x
+            + 2*self.settings.apv.ground_scan_margin_x
         y_field0 = self.allRows_footprint_y \
-            + 2*self.APV_SystSettings.ground_scan_margin_y
+            + 2*self.settings.apv.ground_scan_margin_y
 
         # make it larger if not azimuth = 0 or 180 to cover footprint within
         # scan field aligned to north and parallel to x and y axes:
@@ -121,7 +121,7 @@ class GeometriesHandler:
             np.sin(self.azi_rad))*x_field0
 
         # round up (ceiling)
-        if self.APV_SystSettings.round_up_field_dimensions:
+        if self.settings.apv.round_up_field_dimensions:
             x_field = np.ceil(x_field)
             y_field = np.ceil(y_field)
 
@@ -159,9 +159,9 @@ class GeometriesHandler:
 
         # south west corners of the ground scan area
         self.sw_corner_scan_x = -self.x_field/2 + self.center_offset_x \
-            + self.APV_SystSettings.ground_scan_shift_x
+            + self.settings.apv.ground_scan_shift_x
         self.sw_corner_scan_y = -self.y_field/2 + self.center_offset_y \
-            + self.APV_SystSettings.ground_scan_shift_y
+            + self.settings.apv.ground_scan_shift_y
 
     def get_customObject_cloning_rad_txt(self, APV_SystSettings: SystSettings):
 
@@ -169,7 +169,7 @@ class GeometriesHandler:
             -APV_SystSettings.n_apv_system_clones_in_negative_x\
             * self.clone_distance_x
 
-        # #TODO if self.APV_SystSettings.n_sets_x > 1:
+        # #TODO if self.settings.apv.n_sets_x > 1:
         # statt n_sets_x --> schöner name für "Anzahl geclonter Sets für
         # periodische Randbedingungen
         # in einer Richtung (-x oder +x)" mit "Set" = Struktur + Module?
@@ -194,7 +194,7 @@ class GeometriesHandler:
 
         beamlength_x = self.post_distance_x
 
-        if self.APV_SystSettings.enlarge_beams_for_periodic_shadows:
+        if self.settings.apv.enlarge_beams_for_periodic_shadows:
             beamlength_x = self.allRows_footprint_x * 1.2
             # to get periodic shadows in summer sunrise and set
             beamlength_y = self.scn['pitch']*(self.scn['nRows']-0.4)
@@ -272,7 +272,7 @@ class GeometriesHandler:
 
         if add_glass_box:
             t_y = (self.sw_modCorner_azi0_y + self.allRows_footprint_y
-                   + self.APV_SystSettings.glass_box_to_APV_distance)
+                   + self.settings.apv.glass_box_to_APV_distance)
             # variable cannot be found because not in default()
             # but in declined tables apv system settings
 
@@ -299,7 +299,7 @@ class GeometriesHandler:
     def make_checked_module_text(self) -> str:
 
         mod = self.mod
-        c = self.APV_SystSettings.cellLevelModuleParams
+        c = self.settings.apv.cellLevelModuleParams
 
         # copied from br.main.RadianceObj.makeModule() and modified:
         x = c['numcellsx']*c['xcell']+(c['numcellsx']-1)*c['xcellgap']
@@ -387,7 +387,7 @@ class GeometriesHandler:
         offsetfromaxis = 0.01
         rotation_angle = 2*(90 - self.scn['tilt']) + 180
 
-        c = self.APV_SystSettings.cellLevelModuleParams
+        c = self.settings.apv.cellLevelModuleParams
         # copied from br.main.RadianceObj.makeModule() and modified:
         x = c['numcellsx']*c['xcell']+(c['numcellsx']-1)*c['xcellgap']
         y = c['numcellsy']*c['ycell'] + (c['numcellsy']-1)*c['ycellgap']

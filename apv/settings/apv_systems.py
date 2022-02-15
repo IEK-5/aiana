@@ -1,6 +1,5 @@
 
 from typing import Literal
-from apv.settings import user_paths
 from pathlib import Path
 import pandas as pd
 """
@@ -75,7 +74,8 @@ class Default:
                   }
 
     moduleSpecs: pd.Series = pd.read_csv(
-        user_paths.apv_package / Path(
+        Path(__file__).parent.parent.resolve()  # apv package location
+        / Path(
             'resources/pv_modules/Sanyo240_moduleSpecs_guestimate.txt'),
         delimiter='\t'
     ).T[0]
@@ -103,7 +103,8 @@ class Default:
         'material': 'Metal_Aluminum_Anodized',
         'post_thickness': 0.25,  # mounting structure post thickness [m]
         'n_post_x': 2,  # number of posts along x (along row) [-]
-        'module_to_post_distance_x': 0.5
+        'module_to_post_distance_x': 0.5,
+        'inner_table_post_distance_y': 1.35  # only used by 'declined_tables'
     }
 
     mounting_structure_type: Literal[
@@ -154,8 +155,8 @@ class Default:
                      'view_direction_x': 0,
                      'view_direction_y': 0.001,
                      'view_direction_z': -1,
-                     'horizontal_view_angle': 40,  # [degree]
-                     'vertical_view_angle': 30  # [degree]
+                     'horizontal_view_angle': 20,  # [degree]
+                     'vertical_view_angle': 20  # [degree]
                      },
     }
     # to optionally add a glass plate on the black modules:

@@ -8,7 +8,7 @@ if __name__ == '__main__':
     APV_SystSettings = \
         apv.settings.apv_systems.APV_Syst_InclinedTables_Juelich()
 
-    brObj = apv.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings)
+    brObj = apv.classes.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings)
     brObj.setup_br()
 
     # #

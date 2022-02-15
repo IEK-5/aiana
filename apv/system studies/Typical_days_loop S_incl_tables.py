@@ -14,13 +14,13 @@ if __name__ == '__main__':
     import apv
     import os
     from typing import Literal
-    from apv.classes.sim_datetime import SimDT
+    from apv.classes.util_classes.sim_datetime import SimDT
     from apv.classes.geometries_handler import GeometriesHandler
     import apv.utils.files_interface as fi
 
     imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.settings.apv_systems)
-    imp.reload(apv.br_wrapper)
+    imp.reload(apv.classes.br_wrapper)
 
     # ############ SIM SETTINGS #############
     SimSettings = apv.settings.simulation.Simulation()
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     # APV_SystSettings.add_groundScanArea_as_object_to_scene = True
     # ================== =============== ================== ===============
 
-    APV_SystSettings.add_airrails = True
+    # APV_SystSettings.add_airrails = False
     x_reduction = -((APV_SystSettings.moduleDict['x']
                      + APV_SystSettings.moduleDict['xgap'])
                     * (APV_SystSettings.sceneDict['nMods']))/2+2  # =2*2m=4m
@@ -67,9 +67,9 @@ if __name__ == '__main__':
         return fi.create_results_folder_path(
             SimSettings, APV_SystSettings) / f'month-{month}_{posi}-position'
     # #
-    brObj = apv.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings,
-                                      # debug_mode=True
-                                      )
+    brObj = apv.classes.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings,
+                                              # debug_mode=True
+                                              )
     brObj.setup_br()
 
     # #
@@ -162,9 +162,9 @@ if __name__ == '__main__':
             for position in positions:
                 SimSettings.position = position
                 SimSettings.TMY_irradiance_aggfunc = agg_func
-                brObj = apv.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings,
-                                                  # debug_mode=True
-                                                  )
+                brObj = apv.classes.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings,
+                                                          # debug_mode=True
+                                                          )
                 # brObj.setup_br()
                 brObj.results_subfolder = modify_results_subfolder(
                     SimSettings, APV_SystSettings, month, SimSettings.position)
@@ -189,7 +189,7 @@ if __name__ == '__main__':
                 results_subfolder_cum = brObj.results_subfolder.parent.parent\
                     / 'cumulative'
                 fi.make_dirs_if_not_there(results_subfolder_cum)
-                cum_file_name = brObj.create_plot_title(
+                cum_file_name = brObj.return_plot_title(
                     title_comps=['weather', 'position'],
                     cumulative=True)  # +' - month '+str(month)
                 cum_file_name = cum_file_name.replace('\n', ' - ').replace(':', '')
@@ -253,6 +253,7 @@ if __name__ == '__main__':
     meta_cumulate(agg_funcs=['mean'], positions=all_positions)
     meta_cumulate(agg_funcs=all_aggs, positions=['center'], equalColLims=True)
     # #
-    meta_cumulate(agg_funcs=['mean'], positions=all_positions, equalColLims=True)
+    meta_cumulate(
+        agg_funcs=['mean'], positions=all_positions, equalColLims=True)
 
 # #

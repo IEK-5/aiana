@@ -7,7 +7,7 @@ if __name__ == '__main__':
     import apv
     imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.settings.apv_systems)
-    imp.reload(apv.br_wrapper)
+    imp.reload(apv.classes.br_wrapper)
 
     SimSettings = apv.settings.simulation.Simulation()
     APV_SystSettings = apv.settings.apv_systems.Default()
@@ -51,12 +51,12 @@ if __name__ == '__main__':
 
     #
     imp.reload(apv.classes.geometries_handler)
-    imp.reload(apv.br_wrapper)
+    imp.reload(apv.classes.br_wrapper)
     # SimSettings.use_multi_processing = False
 
     APV_SystSettings.add_groundScanArea_as_object_to_scene = True
 
-    brObj = apv.br_wrapper.BR_Wrapper(
+    brObj = apv.classes.br_wrapper.BR_Wrapper(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings,
         weather_file=weather_file,
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     for hour in range(8, 21, 2):
         # for azimuth in range(180, 361, 30):
         SimSettings.sim_date_time = f'06-15_{hour}h'
-        brObj = apv.br_wrapper.BR_Wrapper(
+        brObj = apv.classes.br_wrapper.BR_Wrapper(
             SimSettings=SimSettings,
             APV_SystSettings=APV_SystSettings,
             weather_file=weather_file,

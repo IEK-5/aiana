@@ -8,7 +8,7 @@ if __name__ == '__main__':
     import importlib as imp
     import apv
     imp.reload(apv.classes.geometries_handler)
-    imp.reload(apv.br_wrapper)
+    imp.reload(apv.classes.br_wrapper)
 
     SimSettings = apv.settings.simulation.Simulation()
     # APV_SystSettings = apv.settings.apv_systems.Default()
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     # APV_SystSettings.sceneDict['nRows'] = 3
     # APV_SystSettings.sceneDict['nMods'] = 6
 
-    brObj = apv.br_wrapper.BR_Wrapper(
+    brObj = apv.classes.br_wrapper.BR_Wrapper(
         SimSettings=SimSettings,
         APV_SystSettings=APV_SystSettings
     )

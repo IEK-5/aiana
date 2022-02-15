@@ -7,7 +7,7 @@ if __name__ == '__main__':
 
     imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.settings.apv_systems)
-    imp.reload(apv.br_wrapper)
+    imp.reload(apv.classes.br_wrapper)
 
     SimSettings = apv.settings.simulation.Simulation()
     SimSettings.sim_name = 'functionality'
@@ -20,7 +20,7 @@ if __name__ == '__main__':
                         'none']:
         APV_SystSettings.module_form = module_form
 
-        brObj = apv.br_wrapper.BR_Wrapper(
+        brObj = apv.classes.br_wrapper.BR_Wrapper(
             SimSettings=SimSettings,
             APV_SystSettings=APV_SystSettings,
             debug_mode=False
@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.settings.apv_systems)
-    imp.reload(apv.br_wrapper)
+    imp.reload(apv.classes.br_wrapper)
 
     SimSettings = apv.settings.simulation.Simulation()
     SimSettings.sim_name = 'c'
@@ -52,7 +52,7 @@ if __name__ == '__main__':
         apv_systems.SimpleSingleCheckerBoard(),
     ]:
 
-        brObj = apv.br_wrapper.BR_Wrapper(
+        brObj = apv.classes.br_wrapper.BR_Wrapper(
             SimSettings=SimSettings,
             APV_SystSettings=APV_SystSettings,
             debug_mode=False

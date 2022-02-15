@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     SimSettings.sim_name = 'declined_tables_and_glassbox'
     SimSettings.use_multi_processing = False
-    brObj = apv.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings)
+    brObj = apv.classes.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings)
     brObj.setup_br()
     # #
     brObj.view_scene(

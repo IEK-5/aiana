@@ -6,7 +6,7 @@ if __name__ == '__main__':
     SimSettings.spatial_resolution = 1
     APV_SystSettings = apv.settings.apv_systems.Default()
     # APV_SystSettings.n_apv_system_clones_in_x = 2
-    brObj = apv.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings)
+    brObj = apv.classes.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings)
     brObj.setup_br()
 
     # #
