@@ -181,12 +181,13 @@ class GeometriesHandler:
         text = self.post_array(h_post, y_start)
 
         # create horizontal beams in y direction
-        text += (
-            f'\n!genbox {material} post {s_beam} {beamlength_y} {s_beam} \
-            | xform -t {self.post_start_x} {y_start} {h_post - s_beam - 0.4} \
-            -a {self.mount["n_post_x"]} -t {self.post_distance_x} \
-            0 0 -a 2 -t 0 0 {-d_beam} '
-        )
+        if self.scn['nRows'] > 1:
+            text += (
+                f'\n!genbox {material} post {s_beam} {beamlength_y} {s_beam} \
+                | xform -t {self.post_start_x} {y_start} {h_post-s_beam-0.4} \
+                -a {self.mount["n_post_x"]} -t {self.post_distance_x} \
+                0 0 -a 2 -t 0 0 {-d_beam} '
+            )
         # create horizontal beams in x direction
         text += (
             f'\n!genbox {material} post {beamlength_x} {s_beam} {s_beam} \

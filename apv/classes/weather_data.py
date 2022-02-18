@@ -28,12 +28,13 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class WeatherData:
     """credentials (dict): output of .load_credentials()
+    #TODO make class init fast
     """
 
     def __init__(self, settings: Settings, debug_mode=False):
         self.settings = settings
         self.debug_mode = debug_mode
-        self.simDT = SimDT(settings.sim)
+        self.simDT = SimDT(self.settings.sim)
 
         self.credentials = self.load_API_credentials()
         self.ghi: float = None

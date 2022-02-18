@@ -1,36 +1,76 @@
 # #
-from apv.classes.util_classes.sim_datetime import SimDT
-import pvlib
-from apv.classes.weather_data import WeatherData
-from apv.utils import files_interface
-import apv.utils.files_interface as fi
-from apv.classes.geometries_handler import GeometriesHandler
-import re
-import apv.settings.user_paths as user_paths
-from typing import Literal
-from datetime import datetime as dt
-import hjson
-from types import SimpleNamespace
-from pathlib import Path
-import apv
-import subprocess
-import numpy as np
-import pandas as pd
-import json
-import os
-import pytictoc
-from apv.utils import files_interface as fi
-from apv import settings
-from apv import br_wrapper as br
-import importlib as imp
-import sys
-import time
-import random
-from apv.settings import apv_systems
-import pandas
-import pytz
-from pandas.tseries.offsets import Minute
 import honeybee_radiance_command as hrc
+from pandas.tseries.offsets import Minute
+import pytz
+import pandas
+from apv.settings import apv_systems
+import random
+import time
+import sys
+import importlib as imp
+from apv import br_wrapper as br
+from apv import settings
+from apv.utils import files_interface as fi
+import pytictoc
+import os
+import json
+import pandas as pd
+import numpy as np
+import subprocess
+import apv
+from pathlib import Path
+from types import SimpleNamespace
+import hjson
+from datetime import datetime as dt
+from typing import Literal
+import apv.settings.user_paths as user_paths
+import re
+from apv.classes.geometries_handler import GeometriesHandler
+import apv.utils.files_interface as fi
+from apv.utils import files_interface
+from apv.classes.weather_data import WeatherData
+import pvlib
+from apv.classes.util_classes.sim_datetime import SimDT
+
+# #
+class Celsius:
+    def __init__(self, foo=3
+                 ):
+        self.temperature = temperature
+
+        self.foo = foo
+
+    @property
+    def temperature(self):
+        print("Getting value...")
+        return self._temperature
+
+    @temperature.setter
+    def temperature(self):
+        print("Setting value...")
+        self._temperature = 3*self.foo
+
+
+# #
+test = Celsius(2)
+
+test.temperature
+
+# #
+class test:
+    test =
+
+
+foo = test()
+
+setattr(foo, 'a', 2)
+foo.a
+
+# #
+leo.temperature = 0
+
+
+# #
 
 # #
 

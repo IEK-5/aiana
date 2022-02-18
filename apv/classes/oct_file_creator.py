@@ -39,8 +39,9 @@ class OctFileCreator:
 
     """
 
-    scene: br.SceneObj  # set in create_oct_file()
-    radObj: br.RadianceObj  # "
+    sceneObj: br.SceneObj  # set in create_oct_file()
+    radianceObj: br.RadianceObj  # "
+    moduleObj: br.ModuleObj
 
     def __init__(
             self,
@@ -60,34 +61,29 @@ class OctFileCreator:
             self.weatherData = weatherData
 
         self.debug_mode = debug_mode
+        # for custom radiance geometry descriptions:
+        self.ghObj = GeometriesHandler(self.settings.apv, self.debug_mode)
 
     def create_oct_file(self):
         """creates pv modules and mounting structure (optional)"""
 
         # create a bifacial_radiance Radiance object
-        self.radObj = br.RadianceObj(
+        self.radianceObj = br.RadianceObj(
             path=str(self.settings.paths.bifacial_radiance_files)
         )
         # make scene
         self._create_materials()
-        self.radObj.setGround(self.settings.sim.ground_albedo)
+        self.radianceObj.setGround(self.settings.sim.ground_albedo)
         self._create_sky()
 
-        # for custom radiance geometry descriptions:
-        self.ghObj = GeometriesHandler(self.settings.apv, self.debug_mode)
-
         # backup azimuth
-        sceneDict = self.settings.apv.sceneDict.copy()
-        azimuth = sceneDict["azimuth"]
+        self.sceneDict = self.settings.apv.sceneDict.copy()
+        azimuth = self.sceneDict["azimuth"]
         # set azimuth for BR to 180
-        sceneDict['azimuth'] = 180  # always to bottom in rvu,
+        self.sceneDict['azimuth'] = 180  # always to bottom in rvu,
         # to handle azimuth, the sky was already rotated instead
 
-        self.scene = self.radObj.makeScene(
-            moduletype=self.settings.apv.module_name,
-            sceneDict=sceneDict)
-
-        customObjects = {'modules': self._apply_BRs_makeModule}
+        customObjects = {'modules': self.get_radtext_of_all_modules}
         # north arrow
         if self.debug_mode:
             customObjects['north_arrow'] = self.ghObj.north_arrow
@@ -114,7 +110,7 @@ class OctFileCreator:
             customObjects, extra_radtext_to_apply_on_a_radObject
         )
 
-        self.radObj.makeOct(octname=self.settings.names.oct_fn[:-4])
+        self.radianceObj.makeOct(octname=self.settings.names.oct_fn[:-4])
 
     def view_scene(
         self,
@@ -141,9 +137,12 @@ class OctFileCreator:
         scd = self.settings.apv.scene_camera_dicts[view_name]
         radiance_utils.write_viewfile_in_vp_format(scd, view_fp, view_type)
 
-        oct_file_name = oct_file_name or self.settings.names.oct_fn
+        if oct_file_name is None:
+            oct_file_name = self.settings.names.oct_fn
+
+        print(f'Viewing {oct_file_name}.')
         subprocess.call(
-            ['rvu', '-vf', view_fp, '-e', '.01', oct_file_name+'.oct'])
+            ['rvu', '-vf', view_fp, '-e', '.01', oct_file_name])
 
     def _create_materials(self):
         # self.makeCustomMaterial(mat_name='dark_glass', mat_type='glass',
@@ -193,18 +192,18 @@ class OctFileCreator:
                 possible without light. Please choose a different time.""")
 
         # gendaylit using Perez models for direct and diffuse components
-        self.radObj.gendaylit2manual(
+        self.radianceObj.gendaylit2manual(
             self.weatherData.dni, self.weatherData.dhi,
             self.weatherData.sunalt, sunaz_modified)
 
-    def _apply_BRs_makeModule(self):
+    def get_radtext_of_all_modules(self):
         # # create PV module
         # this is a bit nasty because we use self.radObj.makeModule()
         # to create std or cell_level module, whereby in this case
         # the "text" argument has to be None. For the other module forms,
         # which are not present in self.radObj.makeModule(), we use own methods
 
-        module_text_dict = {
+        single_module_text_dict = {
             'std': None,  # rad text is created by self.radObj.makeModule()
             'cell_level': None,  # as above
             'none': "",  # empty
@@ -215,29 +214,31 @@ class OctFileCreator:
         module_form = self.settings.apv.module_form
         if module_form in ['std', 'cell_level', 'none']:
             # pass dict value without calling
-            module_text = module_text_dict[module_form]
+            single_module_text = single_module_text_dict[module_form]
         else:
             # pass dict value being a ghObj-method with calling
-            module_text = module_text_dict[module_form]()
+            single_module_text = single_module_text_dict[module_form]()
 
-        if module_form == 'cell_level':
-            # then use bifacial radiance by passing cellLevelModuleParams
-            cellParams = self.settings.apv.cellLevelModuleParams
-        else:
-            cellParams = None
-
-        self.radObj.makeModule(
+        self.moduleObj = br.ModuleObj(
             name=self.settings.apv.module_name,
             **self.settings.apv.moduleDict,
-            cellLevelModuleParams=cellParams,
-            text=module_text,
+            text=single_module_text,
             glass=self.settings.apv.glass_modules,
+            # TODO check frame and omega input options
+        )
+
+        if module_form == 'cell_level':
+            self.moduleObj.addCellModule(
+                self.settings.apv.cellLevelModuleParams)
+
+        self.sceneObj = self.radianceObj.makeScene(
+            module=self.moduleObj, sceneDict=self.sceneDict
         )
 
         modules_text = (
-            self.radObj.moduleDict['text']  # module text
+            self.moduleObj.text  # text of module radiance description
             # (only "numpanels" considered)
-            + self.scene.text.replace(  # all modules in first set
+            + self.sceneObj.text.replace(  # all modules in first set
                 '!xform', '|xform').replace(
                 f' objects\\{self.settings.apv.module_name}.rad', ''))
 
@@ -262,10 +263,10 @@ class OctFileCreator:
             else:
                 extra_radtext = "!xform "
 
-            with open(self.scene.radfiles, 'a+') as f:
+            with open(self.sceneObj.radfiles, 'a+') as f:
                 f.write(f'\n{extra_radtext}{rad_file_path}')
 
-            self.radObj.radfiles.append(rad_file_path)
+            self.radianceObj.radfiles.append(rad_file_path)
 
         print("\nCreated custom object", rad_file_path)
 
@@ -281,7 +282,7 @@ if __name__ == '__main__':
         octFileCreator.settings.apv.sceneDict['azimuth'] = azimuth
         octFileCreator.create_oct_file()
         octFileCreator.view_scene(
-            #view_name='top_down', view_type='parallel'
-            )
+            # view_name='top_down', view_type='parallel'
+        )
 
 # #

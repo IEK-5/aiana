@@ -145,7 +145,7 @@ def save_fig(
     make_dirs_if_not_there(file_path.parent)
     fig.savefig(file_path, bbox_inches='tight',
                 dpi=dpi, transparent=transparent)
-    print('saved fig ' + file_path)
+    print('saved fig ' + str(file_path))
     return
 
 

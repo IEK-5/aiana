@@ -67,7 +67,7 @@ class Default:
 
     moduleDict = {'x': 0.998,
                   'y': 1.980,
-                  'xgap': 0.005,
+                  'xgap': 0.05,
                   'ygap': 0.05,
                   'zgap': 0,
                   'numpanels': 2

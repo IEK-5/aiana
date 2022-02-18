@@ -5,6 +5,8 @@ from pvlib import location
 
 class Simulation:
 
+    study_name: str = 'APV_Floating'
+
     ground_albedo = 0.25  # grass
 
     # Spatial resolution between virtual radiation sensors
@@ -70,6 +72,8 @@ class Simulation:
     ##################
     # less important / not fully implemented at the moment
     scan_target: Literal['ground', 'module'] = 'ground'
+    # TODO for module east west see br tutorial 19
+
     # sky generation type:
     sky_gen_mode: Literal['gendaylit'
                           # , 'gencumsky'  # not included at the moment

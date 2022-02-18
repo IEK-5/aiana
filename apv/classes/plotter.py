@@ -1,11 +1,29 @@
-   def plot_ground_heatmap(
+
+from pathlib import Path
+import sys
+import pandas as pd
+from apv.classes.util_classes.settings_grouper import Settings
+from apv.utils import plotting
+from apv.utils import files_interface as fi
+
+
+class Plotter:
+
+    def __init__(
+            self,
+            settings: Settings,
+            debug_mode=False
+    ):
+        self.settings = settings
+
+    def ground_heatmap(
         self,
         df: pd.DataFrame = None,
-        destination_folder: Path = None,
-        file_name: str = None,
         cm_unit: str = None,
         cumulative: bool = None,
-        df_col_limits: pd.DataFrame = None
+        df_col_limits: pd.DataFrame = None,
+        destination_file_path: Path = None,
+        ticklabels_skip_count_number="auto",
     ):
         """plots the ground insolation as a heat map and saves it into
             the results/plots folder.
@@ -21,20 +39,19 @@
             Defaults to None.
         """
         if df is None:
-            df = fi.df_from_file_or_folder(str(self.csv_file_path))
+            if self.settings.paths.csv_file_path.exists() == False:
+                sys.exit("Cant plot without data, please simulate first"
+                         "or pass a pd.Dataframe.")
+            else:
+                df = fi.df_from_file_or_folder(
+                    str(self.settings.paths.csv_file_path))
         if cm_unit is None:
             cm_unit = self.settings.sim.cm_quantity
 
         if cumulative is None:
             cumulative = self.settings.sim.cumulative
 
-        ticklabels_skip_count_number = int(
-            round(self.ghObj.x_field, 0)
-            / (8*self.settings.sim.spatial_resolution))
-        if ticklabels_skip_count_number < 2:
-            ticklabels_skip_count_number = "auto"
-
-        label_and_cm_input: dict = self.evalObj.get_label_and_cm_input(
+        label_and_cm_input: dict = self.get_label_and_cm_input(
             cm_unit=cm_unit, cumulative=cumulative,
             df_col_limits=df_col_limits)
 
@@ -52,17 +69,11 @@
         fig.axes[1] = plotting.add_north_arrow(
             fig.axes[1], self.settings.apv.sceneDict['azimuth'])
 
-        if file_name is None:
-            file_name = self.file_name
-
-        if destination_folder is None:
-            destination_folder = self.results_subfolder
-        fi.save_fig(
-            fig,
-            cm_unit+'_'+file_name,
-            parent_folder_path=destination_folder,
-            sub_folder_name='',
-        )
+        if destination_file_path is None:
+            destination_file_path = self.settings.paths.results_folder / Path(
+                self.settings.names.jpg_fn
+            )
+        fi.save_fig(fig, destination_file_path)
 
     def return_weather_description(self):
         if self.settings.sim.TMY_irradiance_aggfunc == 'min':
@@ -94,3 +105,56 @@
                 title += (f'\nFrom: [{self.settings.sim.startdt}] '
                           f'To: [{self.settings.sim.enddt}]')
         return title
+
+    @staticmethod
+    def get_label_and_cm_input(cm_unit, cumulative,
+                               df_col_limits: pd.DataFrame = None):
+        """for the heatmap"""
+
+        # #################################### #
+        if cm_unit == 'radiation':
+            input_dict = {'colormap': 'inferno'}
+            if cumulative:
+                dict_up = {'z': 'Whm2', 'z_label':
+                           'Cumulative Irradiation on Ground [Wh m$^{-2}$]'}
+            else:
+                dict_up = {'z': 'Wm2', 'z_label':
+                           'Irradiance on Ground [W m$^{-2}$]'}
+        # #################################### #
+        elif cm_unit == 'shadow_depth':
+            input_dict = {'colormap': 'viridis_r'}
+            if cumulative:
+                dict_up = {'z': 'ShadowDepth_cum', 'z_label':
+                           'Cumulative Shadow Depth [%]'}
+            else:
+                dict_up = {'z': 'ShadowDepth', 'z_label': 'Shadow Depth [%]'}
+        # #################################### #
+        elif cm_unit == 'PAR':  # TODO unit changes also to *h ?
+            input_dict = {'colormap': 'YlOrBr_r'}
+            if cumulative:
+                dict_up = {'z': 'PARGround_cum', 'z_label': 'Cumulative PAR'
+                           + r' [μmol quanta.m$^{-2}\cdot s^{-1}$]'}
+            else:
+                dict_up = {'z': 'PARGround', 'z_label':
+                           'PAR [μmol quanta.m$^{-2}$.s$^{-1}$]'}
+        # #################################### #
+        elif cm_unit == 'DLI':
+            input_dict = {'colormap': 'YlOrBr_r'}
+            if cumulative:
+                dict_up = {'z': 'DLI', 'z_label':
+                           r'DLI [mol quanta.m$^{-2}\cdot day^{-1}$]'}
+            else:
+                sys.exit('cm_unit = DLI is only for cumulative')
+        else:
+            sys.exit('cm_unit has to be radiation, shadow_depth, PAR or DLI')
+
+        input_dict.update(dict_up)
+
+        if df_col_limits is None:
+            input_dict['vmin'] = None
+            input_dict['vmax'] = None
+        else:
+            input_dict['vmin'] = df_col_limits.loc['min', input_dict['z']]
+            input_dict['vmax'] = df_col_limits.loc['max', input_dict['z']]
+
+        return input_dict

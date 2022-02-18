@@ -5,30 +5,11 @@ from apv.settings.user_paths import UserPaths
 
 
 class Settings:
-    def __init__(
-        self,
-        SimSettings: Simulation = None,
-        APV_SystSettings: SystSettings = None,
-        paths: UserPaths = None,
-        names: Names = None
-    ):
+    def __init__(self):
+        self.sim = Simulation()
+        self.apv = SystSettings()
+        self.set_names_and_paths()
 
-        if SimSettings is None:
-            self.sim = Simulation()
-        else:
-            self.sim = SimSettings
-
-        if APV_SystSettings is None:
-            self.apv = SystSettings()
-        else:
-            self.apv = APV_SystSettings
-
-        if names is None:
-            self.names = Names(self.sim, self.apv)
-        else:
-            self.names = names
-
-        if paths is None:
-            self.paths = UserPaths(self.names)
-        else:
-            self.paths = paths
+    def set_names_and_paths(self):
+        self.names = Names(self.sim, self.apv)
+        self.paths = UserPaths(self.names)

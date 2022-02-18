@@ -6,7 +6,7 @@ from apv.classes.util_classes.settings_grouper import Settings
 def create_results_subfolder_path(settings: Settings):
 
     results_subfolder_path: Path = settings.paths.results_folder / Path(
-        settings.names.study,
+        settings.sim.study_name,
         settings.apv.module_form
         + f'_res-{settings.sim.spatial_resolution}m'
         + f'_step-{settings.sim.time_step_in_minutes}min'
