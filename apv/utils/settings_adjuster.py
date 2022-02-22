@@ -4,7 +4,7 @@ import numpy as np
 # TODO implement into geometries handler
 
 
-def adjust_settings(
+def adjust_apvSystem_settings(
     APV_SystSettings: SystSettings
 ) -> SystSettings:
 

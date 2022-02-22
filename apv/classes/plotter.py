@@ -2,6 +2,7 @@
 from pathlib import Path
 import sys
 import pandas as pd
+from apv.classes.util_classes.geometries_handler import GeometriesHandler
 from apv.classes.util_classes.settings_grouper import Settings
 from apv.utils import plotting
 from apv.utils import files_interface as fi
@@ -12,9 +13,11 @@ class Plotter:
     def __init__(
             self,
             settings: Settings,
+            ghObj: GeometriesHandler,
             debug_mode=False
     ):
         self.settings = settings
+        self.ghObj = ghObj
 
     def ground_heatmap(
         self,
@@ -22,8 +25,7 @@ class Plotter:
         cm_unit: str = None,
         cumulative: bool = None,
         df_col_limits: pd.DataFrame = None,
-        destination_file_path: Path = None,
-        ticklabels_skip_count_number="auto",
+        destination_file_path: Path = None
     ):
         """plots the ground insolation as a heat map and saves it into
             the results/plots folder.
@@ -54,6 +56,12 @@ class Plotter:
         label_and_cm_input: dict = self.get_label_and_cm_input(
             cm_unit=cm_unit, cumulative=cumulative,
             df_col_limits=df_col_limits)
+
+        ticklabels_skip_count_number = int(
+            round(self.ghObj.scan_length_x, 0)
+            / (8*self.settings.sim.spatial_resolution))
+        if ticklabels_skip_count_number < 2:
+            ticklabels_skip_count_number = "auto"
 
         fig = plotting.plot_heatmap(
             df=df, x='x', y='y', c=label_and_cm_input['z'],
@@ -115,10 +123,11 @@ class Plotter:
         if cm_unit == 'radiation':
             input_dict = {'colormap': 'inferno'}
             if cumulative:
+                # update dict
                 dict_up = {'z': 'Whm2', 'z_label':
                            'Cumulative Irradiation on Ground [Wh m$^{-2}$]'}
             else:
-                dict_up = {'z': 'Wm2', 'z_label':
+                dict_up = {'z': 'Wm2Front', 'z_label':
                            'Irradiance on Ground [W m$^{-2}$]'}
         # #################################### #
         elif cm_unit == 'shadow_depth':

@@ -12,7 +12,7 @@
     """
 
 import numpy as np
-from apv.settings.apv_systems import Default as SystSettings
+from apv.classes.util_classes.settings_grouper import Settings
 from apv.utils import settings_adjuster as sa
 import pandas as pd
 
@@ -37,8 +37,8 @@ class GeometriesHandler:
     allRows_footprint_x: float
     allRows_footprint_y: float
 
-    x_field: int  # lengths of the groundscan area in x direction
-    y_field: int
+    scan_length_x: int  # lengths of the groundscan area in x direction
+    scan_length_y: int
 
     # shifts from apv- and groundscan_field-center towards origin (x=y=0):
     center_offset_x: float
@@ -53,28 +53,30 @@ class GeometriesHandler:
     post_start_x: float
     post_distance_x: float
 
-    def __init__(self, APV_SystSettings: SystSettings, debug_mode=False):
+    ygrid: list[int]
+    groundscan: dict
+    # frontscan: dict
+    # backscan: dict
+
+    def __init__(self, settings: Settings, debug_mode=False):
+        self.settings = settings
         # adjust, e.g. add cell sizes
-        self.APV_SystSettings = sa.adjust_settings(APV_SystSettings)
+        self.settings.apv = sa.adjust_apvSystem_settings(settings.apv)
 
         self.debug_mode = debug_mode
 
         # short cuts:
-        self.mod = APV_SystSettings.moduleDict
-        self.scn = APV_SystSettings.sceneDict
-        self.mount = APV_SystSettings.mountingStructureDict
+        self.mod = settings.apv.moduleDict
+        self.scn = settings.apv.sceneDict
+        self.mount = settings.apv.mountingStructureDict
 
         self._set_singleRow_lengths_and_footprints()
-        self._set_x_y_field()  # TODO rename to GroundScanLength_x_y ?
+        self._set_scan_lengths_x_y()  # TODO rename to GroundScanLength_x_y ?
         self._set_APVSystCenter_to_origin_offsets()
         self._set_x_y_coordinates_of_modCorner_and_scanArea_anchors()
-
-        modPostDist = self.mount['module_to_post_distance_x']
-        # array cloning distance in x (in y called 'pitch' by BR)
-        self.clone_distance_x = self.singleRow_footprint_x + 2*modPostDist
-        # post start and distance used for building mounting structure
-        self.post_start_x = self.sw_modCorner_x - modPostDist
-        self.post_distance_x = self.clone_distance_x/(self.mount['n_post_x']-1)
+        self._set_y_grid_and_sensors()
+        self._set_groundscan_dict()
+        self._set_post_x_pos_respecting_cloning()
 
     def _set_singleRow_lengths_and_footprints(self):
 
@@ -98,17 +100,34 @@ class GeometriesHandler:
             self.singleRow_footprint_y+self.scn['pitch']*(self.scn['nRows']-1)
         )
 
-        # ### ground scan dimensions x_field, y_field
-    def _set_x_y_field(self):
-        self.x_field = self.allRows_footprint_x \
-            + 2*self.APV_SystSettings.ground_scan_margin_x
-        self.y_field = self.allRows_footprint_y \
-            + 2*self.APV_SystSettings.ground_scan_margin_y
+    def _set_post_x_pos_respecting_cloning(self):
+        modPostDist = self.mount['module_to_post_distance_x']
+        # array cloning distance in x (in y called 'pitch' by BR)
+        self.clone_distance_x = self.singleRow_footprint_x + 2*modPostDist
+        # post start and distance used for building mounting structure
+        self.post_start_x = self.sw_modCorner_x - modPostDist
+        self.post_distance_x = self.clone_distance_x/(self.mount['n_post_x']-1)
+
+    def _set_scan_lengths_x_y(self):
+        """ground scan dimensions (old name: x_field, y_field)"""
+
+        if self.mount['module_to_post_distance_x'] > 0:
+            extra_x = self.mount['post_thickness']
+        else:
+            extra_x = 0
+
+        self.scan_length_x = self.allRows_footprint_x \
+            + 2*self.settings.apv.ground_scan_margin_x \
+            + self.mount['module_to_post_distance_x'] \
+            + extra_x
+
+        self.scan_length_y = self.allRows_footprint_y \
+            + 2*self.settings.apv.ground_scan_margin_y
 
         # round up (ceiling)
-        if self.APV_SystSettings.round_up_field_dimensions:
-            self.x_field = np.ceil(self.x_field)
-            self.y_field = np.ceil(self.y_field)
+        if self.settings.apv.round_up_field_dimensions:
+            self.scan_length_x = np.ceil(self.scan_length_x)
+            self.scan_length_y = np.ceil(self.scan_length_y)
 
     def _set_APVSystCenter_to_origin_offsets(self):
         self.center_offset_x = 0
@@ -127,10 +146,10 @@ class GeometriesHandler:
             -self.allRows_footprint_y/2 + self.center_offset_y)
 
         # south west corners of the ground scan area
-        self.scan_area_anchor_x = -self.x_field/2 + self.center_offset_x \
-            + self.APV_SystSettings.ground_scan_shift_x
-        self.scan_area_anchor_y = -self.y_field/2 + self.center_offset_y \
-            + self.APV_SystSettings.ground_scan_shift_y
+        self.scan_area_anchor_x = -self.scan_length_x/2 + self.center_offset_x \
+            + self.settings.apv.ground_scan_shift_x
+        self.scan_area_anchor_y = -self.scan_length_y/2 + self.center_offset_y \
+            + self.settings.apv.ground_scan_shift_y
 
     def get_rad_txt_for_cloning_of_the_apv_system(self) -> str:
         """Usefull for periodic boundary conditions.
@@ -139,13 +158,13 @@ class GeometriesHandler:
         """
 
         shift_x_array_start = \
-            -self.APV_SystSettings.n_apv_system_clones_in_negative_x \
+            -self.settings.apv.n_apv_system_clones_in_negative_x \
             * self.clone_distance_x
 
         # total count n of cloned system segments
         # (segment = structure + modules without a gap in x direction)
-        n_system_segments_x = self.APV_SystSettings.n_apv_system_clones_in_x \
-            + 1 + self.APV_SystSettings.n_apv_system_clones_in_negative_x
+        n_system_segments_x = self.settings.apv.n_apv_system_clones_in_x \
+            + 1 + self.settings.apv.n_apv_system_clones_in_negative_x
 
         if n_system_segments_x > 1:
             return (f'!xform -t {shift_x_array_start} 0 0 '
@@ -167,7 +186,7 @@ class GeometriesHandler:
 
         beamlength_x = self.post_distance_x
 
-        if self.APV_SystSettings.enlarge_beams_for_periodic_shadows:
+        if self.settings.apv.enlarge_beams_for_periodic_shadows:
             beamlength_x = self.allRows_footprint_x * 1.2
             # to get periodic shadows in summer sunrise and set
             beamlength_y = self.scn['pitch']*(self.scn['nRows']-0.4)
@@ -197,10 +216,59 @@ class GeometriesHandler:
         )
         return text
 
-    def groundscan_area(self) -> str:
+    def _set_y_grid_and_sensors(self):
+        self.ygrid: list[float] = np.arange(
+            self.scan_area_anchor_y,
+            (self.scan_area_anchor_y + self.scan_length_y
+             + self.settings.sim.spatial_resolution),
+            self.settings.sim.spatial_resolution)
+
+        self.sensors_x = int(
+            self.scan_length_x / self.settings.sim.spatial_resolution)+1
+
+    def _set_groundscan_dict(self):
+        """
+        groundscan (dict): dictionary containing the XYZ-start and
+        -increments values for a bifacial_radiance linescan.
+        It describes where the virtual ray tracing sensors are placed.
+        The origin (x=0, y=0) of the PV facility is in its center.
+        """
+
+        sx_xinc = self.settings.sim.spatial_resolution
+        self.groundscan = {
+            'xstart':  self.scan_area_anchor_x,  # bottom left for azimuth 180
+            'ystart': self.scan_area_anchor_y,
+            # ystart will be set by looping ygrid for multiprocessing
+            'zstart': 0.001,  # 0.05,
+            'xinc': 0, 'yinc': 0, 'zinc': 0,
+            'sx_xinc': sx_xinc, 'sx_yinc': 0, 'sx_zinc': 0,
+            # NOTE Sensor x-coordinate = xstart + iy*xinc + ix*sx_xinc,
+            # whereby iy und ix are looped over range(Ny) and range(Nx)
+            'Nx': self.sensors_x, 'Ny': 1, 'Nz': 1,
+            'orient': '0 0 -1'
+        }
+
+        print(f'\n sensor grid:\nx: {self.sensors_x}, y: {len(self.ygrid)}, '
+              f'total: {self.sensors_x * len(self.ygrid)}')
+
+    # =========================================================================
+    # =============================== RAD TEXTS: ==============================
+    # =========================================================================
+
+    def groundscan_area_and_sensors(self) -> str:
+        g = self.groundscan
+        # ground scan area
         text = (
-            f'!genbox grass field {self.x_field} {self.y_field} 0.00001'
-            f' | xform -t {self.scan_area_anchor_x} {self.scan_area_anchor_y} 0'
+            f'!genbox grass field {self.scan_length_x} {self.scan_length_y} 0.00001'
+            f' | xform -t {g["xstart"]} {g["ystart"]} 0'
+        )
+        # sensors
+        s = 0.05
+        text += (
+            f'\n!genbox red sensor {s} {s} {s/2} '
+            f'| xform -t {g["xstart"]} {g["ystart"]} 0 '
+            f'-a {self.sensors_x} -t {g["sx_xinc"]} 0 0 '
+            f'-a {len(self.ygrid)} -t 0 {g["sx_xinc"]} 0'  # x- and y-inc equal
         )
 
         if self.debug_mode:
@@ -215,7 +283,7 @@ class GeometriesHandler:
                 f'| xform -t {self.center_offset_x} {self.center_offset_y} 0'
                 # mark system edge
                 f'\n!genbox black post {0.2} {0.2} 8 '
-                f'| xform -t {self.scan_area_anchor_x} {self.scan_area_anchor_y} 0'
+                f'| xform -t {g["xstart"]} {g["ystart"]} 0'
             )
         return text
 
@@ -251,9 +319,9 @@ class GeometriesHandler:
             self.scn["hub_height"] + height_shift,  # higher post height
             higher_post_start_y)
 
-        if self.APV_SystSettings.add_glass_box:
+        if self.settings.apv.add_glass_box:
             t_y = (self.sw_modCorner_y + self.allRows_footprint_y
-                   + self.APV_SystSettings.glass_box_to_APV_distance)
+                   + self.settings.apv.glass_box_to_APV_distance)
             # variable cannot be found because not in default()
             # but in declined tables apv system settings
 
@@ -261,7 +329,7 @@ class GeometriesHandler:
             text += (f'\n!genbox stock_glass glass_wall {t_x} 0.005 5'
                      f' | xform -t {self.sw_modCorner_x} {t_y} 0')
 
-        if self.APV_SystSettings.add_airrails:
+        if self.settings.apv.add_airrails:
 
             n_rails = 8
             s_rail = 0.08
@@ -302,7 +370,7 @@ class GeometriesHandler:
     def make_checked_module_text(self) -> str:
 
         mod = self.mod
-        c = self.APV_SystSettings.cellLevelModuleParams
+        c = self.settings.apv.cellLevelModuleParams
 
         # copied from br.main.RadianceObj.makeModule() and modified:
         x = c['numcellsx']*c['xcell']+(c['numcellsx']-1)*c['xcellgap']
@@ -390,7 +458,7 @@ class GeometriesHandler:
         offsetfromaxis = 0.01
         rotation_angle = 2*(90 - self.scn['tilt']) + 180
 
-        c = self.APV_SystSettings.cellLevelModuleParams
+        c = self.settings.apv.cellLevelModuleParams
         # copied from br.main.RadianceObj.makeModule() and modified:
         x = c['numcellsx']*c['xcell']+(c['numcellsx']-1)*c['xcellgap']
         y = c['numcellsy']*c['ycell'] + (c['numcellsy']-1)*c['ycellgap']
@@ -426,8 +494,8 @@ class GeometriesHandler:
         # )
 
         '''
-        if APV_SystSettings.n_apv_system_clones_in_x > 1 \
-                or APV_SystSettings.n_apv_system_clones_in_negative_x > 1:
+        if settings.apv.n_apv_system_clones_in_x > 1 \
+                or settings.apv.n_apv_system_clones_in_negative_x > 1:
             """ TODO cleaner code and slight speed optimization:
         Return concat of matfiles, radfiles and skyfiles
 
@@ -448,7 +516,7 @@ class GeometriesHandler:
                 # (only "numpanels" considered)
                 + self.scene.text.replace(  # all modules in first set
                     '!xform', '|xform').replace(
-                    f' objects\\{self.APV_SystSettings.module_name}.rad', ''))
+                    f' objects\\{self.settings.apv.module_name}.rad', ''))
 
             self.radObj.appendtoScene(
                 radfile=self.scene.radfiles,
@@ -456,7 +524,7 @@ class GeometriesHandler:
                     'copied_modules', modules_text),
                 # cloning all modules from first set into all sets
                 text=self.geomObj.get_customObject_cloning_rad_txt(
-                    APV_SystSettings)
+                    settings.apv)
             )
 
         # add ground scan area visualization to the radObj without rotation

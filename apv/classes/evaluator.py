@@ -59,6 +59,9 @@ class Evaluator:
         df['time_local'] = self.simDT.sim_dt_local
         df['time_utc'] = self.simDT.sim_dt_utc_pd
 
+        if 'ground' in str(self.settings.paths.csv_file_path):
+            df.rename(columns={'Wm2Front': 'Wm2'}, inplace=True)
+
         df = self._add_PAR(df=df)
         df = self._add_shadowdepth(df=df, cumulative=False)
 

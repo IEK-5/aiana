@@ -45,26 +45,19 @@ class OctFileCreator:
 
     def __init__(
             self,
-            settings: Settings = None,
-            weatherData: WeatherData = None,
-            debug_mode=False
+            settings: Settings,
+            weatherData: WeatherData,
+            ghObj: GeometriesHandler,
+            debug_mode=False,
     ):
 
-        if settings is None:  # for self.set_up_AnalObj_and_groundscan()
-            self.settings = Settings()
-        else:
-            self.settings = settings
-
-        if weatherData is None:
-            self.weatherData = WeatherData(self.settings)
-        else:
-            self.weatherData = weatherData
-
-        self.debug_mode = debug_mode
+        self.settings = settings
+        self.weatherData = weatherData
         # for custom radiance geometry descriptions:
-        self.ghObj = GeometriesHandler(self.settings.apv, self.debug_mode)
+        self.ghObj = ghObj
+        self.debug_mode = debug_mode
 
-    def create_oct_file(self):
+    def create_octfile(self):
         """creates pv modules and mounting structure (optional)"""
 
         # create a bifacial_radiance Radiance object
@@ -90,7 +83,7 @@ class OctFileCreator:
 
         # scan area
         if self.settings.apv.add_groundScanArea_as_object_to_scene:
-            customObjects['scan_area'] = self.ghObj.groundscan_area
+            customObjects['scan_area'] = self.ghObj.groundscan_area_and_sensors
 
         # mounting structure
         structure_type = self.settings.apv.mounting_structure_type
@@ -112,7 +105,7 @@ class OctFileCreator:
 
         self.radianceObj.makeOct(octname=self.settings.names.oct_fn[:-4])
 
-    def view_scene(
+    def view_octfile(
         self,
         view_type: Literal['perspective', 'parallel'] = 'perspective',
         view_name: Literal['total', 'module_zoom', 'top_down'] = 'total',
@@ -153,13 +146,18 @@ class OctFileCreator:
             rad_mat_file,
             mat_name='grass', mat_type='plastic',
             R=0.1, G=0.3, B=0.08,
-            specularity=0.1,
+            specularity=0,
             # self.settings.sim.ground_albedo,  # TODO
             # albedo hängt eigentlich auch von strahlungswinkel
             # und diffusen/direktem licht anteil ab
             # https://curry.eas.gatech.edu/Courses/6140/ency/Chapter9 \
             # /Ency_Atmos/Reflectance_Albedo_Surface.pdf
             roughness=0.3)
+
+        radiance_utils.makeCustomMaterial(
+            rad_mat_file,
+            mat_name='red', mat_type='plastic',
+            R=1, G=0, B=0)
 
     def _create_sky(self, tracked=False):
         """
@@ -280,8 +278,8 @@ if __name__ == '__main__':
     for azimuth in [180]:  # [90, 135, 180, 270]:
         #octFileCreator.settings.apv = APV_Syst_InclinedTables_S_Morschenich()
         octFileCreator.settings.apv.sceneDict['azimuth'] = azimuth
-        octFileCreator.create_oct_file()
-        octFileCreator.view_scene(
+        octFileCreator.create_octfile()
+        octFileCreator.view_octfile(
             # view_name='top_down', view_type='parallel'
         )
 

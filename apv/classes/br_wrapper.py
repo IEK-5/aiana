@@ -78,69 +78,40 @@ eh nicht möglich...)
 
 """
 
-
-from apv.classes.evaluator import Evaluator
-from apv.classes.oct_file_creator import OctFileCreator
-from apv.classes.plotter import Plotter
-from apv.classes.simulator import Simulator
-from apv.utils import files_interface as fi
-from apv.classes.weather_data import WeatherData
-from apv.classes.util_classes.sim_datetime import SimDT
-
-import bifacial_radiance as br
-from typing import Literal
-import numpy as np
-import pandas as pd
-import sys
-from pathlib import Path
 from apv.classes.util_classes.settings_grouper import Settings
+from apv.classes.util_classes.sim_datetime import SimDT
+from apv.classes.util_classes.geometries_handler import GeometriesHandler
+from apv.classes.weather_data import WeatherData
+from apv.classes.oct_file_creator import OctFileCreator
+from apv.classes.simulator import Simulator
+from apv.classes.evaluator import Evaluator
+from apv.classes.plotter import Plotter
 
 
 class BR_Wrapper():
 
-    settings: Settings
-
-    def __init__(self, settings: Settings, weatherData=None):
+    def __init__(self, settings: Settings):
         self.settings = settings
         self.settings.set_names_and_paths()
 
-        if weatherData is None:
-            self.weatherData = WeatherData(self.settings)
-        else:
-            self.weatherData = weatherData
-
+        self.weatherData = WeatherData(self.settings)
         self.simDT = SimDT(self.settings.sim)
-
+        self.ghObj = GeometriesHandler(self.settings,  # self.debug_mode=True
+                                       )
         self.octFileObj = OctFileCreator(
-            settings=self.settings, weatherData=self.weatherData
+            self.settings, self.weatherData, self.ghObj,
+            # self.debug_mode=True
         )
-        self.simulatorObj = Simulator(self.settings)
-
+        self.simulatorObj = Simulator(self.settings, self.ghObj)
         self.evaluatorObj = Evaluator(self.settings, self.weatherData)
+        self.plotterObj = Plotter(self.settings, self.ghObj)
 
-        self.octFileObj.ghObj.x_field
-        self.plotterObj = Plotter(self.settings)
+    def create_octfile(self):
+        self.octFileObj.create_octfile()
 
-    def create_oct_file(self):
-        self.octFileObj.create_oct_file()
+    def view_octfile(self):
+        self.octFileObj.view_octfile()
 
-    def simulate(self):
-        """        self.frontscan, self.backscan = self.analObj.moduleAnalysis(
-            scene=self.scene, sensorsy=sensorsy)
-        scan_dicts{'front': frontscan}"""
-
+    def simulate_and_evaluate(self):
         self.simulatorObj.run_raytracing_simulation()
-
-    def plot_ground_heatmap(self):
-
-        ticklabels_skip_count_number = int(
-            round(self.octFileObj.ghObj.x_field, 0)
-            / (8*self.settings.sim.spatial_resolution))
-        if ticklabels_skip_count_number < 2:
-            ticklabels_skip_count_number = "auto"
-
-        self.plotterObj.ground_heatmap(
-            ticklabels_skip_count_number=ticklabels_skip_count_number)
-    # def run_raytracing_simulation(self):
-
-    # def plot_ground_heatmap(self):
+        self.evaluatorObj.add_time_stamps_PAR_shadowDepth_to_csv_file()
