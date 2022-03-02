@@ -33,6 +33,8 @@ import pvlib
 from apv.classes.util_classes.sim_datetime import SimDT
 
 # #
+
+
 class Celsius:
     def __init__(self, foo=3
                  ):
@@ -57,6 +59,8 @@ test = Celsius(2)
 test.temperature
 
 # #
+
+
 class test:
     test =
 
@@ -167,7 +171,7 @@ MyObj.__dict__
 
 
 # #
-SimSettings = apv.settings.simulation.Simulation()
+SimSettings = apv.settings.sim_settings.Simulation()
 simdt = SimDT(SimSettings)
 weatherObj = WeatherData(SimSettings)
 

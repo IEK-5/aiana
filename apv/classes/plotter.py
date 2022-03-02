@@ -41,9 +41,10 @@ class Plotter:
             Defaults to None.
         """
         if df is None:
-            if self.settings.paths.csv_file_path.exists() == False:
-                sys.exit("Cant plot without data, please simulate first"
-                         "or pass a pd.Dataframe.")
+            fp = self.settings.paths.csv_file_path
+            if fp.exists() is False:
+                sys.exit("Can't plot, "
+                         f"{self.settings.paths.csv_file_path} not found.")
             else:
                 df = fi.df_from_file_or_folder(
                     str(self.settings.paths.csv_file_path))
@@ -79,7 +80,7 @@ class Plotter:
 
         if destination_file_path is None:
             destination_file_path = self.settings.paths.results_folder / Path(
-                self.settings.names.jpg_fn
+                f'{self.settings.names.csv_fn[:-4]}_{cm_unit}.jpg'
             )
         fi.save_fig(fig, destination_file_path)
 
@@ -103,7 +104,7 @@ class Plotter:
         if 'resolution' in title_comps:
             title += f'Resolution: {self.settings.sim.spatial_resolution} m\n'
         if 'position' in title_comps:
-            title += f'Scanned Position: {self.settings.sim.position}\n'
+            title += f'Scanned Position: {self.settings.sim.scan_position}\n'
         if 'module_form' in title_comps:
             title += f'Module Form: {self.settings.apv.module_form}'
         if 'datetime' in title_comps:
@@ -127,7 +128,7 @@ class Plotter:
                 dict_up = {'z': 'Whm2', 'z_label':
                            'Cumulative Irradiation on Ground [Wh m$^{-2}$]'}
             else:
-                dict_up = {'z': 'Wm2Front', 'z_label':
+                dict_up = {'z': 'Wm2', 'z_label':
                            'Irradiance on Ground [W m$^{-2}$]'}
         # #################################### #
         elif cm_unit == 'shadow_depth':

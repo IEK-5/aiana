@@ -79,7 +79,6 @@ eh nicht möglich...)
 """
 
 from apv.classes.util_classes.settings_grouper import Settings
-from apv.classes.util_classes.sim_datetime import SimDT
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
 from apv.classes.weather_data import WeatherData
 from apv.classes.oct_file_creator import OctFileCreator
@@ -90,12 +89,19 @@ from apv.classes.plotter import Plotter
 
 class BR_Wrapper():
 
+    """NOTE create/view octfile and plotting can be called
+    via the respective octFileObj and plotterObj
+
+    datetime info is set in settings and stored in weatherData.SimDT object
+    setting correct irradiance and sun pos on weatherData initialization.
+    """
+
     def __init__(self, settings: Settings):
         self.settings = settings
         self.settings.set_names_and_paths()
+        print('csv_file exists: ', self.settings.paths.csv_file_path.exists())
 
         self.weatherData = WeatherData(self.settings)
-        self.simDT = SimDT(self.settings.sim)
         self.ghObj = GeometriesHandler(self.settings,  # self.debug_mode=True
                                        )
         self.octFileObj = OctFileCreator(
@@ -105,12 +111,6 @@ class BR_Wrapper():
         self.simulatorObj = Simulator(self.settings, self.ghObj)
         self.evaluatorObj = Evaluator(self.settings, self.weatherData)
         self.plotterObj = Plotter(self.settings, self.ghObj)
-
-    def create_octfile(self):
-        self.octFileObj.create_octfile()
-
-    def view_octfile(self):
-        self.octFileObj.view_octfile()
 
     def simulate_and_evaluate(self):
         self.simulatorObj.run_raytracing_simulation()

@@ -1,4 +1,5 @@
 # #
+from pathlib import Path
 from typing import Literal
 from pvlib import location
 
@@ -7,6 +8,8 @@ class Simulation:
 
     study_name: str = 'APV_Floating'
 
+    results_subfolder: Path = Path('test')
+
     ground_albedo = 0.25  # grass
 
     # Spatial resolution between virtual radiation sensors
@@ -14,6 +17,9 @@ class Simulation:
 
     sim_year: int or Literal['TMY'] = 'TMY'  # or e.g. 2020
     # TMY = typical meterological year; here: mean data from 2005 to 2020
+
+    use_typDay_perMonth_for_irradianceCalculation = False  # for dni, dhi, ghi
+    use_typDay_perMonth_irradiationData = False
 
     TMY_irradiance_aggfunc: Literal['min', 'mean', 'max'] = 'mean'
     # also used as aggregation function for satelite watherdata pivoting to TMY
@@ -28,8 +34,6 @@ class Simulation:
 
     # time settings (as local time of the timezone defined in apv_location.tz)
     # currently only as typical meterological year
-
-    use_typDay_perMonth_for_shadowDepthCalculation = False
 
     sim_date_time: str = '06-15_13:00'  # used as second part of the .oct file name
     time_step_in_minutes: int = 60  # only 1,2,3,6,10,12,15,20,30,60,120
@@ -64,7 +68,7 @@ class Simulation:
     plot_title_components: list = ['position', 'weather', 'datetime']
     # all options: ['weather', 'module_form', 'resolution',
     #                'position', 'agg_func', 'datetime']
-    position: Literal['north', 'center', 'south', 'east'] = 'south'
+    scan_position: Literal['north', 'center', 'south', 'east'] = 'south'
     # to be used in scan field shifting, to shift scanned area within a system
     plots_shifts_xy = {'north': [0, 1], 'center': [0, 0],
                        'south': [0, -1], 'east': [3, 0]}

@@ -10,7 +10,7 @@ if __name__ == '__main__':
     imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.classes.br_wrapper)
 
-    SimSettings = apv.settings.simulation.Simulation()
+    SimSettings = apv.settings.sim_settings.Simulation()
     # APV_SystSettings = apv.settings.apv_systems.Default()
     APV_SystSettings = \
         apv.settings.apv_systems.SimpleSingleCheckerBoard()

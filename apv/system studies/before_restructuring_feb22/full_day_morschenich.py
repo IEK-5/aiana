@@ -9,7 +9,7 @@ if __name__ == '__main__':
     imp.reload(apv.settings.apv_systems)
     imp.reload(apv.classes.br_wrapper)
 
-    SimSettings = apv.settings.simulation.Simulation()
+    SimSettings = apv.settings.sim_settings.Simulation()
     APV_SystSettings = apv.settings.apv_systems.Default()
     evalObj = apv.classes.APV_evaluation.APV_Evaluation(
         SimSettings=SimSettings,

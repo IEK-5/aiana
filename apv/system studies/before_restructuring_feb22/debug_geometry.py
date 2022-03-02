@@ -6,7 +6,7 @@ if __name__ == '__main__':
     imp.reload(apv.settings.apv_systems)
     imp.reload(apv.classes.br_wrapper)
 
-    SimSettings = apv.settings.simulation.Simulation()
+    SimSettings = apv.settings.sim_settings.Simulation()
     APV_SystSettings = \
         apv.settings.apv_systems.Default()
     APV_SystSettings.add_groundScanArea_as_object_to_scene = True

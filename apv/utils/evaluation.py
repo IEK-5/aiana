@@ -2,7 +2,7 @@ import pandas as pd
 from collections import namedtuple
 import apv
 from pathlib import Path
-from apv.settings.simulation import Simulation
+from apv.settings.sim_settings import Simulation
 
 RMSE_MBE_results = namedtuple(
     'RMSE_MBE_results', ('mbe', 'rel_mbe', 'rmse', 'rel_rmse'))

@@ -23,7 +23,7 @@ from apv.settings.apv_systems import APV_Syst_InclinedTables_S_Morschenich
 class OctFileCreator:
     """
     Attributes:
-        simSettings (apv.settings.simulation.Simulation):
+        simSettings (apv.settings.sim_settings.Simulation):
         simulation settings object
         --------
         radObj (bifacial_radiance.RadianceObj): radiance object
@@ -76,8 +76,11 @@ class OctFileCreator:
         self.sceneDict['azimuth'] = 180  # always to bottom in rvu,
         # to handle azimuth, the sky was already rotated instead
 
-        customObjects = {'modules': self.get_radtext_of_all_modules}
+        customObjects = {}
         # north arrow
+        if self.settings.apv.module_form is not 'none':
+            customObjects['modules'] = self.get_radtext_of_all_modules
+
         if self.debug_mode:
             customObjects['north_arrow'] = self.ghObj.north_arrow
 
@@ -203,14 +206,13 @@ class OctFileCreator:
 
         single_module_text_dict = {
             'std': None,  # rad text is created by self.radObj.makeModule()
-            'cell_level': None,  # as above
             'none': "",  # empty
             'cell_level_checker_board': self.ghObj.make_checked_module_text,
             'EW_fixed': self.ghObj.make_EW_module_text,
             'cell_level_EW_fixed': self.ghObj.make_cell_level_EW_module_text,
         }
         module_form = self.settings.apv.module_form
-        if module_form in ['std', 'cell_level', 'none']:
+        if module_form in ['std', 'none']:
             # pass dict value without calling
             single_module_text = single_module_text_dict[module_form]
         else:
@@ -220,7 +222,7 @@ class OctFileCreator:
         self.moduleObj = br.ModuleObj(
             name=self.settings.apv.module_name,
             **self.settings.apv.moduleDict,
-            text=single_module_text,
+            text=single_module_text,  # NOTE TODO seems inactive, opened issue
             glass=self.settings.apv.glass_modules,
             # TODO check frame and omega input options
         )

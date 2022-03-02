@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime
 import pytz
-from apv.settings.simulation import Simulation
+from apv.settings.sim_settings import Simulation
 
 
 class SimDT:

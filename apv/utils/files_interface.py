@@ -4,7 +4,8 @@
 - save figures into files
 (all with suitable standard settings).
 """
-
+# #
+import subprocess
 import xarray as xr
 from matplotlib.figure import Figure
 import pandas as pd
@@ -133,8 +134,8 @@ def save_fig(
         file_path: Path,
         dpi=300,
         transparent=False):
-    """Saves a figure with certain default settings into
-    results_folder/sub_folder and makes parent directories if not existing.
+    """Saves a figure with certain default settings into file_path
+    and makes parent directories if not existing.
 
     Args:
         fig (matplotlib.figure.Figure): figure to be saved
@@ -149,7 +150,15 @@ def save_fig(
     return
 
 
-def get_min_max_of_cols_in_several_csv_files(csv_files: list):
+def get_min_max_of_cols_in_several_csv_files(csv_files: list) -> pd.DataFrame:
+    """
+
+    Args:
+        csv_files (list): list of csv-file-paths
+
+    Returns:
+        pd.DataFrame with min and max of each csv-file-column
+    """
 
     dfs = (df_from_file_or_folder(file) for file in csv_files)
     df = pd.concat(dfs)

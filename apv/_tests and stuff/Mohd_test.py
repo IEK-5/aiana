@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 from apv.utils.files_interface import save_fig
 import apv
 from apv.classes.weather_data import WeatherData
-SimSettings = apv.settings.simulation.Simulation()
+SimSettings = apv.settings.sim_settings.Simulation()
 weatherObj = WeatherData(SimSettings=SimSettings)
 
 # #

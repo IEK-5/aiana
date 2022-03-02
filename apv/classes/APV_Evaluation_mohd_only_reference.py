@@ -9,7 +9,7 @@ import pvlib
 # import pvfactors
 import apv
 from apv.settings.apv_systems import Default as APV_System
-from apv.settings.simulation import Simulation
+from apv.settings.sim_settings import Simulation
 from apv.classes.weather_data import WeatherData
 from apv.classes.util_classes.sim_datetime import SimDT
 import apv.settings.user_paths as UserPaths
@@ -20,7 +20,7 @@ from apv.utils import files_interface as fi
 class Evaluator:
     """
     Attributes:
-        simSettings (apv.settings.simulation.Simulation):
+        simSettings (apv.settings.sim_settings.Simulation):
         simulation settings object
         --------
         met_data(bifacial_radiance.MetObj): meterologic data object
@@ -53,7 +53,6 @@ class Evaluator:
         self.tmydata = pd.DataFrame()
         self.irrad_data = pd.DataFrame()
 
-
     def add_time_stamps_and_eval_quantities_to_merged_line_scans(self):
         """merge results to create one complete ground DataFrame
         """
@@ -70,11 +69,9 @@ class Evaluator:
         df = self.evalObj.add_shadowdepth(
             df=df, SimSettings=self.settings.sim, cumulative=False)
 
-
         df.to_csv(self.settings.paths.csv_file_path)
         print(f'merged file saved in {self.settings.paths.csv_file_path}\n')
         self.df_ground_results = df
-
 
     def evaluate_APV(self, SimSettings: Simulation):
         """manages estimate_energy according to settings and returns
@@ -315,54 +312,7 @@ class Evaluator:
             self.irrad_data['dni'] = self.irrad_data['ghi'] \
                 - self.irrad_data['dhi']
 
-    def cumulate_gendaylit_results(
-            self,
-            file_folder_to_merge, cum_csv_path, SimSettings: Simulation):
 
-        # load all single results and append
-        df = apv.utils.files_interface.df_from_file_or_folder(
-            file_folder_to_merge, append_all_in_folder=True, index_col=0)
-
-        df['xy'] = df['x'].astype(str) + df['y'].astype(str)
-
-        # radiation and PAR
-        df_merged = pd.pivot_table(
-            df, index=['xy'],
-            values=['Wm2', 'PARGround'],
-            aggfunc='sum')
-
-        # TODO nicer way?  currently it results in two x and two y columns!
-        df_merged2 = pd.pivot_table(
-            df, index=['xy'],
-            values=['x', 'y'],
-            aggfunc='mean')
-
-        df_merged['x'] = df_merged2['x']
-        df_merged['y'] = df_merged2['y']
-
-        df_merged.loc[:, 'Wm2'] *= SimSettings.time_step_in_minutes/60
-        df_merged.rename(columns={"Wm2": "Whm2"}, inplace=True)
-
-        # TODO do we have to do this outcommented line: ???
-        # df_merged.loc[:, 'PARGround'] *= SimSettings.time_step_in_minutes/60
-        df_merged.rename(columns={"PARGround": "PARGround_cum"}, inplace=True)
-
-        # Add Daily Light Integral
-        df_merged['DLI'] = df_merged['Whm2']*0.0074034
-        """0.0074034 = 4.57  [ref1]  * 0.45 [ref2] *3600/1000000
-        # mol quanta / m² = W*h/m² * µmol quanta/(sec*m²) * (3600s/h) / (µ*1E6)
-        [ref1] Catsky1998 Plant growth chamber handbook, Chapt1., p.3, table2
-        [ref2] Faust2018, HORTSCIENCE 53(9):1250–1257.
-        https://doi.org/10.21273/HORTSCI13144-18"""
-
-        # shadow depth cumulative
-        df_merged = self.add_shadowdepth(
-            df=df_merged, SimSettings=SimSettings, cumulative=True)
-
-        df_merged.to_csv(cum_csv_path)
-        print(f'Cumulating completed!\n',
-              'NOTE: Shadow_depth was recalculated for cumulative data\n')
-        return df_merged
 
     @staticmethod
     def monthly_avg_std(

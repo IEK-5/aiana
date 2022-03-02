@@ -1,25 +1,26 @@
 # #
 import sys
 import pandas as pd
-from pandas.io.formats.format import TextAdjustment
 # import shutil
 import pvlib
 import cdsapi
 import pathlib
 import os
-from pytz import timezone
 import yaml
 import urllib3
 from pathlib import Path
-from typing import Literal
 import numpy as np
-import apv
 from apv.classes.util_classes.settings_grouper import Settings
-import apv.settings.user_paths as user_paths
-from pvlib import location
-from apv.settings.simulation import Simulation
+
 from apv.classes.util_classes.sim_datetime import SimDT
 import apv.utils.files_interface as fi
+"""
+settings = Settings()
+simDT = SimDT(settings.sim)
+"""
+
+
+# #
 
 
 # suppress InsecureRequestWarning when calling cdsapi retrieve function
@@ -58,7 +59,11 @@ class WeatherData:
         else:
             self.df_irr = self.load_and_process_insolation_data()
 
-        self.set_dhi_dni_ghi_and_sunpos_to_simDT(self.simDT)
+        # set irradiance and sunpos
+        self.set_dhi_dni_ghi_and_sunpos_to_simDT()
+
+        self.set_cumulative_ghi()
+
         # dfs:
         # as downloaded from ads,
         # obs_end labeled
@@ -94,30 +99,47 @@ class WeatherData:
         self.resampled_insolation_data_path: Path = \
             self.weather_folder_path/self.fn_resampled
 
-    def set_dhi_dni_ghi_and_sunpos_to_simDT(self, simDT: SimDT):
-
+    def set_dhi_dni_ghi_and_sunpos_to_simDT(self, simDT: SimDT = None):
+        """allow simDT input for fast GHI filter from outside"""
+        if simDT == None:
+            simDT = self.simDT
+        t_stamp = simDT.sim_dt_utc
+        if self.settings.sim.use_typDay_perMonth_irradiationData:
+            s: pd.Series = self.df_irradiance_typ_day_per_month.loc[
+                (t_stamp.month, t_stamp.hour, t_stamp.minute)]
+        else:
+            s: pd.Series = self.df_irr.loc[t_stamp]
         try:
-            self.ghi = self.df_irr.loc[simDT.sim_dt_utc, 'ghi_Wm-2']
+            self.ghi = s['ghi_Wm-2']
+            self.dhi = s['dhi_Wm-2']
+            self.dni = s['dni_Wm-2']
+            self.ghi_clearsky = s['ghi_clearSky_Wm-2']
         except KeyError:
-            sys.exit('Keyerror!\nDid you choose a simlation time and'
-                     'timestep, which do not match? E.g. 15:30 and 60 min?\n'
-                     '# # # # # # # # # # # # # # # \n')
-        self.dhi = self.df_irr.loc[simDT.sim_dt_utc, 'dhi_Wm-2']
-        self.dni = self.df_irr.loc[simDT.sim_dt_utc, 'dni_Wm-2']
-        self.ghi_clearsky = self.df_irr.loc[
-            simDT.sim_dt_utc, 'ghi_clearSky_Wm-2']
-        # whereby for sky to untilted ground cos(tilt) = 1 and GHI = DNI + DHI
+            sys.exit('\n Please choose a simlation time and timestep, which '
+                     'can meet starting at 00:00. E.g. not 15:30 and 60 min\n')
 
-        # sun position
-        # 30 seconds rounding error should not matter for sunposition
-        timedelta = str(int(self.settings.sim.time_step_in_minutes/2))
+        # taking sun position in between adjacent right labled irradiation data
+        timedelta_sec = str(int(60*self.settings.sim.time_step_in_minutes/2))
         solpos: pd.DataFrame = \
             self.settings.sim.apv_location.get_solarposition(
-                times=simDT.sim_dt_utc_pd-pd.Timedelta(f'{timedelta}min'),
+                times=simDT.sim_dt_utc_pd-pd.Timedelta(f'{timedelta_sec}sec'),
                 temperature=12  # TODO use temperature from ERA5 data
             )
         self.sunalt = float(solpos.elevation)
         self.sunaz = float(solpos.azimuth)-180.0
+
+    def set_cumulative_ghi(self):
+        "for ghi filter and TODO shadow_depth calculation"
+        if self.settings.sim.use_typDay_perMonth_irradiationData:
+            # df_irradiance_typ_day_per_month is already aggregated over all
+            # days per month, therefore the following is the
+            # GHI sum of a single typical day in current month
+            self.daycumulated_ghi = self.df_irradiance_typ_day_per_month.loc[
+                (self.simDT.sim_dt_utc.month), 'ghi_Whm-2'].sum()
+        else:
+            date = self.simDT.sim_dt_utc_pd.date()
+            self.daycumulated_ghi = self.df_irr.loc[
+                self.df_irr.index.date() == date]['ghi_Whm-2'].sum()
 
     # ## DOWNLOADS ##################
 

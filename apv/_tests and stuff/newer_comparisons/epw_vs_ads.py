@@ -11,7 +11,7 @@ from apv.utils import files_interface
 
 
 # ADS
-SimSettings = apv.settings.simulation.Simulation()
+SimSettings = apv.settings.sim_settings.Simulation()
 SimSettings.apv_location = pvlib.location.Location(
     51.2217, 6.7761, altitude=45, tz='Europe/Berlin')  # düsseldorf
 SimSettings.time_step_in_minutes = 60

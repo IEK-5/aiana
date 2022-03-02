@@ -97,10 +97,10 @@ def add_north_arrow(
     ax,
     azimuth,
     text="N",
-    xy=(1.17, 1.1),
+    xy=(1.4, 1.3),
     text_color="black",
     arrow_color="black",
-    fontsize=20,
+    fontsize=12,
     ha="center",
     va="center"
 ):
@@ -122,15 +122,12 @@ def add_north_arrow(
         ha (str, optional): Horizontal alignment. Defaults to "center".
         va (str, optional): Vertical alignment. Defaults to "center".
     """
-    yarrow = xy[1] - 0.05
-    if azimuth == 90 or azimuth == 270:
-        xy = (1, 1.3)
-        yarrow = xy[1] - 0.15
-    # North [N]
+
+    # text "N"
     ax.annotate(
         text,
         xy=xy,
-        xytext=(xy[0], xy[1]),
+        xytext=(xy[0]+0.3, xy[1]),
         color=text_color,
         horizontalalignment='left',
         ha=ha,
@@ -141,7 +138,7 @@ def add_north_arrow(
     # Arrow
     ax.text(
         xy[0],
-        yarrow, "    ", ha=ha, va=va, rotation=90, size=10,
+        xy[1] - 0.05, "    ", ha=ha, va=va, rotation=90, size=5,
         bbox=dict(boxstyle='rarrow, pad=0.5', fc='black',
                   ec=arrow_color, lw=1), transform=ax.transAxes)
 

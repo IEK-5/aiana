@@ -9,7 +9,7 @@ import apv
 imp.reload(apv.settings)
 imp.reload(apv.classes.br_wrapper)
 
-simSettings = apv.settings.simulation.Simulation()
+simSettings = apv.settings.sim_settings.Simulation()
 simSettings.spatial_resolution = 0.5
 
 weather_file = UserPaths.bifacial_radiance_files_folder / \

@@ -14,9 +14,9 @@ if __name__ == '__main__':
     settings.apv.add_groundScanArea_as_object_to_scene = True
     brObj = BR_Wrapper(settings)
     # #
-    brObj.create_octfile()
+    brObj.octFileObj.create_octfile()
     # #
-    brObj.view_octfile(
+    brObj.octFileObj.view_octfile(
         # view_name='top_down', view_type='parallel'
     )
 # #

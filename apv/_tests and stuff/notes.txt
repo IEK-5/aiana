@@ -1,37 +1,39 @@
-'''            
-# df index filter:    
+'''
+# df index filter:
 df[df.index.isin(list_of_indices)]
 
 # df rename index / columns:
-df.index.names = ['name']  
+df.index.names = ['name']
 df.columns = ['name1','name2']
 
 # to select multiple columns use double []:
 df[['col1','col2']]
 
-# with concat and merge all df combining types can be done, 
+# with concat and merge all df combining types can be done,
 # guide: https://towardsdatascience.com/combining-pandas-dataframes-the-easy-way-41eb0f2c1ebf
-# 
-# short cut: create new df with index = df1 and collumns from df2 joined 
+#
+# short cut: create new df with index = df1 and collumns from df2 joined
 # for the same indices as in df1
 df = df1.join(df2)
 
 
 # figure initialization:
     fig = plt.figure()
-    ax1=fig.add_subplot(121, label="1") 
-    # numbers: first 2 numbers = "rows, colums" of complete plot, 
-    # third number: where in the grid goring through rows and 
+    ax1=fig.add_subplot(121, label="1")
+    # numbers: first 2 numbers = "rows, colums" of complete plot,
+    # third number: where in the grid goring through rows and
     # then through colums
-    
-    ax2=fig.add_subplot(122, label="2") 
+
+    ax2=fig.add_subplot(122, label="2")
     # different labels for 2 x and 2 y axes in right subplot
-    
+
     ax3=fig.add_subplot(122, label="3", frame_on=False)
 
 
 f, axs = plt.subplots(3,2, figsize=(12, 12), sharey=True)
 for z,ax in zip(z_list, axs.ravel()):
     ax.plot...
+
+pygount ~/Documents/agri-PV/py-repos/agri-pv/apv'
 
 '''

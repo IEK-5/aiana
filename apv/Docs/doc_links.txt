@@ -41,6 +41,6 @@ source: https://www.researchgate.net/post/What-is-the-difference-between-insolat
 
 
 ---
-to get code lines, put following command in bash console:
+to get code lines, push to git and then put following command in bash console:
 
 git ls-files --exclude-standard -- ':!:**/*.[pjs][npv]g' ':!:**/*.txt' ':!:**/*.csv' ':!:**/*.pyc' ':!:__pycache__' ':!:.gitignore' | xargs wc -l

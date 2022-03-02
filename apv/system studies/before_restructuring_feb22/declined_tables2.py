@@ -2,7 +2,7 @@
 if __name__ == '__main__':
     import apv
 
-    SimSettings = apv.settings.simulation.Simulation()
+    SimSettings = apv.settings.sim_settings.Simulation()
     SimSettings.sim_name = 'declined_tables_and_glassbox'
     SimSettings.spatial_resolution = 1
     APV_SystSettings = \
