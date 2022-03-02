@@ -1,3 +1,6 @@
+# Intro
+apv = agri(photo)voltaic
+
 # Overview
 
 number of code lines 02.03.2022
@@ -7,9 +10,9 @@ number of code lines 02.03.2022
    288 classes/oct_file_creator.py
    170 classes/plotter.py
    120 classes/simulator.py
-   565 classes/util_classes/geometries_handler.py
+   601 classes/util_classes/geometries_handler.py
     47 classes/util_classes/settings_grouper.py
-    99 classes/util_classes/sim_datetime.py
+    67 classes/util_classes/sim_datetime.py
    514 classes/weather_data.py
 
     10 resources/locations.py
@@ -17,34 +20,21 @@ number of code lines 02.03.2022
     99 settings/sim_settings.py
     22 settings/user_paths.py
 
-    32 system_studies/apv_main.py
    257 system_studies/Typical_days_loop_S_incl_tables.py
+    32 system_studies/apv_main.py
 
-x    52 utils/evaluation.py
-   171 utils/files_interface.py
-x   308 utils/plotting.py
-    90 utils/radiance_utils.py
-x    53 utils/settings_adjuster.py
-x    58 utils/time.py
-
+    51 utils/RMSE_MBE.py
+   172 utils/files_interface.py
     19 utils/not_used_by_code_yet/browse_PVlib_modules.py
     67 utils/not_used_by_code_yet/pvlib_wrapper_for_PVGRIP.py
-
-  3728 total
-
-not part of core code:
-   465 classes/APV_Evaluation_mohd_only_reference.py
-   205 system_studies/before_restructuring_feb22/Typical_days_loop.py
-    51 system_studies/before_restructuring_feb22/checked_board.py
-    82 system_studies/before_restructuring_feb22/debug_geometry.py
-    40 system_studies/before_restructuring_feb22/declined_tables.py
-    25 system_studies/before_restructuring_feb22/declined_tables2.py
-   106 system_studies/before_restructuring_feb22/full_day_morschenich.py
-    70 system_studies/before_restructuring_feb22/functionality_testing.py
+    35 utils/not_used_by_code_yet/time.py
+   308 utils/plotting.py
+    90 utils/radiance_utils.py
+  3656 total
 
 (to get this code lines count:
 push to git (no spaces in folder names) and then put following command in bash console:
-git ls-files --exclude-standard -- ':!:**/*.[pjs][npv]g' ':!:_tests_and_stuff' ':!:**/*.txt' ':!:**/*.csv' ':!:**/*.pyc' ':!:*__pycache__*' ':!:*__init__*' ':!:*.gitignore*' | xargs wc -l
+git ls-files --exclude-standard -- ':!:**/*.[pjs][npv]g' ':!:_tests_and_stuff' ':!:system_studies/before_restructuring_feb22' ':!:*/*only_reference*' ':!:**/*.txt' ':!:**/*.csv' ':!:**/*.pyc' ':!:*__pycache__*' ':!:*__init__*' ':!:*.gitignore*' | xargs wc -l
 )
 
 # HOW TO install the package in vscode

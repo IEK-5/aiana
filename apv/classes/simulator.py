@@ -12,10 +12,8 @@ from apv.classes.util_classes.geometries_handler import GeometriesHandler
 
 
 class Simulator:
-    """needs ghObj for scan points"""
-
     df_ground_results: pd.DataFrame
-    ghObj: GeometriesHandler
+    ghObj: GeometriesHandler  # needed for scan points
     analObj: br.AnalysisObj
 
     def __init__(
@@ -82,11 +80,10 @@ class Simulator:
             self.frontscan['ystart'] = y_start
             self.backscan['ystart'] = y_start
 
-            self.analObj.analysis(self.settings.names.oct_fn,
-                                  temp_name,
-                                  self.frontscan,
-                                  self.backscan,
-                                  accuracy=self.settings.sim.ray_tracing_accuracy)
+            self.analObj.analysis(
+                self.settings.names.oct_fn, temp_name,
+                self.frontscan, self.backscan,
+                accuracy=self.settings.sim.ray_tracing_accuracy)
 
         elif self.settings.sim.scan_target == 'ground':
             self.ghObj.groundscan['ystart'] = y_start

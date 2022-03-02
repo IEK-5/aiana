@@ -1,83 +1,3 @@
-"""
-klassen sollen faul sein
-@property statt im init einlesen
-
-dann kann man evt auch auf weather_data übergabe verzichten und
-
-evt. multiple inherence für br_wrapper nutzen mit gleichen argumenten (nur settings)
-
-dann querverweis so, dass plotter in der vererbungskette am ende kommt, dann kennt er auch xfield über oct_file_creator
-
-
-
-Ziel: alles modular: oct_file erstellung und ansehen, simulieren, evaluieren,
-df ausgeben lassen, plotten,
-soll alles unabhängig von einander genutzt werden können.
-daher: dataframes werden immer neu von der platte eingelesen,
-(evt. optional als default df=None übergeben und wenn =None, dann einlesen vom
-standard ort)
-damit sie nicht neu erstellt werden müssen.
-Falls nicht vorhanden -> print warning
-
-
-instanziieren der main klasse (br_wrapper) soll schnell gehen und den
-gruppierten settings input direkt an die hilfsklassen weiter leiten,
-sodass die methoden der hilfsklassen automatisch mit den gleichen settings
-arbeiten können.
-
-Weitergereicht werden DFs nur dann, wenn
-Zwischenstände nicht auf der platte gespeichert werden sollen. Solche methoden
-sollten evt. dann nur in utils kommen (statisch).
-
-
-
-
-uses the other classes to input settings and call from outside:
-
-- make oct file from rad files prepared via geometries_handler class
-- view oct file
-- simulate
-- evaluate
-- plot
-
-
-
-
-
-old:
-
-
-Called by main.py with the needed parameters to set the neccessary
-objects, create scene and run simulation with Bifacial_Radiance according
-to presets in settings.py
-
-TODO
----------------------
-
-- aufräumen, dokumentieren, codeinterne TODOs sichten
-- apv evaluation angucken und verstehen (Leo)
-
-------------
-longterm:
-- GPU 28x faster rtrace https://nljones.github.io/Accelerad/index.html
-- implement 'module' scan_target ?
-- implement era5 data (apv_evaluation: yield & weather_data: solar position)
-- add diffusive glass to be used optional in checker board empty slots.
-ref: Miskin2019 and
-https://www.pv-magazine.com/2020/07/23/special-solar-panels-for-agrivoltaics/
-
-(-bei azi 180°:
-wedgeplot x-achse: y-position im field, y-achse: GHI, monat 1-12 untereinander)
-
-- estimate costs of double sized checker boards for same electrical yield with
- improved shadow values and compare to std
-- also compare normal sized with double sized checker board shadow maps"
-
-(- gendaylitmxt für kumulativen sky? Aber damit ermittlung von shadow duration
-eh nicht möglich...)
-
-"""
-
 from apv.classes.util_classes.settings_grouper import Settings
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
 from apv.classes.weather_data import WeatherData
@@ -89,11 +9,21 @@ from apv.classes.plotter import Plotter
 
 class BR_Wrapper():
 
-    """NOTE create/view octfile and plotting can be called
-    via the respective octFileObj and plotterObj
+    """This is the core class, which is linking all other classes. It passes
+    the settings to the other classes/objects, which were grouped based on
+    these study steps:
 
-    datetime info is set in settings and stored in weatherData.SimDT object
-    setting correct irradiance and sun pos on weatherData initialization.
+    - create/view octfile via the octFileObj class
+        (the oct-format is needed for Radiance simulation and contains the
+        scene infos such as geometries and sky information.
+        an octFileObj takes as additional input two util_classes-objects:
+        a weatherData-object containing the correct irradiance and sun position
+        based on the time set in settings/simulation,
+        and a geometries_handler-object, which creates the rad-files, which
+        hold the geometry information in the Radiance text file format.)
+    - simulate via simulatorObj (tabular results creation/saving)
+    - evaluate via evaluatorObj (tabular results processing/saving)
+    - plot via plotterObj
     """
 
     def __init__(self, settings: Settings):

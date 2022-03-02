@@ -14,7 +14,7 @@ class Plotter:
             self,
             settings: Settings,
             ghObj: GeometriesHandler,
-            debug_mode=False
+            # debug_mode=False
     ):
         self.settings = settings
         self.ghObj = ghObj

@@ -1,7 +1,6 @@
 # #
 import sys
 import pandas as pd
-# import shutil
 import pvlib
 import cdsapi
 import pathlib
@@ -14,13 +13,6 @@ from apv.classes.util_classes.settings_grouper import Settings
 
 from apv.classes.util_classes.sim_datetime import SimDT
 import apv.utils.files_interface as fi
-"""
-settings = Settings()
-simDT = SimDT(settings.sim)
-"""
-
-
-# #
 
 
 # suppress InsecureRequestWarning when calling cdsapi retrieve function
@@ -29,7 +21,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class WeatherData:
     """credentials (dict): output of .load_credentials()
-    #TODO make class init fast
+    # TODO make class init fast
     """
 
     def __init__(self, settings: Settings, debug_mode=False):
@@ -101,10 +93,10 @@ class WeatherData:
 
     def set_dhi_dni_ghi_and_sunpos_to_simDT(self, simDT: SimDT = None):
         """allow simDT input for fast GHI filter from outside"""
-        if simDT == None:
+        if simDT is None:
             simDT = self.simDT
         t_stamp = simDT.sim_dt_utc
-        if self.settings.sim.use_typDay_perMonth_irradiationData:
+        if self.settings.sim.use_typDay_perMonth_for_irradianceCalculation:
             s: pd.Series = self.df_irradiance_typ_day_per_month.loc[
                 (t_stamp.month, t_stamp.hour, t_stamp.minute)]
         else:
@@ -125,12 +117,12 @@ class WeatherData:
                 times=simDT.sim_dt_utc_pd-pd.Timedelta(f'{timedelta_sec}sec'),
                 temperature=12  # TODO use temperature from ERA5 data
             )
-        self.sunalt = float(solpos.elevation)
-        self.sunaz = float(solpos.azimuth)-180.0
+        self.sunalt = float(solpos["elevation"])
+        self.sunaz = float(solpos["azimuth"]-180.0)
 
     def set_cumulative_ghi(self):
         "for ghi filter and TODO shadow_depth calculation"
-        if self.settings.sim.use_typDay_perMonth_irradiationData:
+        if self.settings.sim.use_typDay_perMonth_for_irradianceCalculation:
             # df_irradiance_typ_day_per_month is already aggregated over all
             # days per month, therefore the following is the
             # GHI sum of a single typical day in current month
@@ -196,12 +188,12 @@ class WeatherData:
         The download folder is defined in the user_settings.py.
 
         Args:
-            credentials (dict): output of .load_credentials()
-            file_name (str): name of the .nc file containing the downloaded data
-            location (pvlib.location): pvlib location object to pass coordinates
-            year (str or list of str): e.g. '2020' or ['2020', '2021']
-            month (str or list of str)
-            day (str or list of str)
+           credentials (dict): output of .load_credentials()
+           file_name (str): name of the .nc file containing the downloaded data
+           location (pvlib.location): pvlib location object to pass coordinates
+           year (str or list of str): e.g. '2020' or ['2020', '2021']
+           month (str or list of str)
+           day (str or list of str)
         '''
 
         # instance of cdsapi for cds data only
@@ -250,19 +242,20 @@ class WeatherData:
             time_step_in_minutes: int
     ) -> str:
         '''
-        Downloads insolation data from the atmosphere data store (ADS),
-        which is provided by the Copernicus Atmosphere Monitoring Service (CAMS):
+        Downloads insolation data from the atmosphere data store (ADS), which
+        is provided by the Copernicus Atmosphere Monitoring Service (CAMS):
         https://ads.atmosphere.copernicus.eu/cdsapp#!/dataset/cams-solar-radiation-timeseries?tab=overview
 
         The data is satelite based and takes into account the observed weather.
         The download folder is defined in the user_settings.py.
 
         Args:
-            file_name (str): name of the .csv file containing the downloaded data
-            location (pvlib.location.Location): location object to pass coordinates
-            date_range (str): start and end date str, e.g. '2015-01-01/2015-01-02'
-            time_step_in_minutes (int): e.g. 15 results in DHI [Wh/m²] within
-            15 minutes observation periods. Has to be 1, 15 or 60.
+            file_name (str): name of the .csv file containing the downloaded
+            data location (pvlib.location.Location): location object to pass
+            coordinates date_range (str): start and end date str, e.g.
+            '2015-01-01/2015-01-02' time_step_in_minutes (int): e.g. 15 results
+            in DHI [Wh/m²] within 15 minutes observation periods.
+            Has to be 1, 15 or 60.
         Returns:
             file_path (str): file path of the result file
 
@@ -346,7 +339,8 @@ class WeatherData:
 
         df.drop(columns=['TOA', 'Reliability'], inplace=True)
 
-        df[['obs_start', 'obs_end']] = df.iloc[:, 0].str.split('/', 1, expand=True)
+        df[['obs_start', 'obs_end']] = df.iloc[:, 0].str.split(
+            '/', 1, expand=True)
 
         df.set_index(
             pd.to_datetime(df['obs_end'], utc=True),  # "right-labeled" as inBR
@@ -430,38 +424,6 @@ class WeatherData:
         df_tmy.Name = df_tmy_name
         return df_tmy
 
-    """
-    def write_ghi_dhi_data_for_gendaylit():
-
-        # else:
-        fi.make_dirs_if_not_there(tmy_folder_path)
-
-        # create average GHI and DHI for each hour per year
-        group_list = [df.index.month, df.index.day, df.index.hour]
-        x = df['GHI'].groupby(group_list).mean()
-        y = df['DHI'].groupby(group_list).mean()
-        x = x.reset_index(drop=True)
-        y = y.reset_index(drop=True)
-
-        tmy_data = pd.DataFrame({'ghi': x, 'dhi': y})
-        tmy_data.to_csv(tmy_file_path, index=False, header=False, sep=' ',
-                        columns=['ghi', 'dhi']  # to be sure about order
-                        )
-        return tmy_data
-        # split time stamp for pivot
-
-        df['Month'] = df.index.month
-        df['Day'] = df.index.day
-        df['Hour'] = df.index.hour
-        df['Minute'] = df.index.minute
-
-        df_tmy = pd.pivot_table(
-            df,
-            index=['Month', 'Day', 'Hour'],
-            values=['GHI', 'DHI'])
-
-        return df_tmy """
-
     def typical_day_of_month(self, df: pd.DataFrame):
         """
         df is meant for self.df_irradiance_tmy
@@ -488,6 +450,9 @@ class WeatherData:
         # itself with aggfunc min or mean or max
 
         return df_typ_day_per_month
+
+        ##############
+        # backup code for a min or max day of a certain month:
 
         # create TMY from ADS yearly data
         df_tmy = pd.pivot_table(df,

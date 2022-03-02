@@ -3,6 +3,10 @@ from typing import Literal
 from pathlib import Path
 import pandas as pd
 """
+    all settings can also be overwritten in a working file
+    as long as a br_wrapperObj is initializated afterwards.
+    See system_studies/apv_main.py for a simple example
+
     sceneDict [from BR (bifacial_radiance package)]:
         tilt: panel tilt [degree]
         pitch: y-distance between two adjacent module-row-centers [m]
@@ -116,7 +120,6 @@ class Default:
 
     n_apv_system_clones_in_x: int = 0  # for azimuth = 180: cloned towards east
     n_apv_system_clones_in_negative_x: int = 0  # towards west
-    # TODO make something like a sceneDict_enhanced?
 
     # for 'framed_single_axes':
     enlarge_beams_for_periodic_shadows: bool = False
@@ -241,13 +244,6 @@ class APV_Morchenich_EastWest(Default):
     scene_camera_dicts = Default.scene_camera_dicts.copy()
     scene_camera_dicts['top_down']['horizontal_view_angle'] = 60
     scene_camera_dicts['top_down']['vertical_view_angle'] = 60
-
-    # To reduce sim time and get periodic boundary conditions
-    # north shift is needed for winter to get
-    # periodic boundary conditions in this setup (geometry etc)
-
-    # TODO for ground_scan_margin x,y is rotated,
-    # but for ground_scan_shift not, that is confusing. Should be consistent!
 
     # y reduction (negative margin)
     x_pitch = moduleDict['x']*11/55

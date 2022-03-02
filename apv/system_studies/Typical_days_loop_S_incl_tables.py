@@ -26,7 +26,7 @@ if __name__ == '__main__':
     settings.sim.study_name = f'APV_Morschenich_S_inclinedTables'
     settings.sim.scan_position = 'north'
     settings.sim.use_typDay_perMonth_for_irradianceCalculation = True
-    settings.sim.use_typDay_perMonth_irradiationData = True
+    settings.sim.use_typDay_perMonth_for_irradianceCalculation = True
     settings.sim.spatial_resolution = 0.1
     settings.sim.time_step_in_minutes = 5
     settings.sim.TMY_irradiance_aggfunc = 'mean'

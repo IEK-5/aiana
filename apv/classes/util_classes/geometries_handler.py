@@ -187,7 +187,7 @@ class GeometriesHandler:
         self.scan_area_anchor_y = -self.scan_length_y/2 + self.center_offset_y \
             + self.settings.apv.ground_scan_shift_y
 
-    def get_rad_txt_for_cloning_of_the_apv_system(self) -> str:
+    def get_rad_txt_for_cloning_the_apv_system(self) -> str:
         """Usefull for periodic boundary conditions.
         Returns:
             (str): radiance text

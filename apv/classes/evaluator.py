@@ -6,22 +6,10 @@ from apv.utils import files_interface as fi
 
 
 class Evaluator:
-    """
-    Attributes:
-        simSettings (apv.settings.sim_settings.Simulation):
-        simulation settings object
-        --------
-        met_data(bifacial_radiance.MetObj): meterologic data object
-        --------
 
-    """
     # TODO Wm2 rename to W/m^2 possible?
     # TODO header now sometimes = quantity name, sometimes = unit... unify!
     # TODO ADD Bifacial factor
-    # NOTE 1: The temperature and wind speed are taken from EPW data that has
-    # time index in local time. A -1 was added as a quick fix for the case in
-    # Germany. This should be amended by either change EPW time index to UTC or
-    # use Temperature and wind speed from other data source like CDS.
 
     def __init__(
             self,
@@ -138,7 +126,7 @@ class Evaluator:
 
         elif self.settings.sim.sky_gen_mode == 'gencumsky' or cumulative:
             # cumulated shadow depth
-            if self.settings.sim.use_typDay_perMonth_irradiationData:
+            if self.settings.sim.use_typDay_perMonth_for_irradianceCalculation:
                 month = int(self.settings.sim.sim_date_time.split('-')[0])
                 cumulative_GHI = \
                     self.weatherData.df_irradiance_typ_day_per_month.loc[

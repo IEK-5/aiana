@@ -23,7 +23,8 @@ if __name__ == '__main__':
 if __name__ == '__main__':
 
     # TODO how can create_oct_file be made skipable for sim to work,
-    # if file already existing? (TypeError: 'NoneType' object is not subscriptable)
+    # if file already existing?
+    # (TypeError: 'NoneType' object is not subscriptable)
     brObj.simulate_and_evaluate()
     # #
     brObj.plotterObj.ground_heatmap(cm_unit='shadow_depth')

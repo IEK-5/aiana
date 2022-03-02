@@ -95,16 +95,16 @@ class OctFileCreator:
         elif structure_type == 'framed_single_axes':
             customObjects['structure'] = self.ghObj.framed_single_axes_mount
 
-        cloning_rad_text = self.ghObj.get_rad_txt_for_cloning_of_the_apv_system()
+        cloning_rad_text = self.ghObj.get_rad_txt_for_cloning_the_apv_system()
         extra_radtext_to_apply_on_a_radObject = {
             'north_arrow': f'!xform -rz {azimuth-180} -t 10 10 0 ',
             'structure': cloning_rad_text,
             'modules': cloning_rad_text,
         }
 
-        self._appendtoScene_condensedVersion(  # mounting structure, ground, etc
+        self._appendtoScene_condensedVersion(
             customObjects, extra_radtext_to_apply_on_a_radObject
-        )
+        )  # for mounting structure, ground, etc
 
         self.radianceObj.makeOct(octname=self.settings.names.oct_fn[:-4])
 
@@ -169,8 +169,9 @@ class OctFileCreator:
         """
 
         if tracked:
-            correction_angle = 90  # copy from Leonhard, ISE for later
-            # maybe - 90 as i changed formula from
+            correction_angle = 90
+            # NOTE this is copy  for later from Leonhard (ISE)
+            # maybe it has to be "- 90" as i changed formula from
             # sunaz - scene - correc
             # to sunaz - (scene - correc)
         else:
@@ -222,9 +223,10 @@ class OctFileCreator:
         self.moduleObj = br.ModuleObj(
             name=self.settings.apv.module_name,
             **self.settings.apv.moduleDict,
-            text=single_module_text,  # NOTE TODO seems inactive, opened issue
+            text=single_module_text,  # NOTE TODO inactive, opened issue
+            # but no response yet, downgrade again =(?
             glass=self.settings.apv.glass_modules,
-            # TODO check frame and omega input options
+            # there are now also new frame and omega input options
         )
 
         if module_form == 'cell_level':
@@ -276,9 +278,9 @@ class OctFileCreator:
 if __name__ == '__main__':
     # azimuth and cloning
     octFileCreator = OctFileCreator(debug_mode=True)
-    #octFileCreator.settings.apv.n_apv_system_clones_in_negative_x = 1
+    # octFileCreator.settings.apv.n_apv_system_clones_in_negative_x = 1
     for azimuth in [180]:  # [90, 135, 180, 270]:
-        #octFileCreator.settings.apv = APV_Syst_InclinedTables_S_Morschenich()
+        # octFileCreator.settings.apv = APV_Syst_InclinedTables_S_Morschenich()
         octFileCreator.settings.apv.sceneDict['azimuth'] = azimuth
         octFileCreator.create_octfile()
         octFileCreator.view_octfile(
