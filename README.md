@@ -36,7 +36,7 @@ number of code lines 2.11.2021
 
 (to get this code lines count:
 push to git (no spaces in folder names) and then put following command in bash console:
-git ls-files --exclude-standard -- ':!:**/*.[pjs][npv]g' ':!:**/*.txt' ':!:**/*.csv' ':!:**/*.pyc' ':!:__pycache__' ':!:.gitignore' | xargs wc -l
+git ls-files --exclude-standard -- ':!:**/*.[pjs][npv]g' ':!:_tests_and_stuff' ':!:**/*.txt' ':!:**/*.csv' ':!:**/*.pyc' ':!:*__pycache__*' ':!:*__init__*' ':!:*.gitignore*' | xargs wc -l
 )
 
 # HOW TO install the package in vscode
