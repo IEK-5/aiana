@@ -13,8 +13,6 @@
 
 import numpy as np
 from apv.classes.util_classes.settings_grouper import Settings
-from apv.utils import settings_adjuster as sa
-import pandas as pd
 
 
 class GeometriesHandler:
@@ -60,16 +58,13 @@ class GeometriesHandler:
 
     def __init__(self, settings: Settings, debug_mode=False):
         self.settings = settings
-        # adjust, e.g. add cell sizes
-        self.settings.apv = sa.adjust_apvSystem_settings(settings.apv)
-
         self.debug_mode = debug_mode
-
         # short cuts:
         self.mod = settings.apv.moduleDict
         self.scn = settings.apv.sceneDict
         self.mount = settings.apv.mountingStructureDict
 
+        self._adjust_settings()
         self._set_singleRow_lengths_and_footprints()
         self._set_scan_lengths_x_y()  # TODO rename to GroundScanLength_x_y ?
         self._set_APVSystCenter_to_origin_offsets()
@@ -77,6 +72,47 @@ class GeometriesHandler:
         self._set_y_grid_and_sensors()
         self._set_groundscan_dict()
         self._set_post_x_pos_respecting_cloning()
+
+    def _adjust_settings(self):
+        """adjust apv syst settings, e.g. add cell sizes"""
+
+        mod_form = self.settings.apv.module_form
+        print('\n##### ' + mod_form.replace('_', ' ')
+              + ' simulation mode #####\n')
+
+        # if simSettings.module_form == 'cell_level_checker_board':
+        #     # for checkerboard on cell level calculate only one module
+        #     # and enlarge module in y direction to have the same PV output
+        #     simSettings.moduleDict['y'] *= 2
+        c = self.settings.apv.cellLevelModuleParams
+
+        if mod_form == 'EW_fixed' or mod_form == 'cell_level_EW_fixed':
+            self.scn['azimuth'] = 90  # TODO check again
+            # since change leading to sky rotation
+            self.mod['numpanels'] = 2
+
+        def get_cellSize(mod_size, num_cell, cell_gap):
+            # formula derivation:
+            # x = numcellsx * xcell + (numcellsx-1) * xcellgap
+            # xcell = (x - (numcellsx-1)*xcellgap) / numcellsx
+            cell_size = (mod_size - (num_cell-1)*cell_gap) / num_cell
+            return cell_size
+
+        c['xcell'] = get_cellSize(self.mod['x'], c['numcellsx'], c['xcellgap'])
+        c['ycell'] = get_cellSize(self.mod['y'], c['numcellsy'], c['ycellgap'])
+
+        if mod_form in ['cell_level', 'cell_level_EW_fixed',
+                        'cell_level_checker_board']:
+            if mod_form == 'cell_level_checker_board':
+                factor = 2
+            else:
+                factor = 1
+            packingfactor = np.round(
+                c['xcell']*c['ycell']*c['numcellsx']*c['numcellsy']/(
+                    factor*self.mod['x']*self.mod['y']), 2
+            )
+            print("This is a Cell-Level detailed module with Packaging "
+                  + f"Factor of {packingfactor}.")
 
     def _set_singleRow_lengths_and_footprints(self):
 

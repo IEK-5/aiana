@@ -1,6 +1,5 @@
 # #
 import pandas as pd
-from datetime import datetime
 
 
 def column_to_utc_index(
@@ -34,25 +33,3 @@ def add_missing_timestamp_indices(df: pd.DataFrame) -> pd.DataFrame:
         + ' row(s) were missing and have been added.')
 
     return df_complete
-
-
-intervals = (
-    ('weeks', 604800),  # 60 * 60 * 24 * 7
-    ('days', 86400),    # 60 * 60 * 24
-    ('hours', 3600),    # 60 * 60
-    ('minutes', 60),
-    ('seconds', 1),
-)
-
-
-def display_time(seconds, granularity=2):
-    result = []
-
-    for name, count in intervals:
-        value = seconds // count
-        if value:
-            seconds -= value * count
-            if value == 1:
-                name = name.rstrip('s')
-            result.append("{} {}".format(value, name))
-    return ', '.join(result[:granularity])

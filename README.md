@@ -1,38 +1,46 @@
 # Overview
 
-number of code lines 2.11.2021
+number of code lines 02.03.2022
 
-648	br_wrapper.py
-559	classes/weather_data.py
-456	classes/geometries_handler.py
-407	classes/APV_evaluation.py
-201	utils/plots.py
-182	examples/Typical_days_loop.py
-181	settings/apv_systems.py
-166	utils/files_interface.py
-129	examples/debug_geometry.py
-106	examples/full_day_morschenich.py
-99	classes/sim_datetime.py
-79	settings/simulation.py
-67	utils/pvlib_wrapper_for_PVGRIP.py
-58	utils/time.py
-57	examples/checked_board.py
-52	utils/evaluation.py
-44	examples/dni_dhi_tests.py
-43	utils/settings_adjuster.py
-40	examples/declined_tables.py
-31	apv_main.py
-25	examples/declined_tables2.py
-19	utils/browse_PVlib_modules.py
-15	settings/user_paths.py
-10	resources/locations.py
-5	utils/init.py
-4	classes/init.py
-3	settings/init.py
-2	utils/pycache/.gitignore
-1	resources/init.py
+   117 classes/br_wrapper.py
+   200 classes/evaluator.py
+   288 classes/oct_file_creator.py
+   170 classes/plotter.py
+   120 classes/simulator.py
+   565 classes/util_classes/geometries_handler.py
+    47 classes/util_classes/settings_grouper.py
+    99 classes/util_classes/sim_datetime.py
+   514 classes/weather_data.py
 
-3693 total
+    10 resources/locations.py
+   366 settings/apv_systems.py
+    99 settings/sim_settings.py
+    22 settings/user_paths.py
+
+    32 system_studies/apv_main.py
+   257 system_studies/Typical_days_loop_S_incl_tables.py
+
+x    52 utils/evaluation.py
+   171 utils/files_interface.py
+x   308 utils/plotting.py
+    90 utils/radiance_utils.py
+x    53 utils/settings_adjuster.py
+x    58 utils/time.py
+
+    19 utils/not_used_by_code_yet/browse_PVlib_modules.py
+    67 utils/not_used_by_code_yet/pvlib_wrapper_for_PVGRIP.py
+
+  3728 total
+
+not part of core code:
+   465 classes/APV_Evaluation_mohd_only_reference.py
+   205 system_studies/before_restructuring_feb22/Typical_days_loop.py
+    51 system_studies/before_restructuring_feb22/checked_board.py
+    82 system_studies/before_restructuring_feb22/debug_geometry.py
+    40 system_studies/before_restructuring_feb22/declined_tables.py
+    25 system_studies/before_restructuring_feb22/declined_tables2.py
+   106 system_studies/before_restructuring_feb22/full_day_morschenich.py
+    70 system_studies/before_restructuring_feb22/functionality_testing.py
 
 (to get this code lines count:
 push to git (no spaces in folder names) and then put following command in bash console:

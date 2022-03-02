@@ -248,7 +248,7 @@ def comparing_plot_sns(
 
     # ####################################
     # RMSE and MBE
-    mbe, rel_mbe, rmse, rel_rmse = apv.utils.evaluation.calc_RMSE_MBE(
+    mbe, rel_mbe, rmse, rel_rmse = apv.utils.RMSE_MBE.calc_RMSE_MBE(
         df[x], df[y])
 
     # add text annotation
