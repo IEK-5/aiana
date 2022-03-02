@@ -34,7 +34,8 @@ number of code lines 2.11.2021
 
 3693 total
 
-(to get this code lines count, push to git and then put following command in bash console:
+(to get this code lines count:
+push to git (no spaces in folder names) and then put following command in bash console:
 git ls-files --exclude-standard -- ':!:**/*.[pjs][npv]g' ':!:**/*.txt' ':!:**/*.csv' ':!:**/*.pyc' ':!:__pycache__' ':!:.gitignore' | xargs wc -l
 )
 
