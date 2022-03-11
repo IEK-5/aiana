@@ -5,7 +5,6 @@
 (all with suitable standard settings).
 """
 # #
-import subprocess
 import xarray as xr
 from matplotlib.figure import Figure
 import pandas as pd

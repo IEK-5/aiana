@@ -94,6 +94,8 @@ class OctFileCreator:
             customObjects['structure'] = self.ghObj.declined_tables_mount
         elif structure_type == 'framed_single_axes':
             customObjects['structure'] = self.ghObj.framed_single_axes_mount
+        if self.settings.apv.add_rails_between_modules:
+            customObjects['structure_rails'] = self.ghObj.rails_between_modules
 
         cloning_rad_text = self.ghObj.get_rad_txt_for_cloning_the_apv_system()
         extra_radtext_to_apply_on_a_radObject = {

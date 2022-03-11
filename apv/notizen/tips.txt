@@ -1,0 +1,17 @@
+Michael 3.3.22
+
+- dev branch
+- wenn mal mehr user: https://pypi.org/project/python-configuration/
+
+poetry work flow:
+    poetry add packagename oder toml datei editieren
+    poetry lock (und dann auch pushen, wenn sie funktioniert)
+
+
+    poetry install  (venv einrichten)
+
+    https://python-poetry.org/docs/dependency-specification/
+
+
+    poetry run
+    poetry build (erstellt wheel datei um package für pip publizieren zu können)

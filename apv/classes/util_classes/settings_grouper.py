@@ -3,7 +3,6 @@ from pathlib import Path
 from apv.settings.sim_settings import Simulation
 from apv.settings.apv_systems import Default as SystSettings
 from apv.settings.user_paths import UserPaths
-from apv.utils import files_interface as fi
 
 
 class Settings:

@@ -42,6 +42,10 @@ class BR_Wrapper():
         self.evaluatorObj = Evaluator(self.settings, self.weatherData)
         self.plotterObj = Plotter(self.settings, self.ghObj)
 
+    def create_and_view_octfile(self):
+        self.octFileObj.create_octfile()
+        self.octFileObj.view_octfile()
+
     def simulate_and_evaluate(self):
         self.simulatorObj.run_raytracing_simulation()
         self.evaluatorObj.add_time_stamps_PAR_shadowDepth_to_csv_file()

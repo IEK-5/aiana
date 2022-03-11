@@ -1,27 +1,38 @@
 # Intro
 apv = agri(photo)voltaic
 
+# Installation
+
+Bifacial-radiance
+Installation guide: https://www.youtube.com/watch?v=4A9GocfHKyM
+Nach der Radiance Installation in Windows 10 nach „Systemumgebungsvariablen bearbeiten“ suchen und prüfen ob der Radiance-Pfad „…/Radiance/bin“ wirklich in der Umgebungsvariable „Pfad“ drin ist (war bei mir erst nicht). Dann gegebenenfalls manuell eintragen.
+
+
+Software training: https://www.youtube.com/watch?v=1X9L-R-RVGA
+PHD defense of Ms. Pelaez: https://www.youtube.com/watch?v=11Jp7GqzLPQ
+
+
 # Overview
 
 number of code lines 02.03.2022
 
-   117 classes/br_wrapper.py
-   200 classes/evaluator.py
-   288 classes/oct_file_creator.py
+    47 classes/br_wrapper.py
+   188 classes/evaluator.py
+   290 classes/oct_file_creator.py
    170 classes/plotter.py
-   120 classes/simulator.py
+   117 classes/simulator.py
    601 classes/util_classes/geometries_handler.py
     47 classes/util_classes/settings_grouper.py
     67 classes/util_classes/sim_datetime.py
-   514 classes/weather_data.py
+   479 classes/weather_data.py
 
     10 resources/locations.py
-   366 settings/apv_systems.py
-    99 settings/sim_settings.py
+   362 settings/apv_systems.py
+    94 settings/sim_settings.py
     22 settings/user_paths.py
 
    257 system_studies/Typical_days_loop_S_incl_tables.py
-    32 system_studies/apv_main.py
+    33 system_studies/apv_main.py
 
     51 utils/RMSE_MBE.py
    172 utils/files_interface.py
@@ -30,7 +41,8 @@ number of code lines 02.03.2022
     35 utils/not_used_by_code_yet/time.py
    308 utils/plotting.py
     90 utils/radiance_utils.py
-  3656 total
+
+  3530 total
 
 (to get this code lines count:
 push to git (no spaces in folder names) and then put following command in bash console:

@@ -9,8 +9,8 @@ import yaml
 import urllib3
 from pathlib import Path
 import numpy as np
-from apv.classes.util_classes.settings_grouper import Settings
 
+from apv.classes.util_classes.settings_grouper import Settings
 from apv.classes.util_classes.sim_datetime import SimDT
 import apv.utils.files_interface as fi
 
@@ -131,7 +131,7 @@ class WeatherData:
         else:
             date = self.simDT.sim_dt_utc_pd.date()
             self.daycumulated_ghi = self.df_irr.loc[
-                self.df_irr.index.date() == date]['ghi_Whm-2'].sum()
+                self.df_irr.index.date == date]['ghi_Whm-2'].sum()
 
     # ## DOWNLOADS ##################
 
@@ -396,7 +396,8 @@ class WeatherData:
         if tmy_file_path.exists() and not self.debug_mode:
             df_tmy = fi.df_from_file_or_folder(
                 tmy_file_path, delimiter=' ', index_col=0)
-            df_tmy = df_tmy.set_index(pd.to_datetime(df_tmy.index, utc=True))
+            df_tmy.set_index(
+                pd.to_datetime(df_tmy.index, utc=True), inplace=True)
         else:
             df = self.load_and_process_insolation_data()
             # filter out 29th Feb

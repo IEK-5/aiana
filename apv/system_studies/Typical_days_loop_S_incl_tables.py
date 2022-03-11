@@ -8,19 +8,17 @@
 or it will make problems with multi processing
 """
 from apv.classes.weather_data import WeatherData
-
+import pytictoc
+from pathlib import Path
+import apv
+import os
+from apv.classes.util_classes.sim_datetime import SimDT
+from apv.classes.util_classes.settings_grouper import Settings
+from apv.settings.apv_systems import APV_Syst_InclinedTables_S_Morschenich
+from apv.classes.br_wrapper import BR_Wrapper
+import apv.utils.files_interface as fi
 
 if __name__ == '__main__':
-    import pytictoc
-    from pathlib import Path
-    import apv
-    import os
-    from apv.classes.util_classes.sim_datetime import SimDT
-    from apv.classes.util_classes.settings_grouper import Settings
-    from apv.settings.apv_systems import APV_Syst_InclinedTables_S_Morschenich
-    from apv.classes.br_wrapper import BR_Wrapper
-    import apv.utils.files_interface as fi
-
     settings = Settings()
     # ############ SIM SETTINGS #############
     settings.sim.study_name = f'APV_Morschenich_S_inclinedTables'

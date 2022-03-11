@@ -4,8 +4,8 @@ import pandas as pd
 from pandas.core.frame import DataFrame
 import seaborn as sns
 import joypy
-import apv
 from scipy import stats
+import apv
 
 
 def plot_heatmap(

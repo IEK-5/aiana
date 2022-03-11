@@ -21,7 +21,7 @@ class Simulation:
     sim_year: int or Literal['TMY'] = 'TMY'  # or e.g. 2020
     # TMY = typical meterological year; here: mean data from 2005 to 2021
 
-    use_typDay_perMonth_for_irradianceCalculation = False  # for dni, dhi, ghi
+    use_typDay_perMonth_for_irradianceCalculation = True  # for dni, dhi, ghi
 
     TMY_irradiance_aggfunc: Literal['min', 'mean', 'max'] = 'mean'
     # also used as aggregation function for satelite watherdata pivoting to TMY

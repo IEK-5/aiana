@@ -142,7 +142,12 @@ class GeometriesHandler:
         self.clone_distance_x = self.singleRow_footprint_x + 2*modPostDist
         # post start and distance used for building mounting structure
         self.post_start_x = self.sw_modCorner_x - modPostDist
-        self.post_distance_x = self.clone_distance_x/(self.mount['n_post_x']-1)
+
+        if 'post_distance_x' in self.mount:
+            self.post_distance_x = self.mount['post_distance_x']
+        else:
+            self.post_distance_x = self.clone_distance_x/(
+                self.mount['n_post_x']-1)
 
     def _set_scan_lengths_x_y(self):
         """ground scan dimensions (old name: x_field, y_field)"""
@@ -208,49 +213,6 @@ class GeometriesHandler:
                     )
         else:
             return '!xform '
-
-    def framed_single_axes_mount(self) -> str:
-        """Creates Aluminum posts and mounting structure
-        for azimuth = 0,
-        correct rotation is done later
-        """
-
-        material = 'Metal_Aluminum_Anodized'
-
-        s_beam = 0.15  # beam thickness
-        d_beam = 0.5  # beam distance
-
-        beamlength_x = self.post_distance_x
-
-        if self.settings.apv.enlarge_beams_for_periodic_shadows:
-            beamlength_x = self.allRows_footprint_x * 1.2
-            # to get periodic shadows in summer sunrise and set
-            beamlength_y = self.scn['pitch']*(self.scn['nRows']-0.4)
-        else:
-            beamlength_y = self.scn['pitch']*(self.scn['nRows']-1)
-
-        y_start = self.sw_modCorner_y + self.singleRow_footprint_y/2
-        h_post = self.scn["hub_height"] + 0.2
-
-        # create posts
-        text = self.post_array(h_post, y_start)
-
-        # create horizontal beams in y direction
-        if self.scn['nRows'] > 1:
-            text += (
-                f'\n!genbox {material} post {s_beam} {beamlength_y} {s_beam} \
-                | xform -t {self.post_start_x} {y_start} {h_post-s_beam-0.4} \
-                -a {self.mount["n_post_x"]} -t {self.post_distance_x} \
-                0 0 -a 2 -t 0 0 {-d_beam} '
-            )
-        # create horizontal beams in x direction
-        text += (
-            f'\n!genbox {material} post {beamlength_x} {s_beam} {s_beam} \
-            | xform -t {self.post_start_x} {y_start} {h_post - s_beam - 0.2} \
-            -a {self.scn["nRows"]} -t 0 {self.scn["pitch"]} 0 \
-            -a 2 -t 0 0 {-d_beam} '
-        )
-        return text
 
     def _set_y_grid_and_sensors(self):
         self.ygrid: list[float] = np.arange(
@@ -323,6 +285,49 @@ class GeometriesHandler:
             )
         return text
 
+    def framed_single_axes_mount(self) -> str:
+        """Creates Aluminum posts and mounting structure
+        for azimuth = 0,
+        correct rotation is done later
+        """
+
+        material = 'Metal_Aluminum_Anodized'
+
+        s_beam = 0.15  # beam thickness
+        d_beam = 0.5  # beam distance
+
+        beamlength_x = self.post_distance_x
+
+        if self.settings.apv.enlarge_beams_for_periodic_shadows:
+            beamlength_x = self.allRows_footprint_x * 1.2
+            # to get periodic shadows in summer sunrise and set
+            beamlength_y = self.scn['pitch']*(self.scn['nRows']-0.4)
+        else:
+            beamlength_y = self.scn['pitch']*(self.scn['nRows']-1)
+
+        y_start = self.sw_modCorner_y + self.singleRow_footprint_y/2
+        h_post = self.scn["hub_height"] + 0.2
+
+        # create posts
+        text = self.post_array(h_post, y_start)
+
+        # create horizontal beams in y direction
+        if self.scn['nRows'] > 1:
+            text += (
+                f'\n!genbox {material} post {s_beam} {beamlength_y} {s_beam} \
+                | xform -t {self.post_start_x} {y_start} {h_post-s_beam-0.4} \
+                -a {self.mount["n_post_x"]} -t {self.post_distance_x} \
+                0 0 -a 2 -t 0 0 {-d_beam} '
+            )
+        # create horizontal beams in x direction
+        text += (
+            f'\n!genbox {material} post {beamlength_x} {s_beam} {s_beam} \
+            | xform -t {self.post_start_x} {y_start} {h_post - s_beam - 0.2} \
+            -a {self.scn["nRows"]} -t 0 {self.scn["pitch"]} 0 \
+            -a 2 -t 0 0 {-d_beam} '
+        )
+        return text
+
     def declined_tables_mount(self) -> str:
         """
         tilted along y
@@ -331,7 +336,6 @@ class GeometriesHandler:
                 nRow even: y_center of the the row south to the system center
         """
         # overwrite for Morschenich special case
-        self.post_distance_x = 4
         self.post_start_x = -20+self.center_offset_x
         post_dist_y = self.mount['inner_table_post_distance_y']
 
@@ -355,6 +359,7 @@ class GeometriesHandler:
             self.scn["hub_height"] + height_shift,  # higher post height
             higher_post_start_y)
 
+        """
         if self.settings.apv.add_glass_box:
             t_y = (self.sw_modCorner_y + self.allRows_footprint_y
                    + self.settings.apv.glass_box_to_APV_distance)
@@ -364,29 +369,29 @@ class GeometriesHandler:
             t_x = self.allRows_footprint_x
             text += (f'\n!genbox stock_glass glass_wall {t_x} 0.005 5'
                      f' | xform -t {self.sw_modCorner_x} {t_y} 0')
+        """
 
-        if self.settings.apv.add_airrails:
+        return text
 
-            n_rails = 8
-            s_rail = 0.08
-            s = self.mount['post_thickness']
-            l_x = 20*2
-            # inclined beams in parallel to y
-            y_start = self.sw_modCorner_y+self.singleRow_length_y
-            text += (
-                f'\n!genbox {self.mount["material"]} post {s} 4.8 {s}'
-                f' | xform -rx -14 -t {self.post_start_x} {y_start} 3.8 '
-                f'-a {self.mount["n_post_x"]*2-1} -t 2 0 0 '
-                f'-a {self.scn["nRows"]-1} -t 0 {self.scn["pitch"]} 0 '
-            )
-            # streight rails in steps parallel to x
-            y_start += 0.25
-            text += (
-                f'\n!genbox {self.mount["material"]} post {l_x} {s_rail} {s_rail}'
-                f' | xform -rx -14 -t {self.post_start_x} {y_start} 3.84 '
-                f'-a {n_rails} -t 0 0.5 -0.125 '
-                f'-a {self.scn["nRows"]-1} -t 0 {self.scn["pitch"]} 0 '
-            )
+    def rails_between_modules(self, n_rails=8, s_rail=0.08, l_x=20*2):
+
+        s = self.mount['post_thickness']
+        # inclined beams in parallel to y
+        y_start = self.sw_modCorner_y+self.singleRow_length_y
+        text = (
+            f'\n!genbox {self.mount["material"]} post {s} 4.8 {s}'
+            f' | xform -rx -14 -t {self.post_start_x} {y_start} 3.8 '
+            f'-a {self.mount["n_post_x"]*2-1} -t 2 0 0 '
+            f'-a {self.scn["nRows"]-1} -t 0 {self.scn["pitch"]} 0 '
+        )
+        # straight rails in steps parallel to x
+        y_start += 0.25
+        text += (
+            f'\n!genbox {self.mount["material"]} post {l_x} {s_rail} {s_rail}'
+            f' | xform -rx -14 -t {self.post_start_x} {y_start} 3.84 '
+            f'-a {n_rails} -t 0 0.5 -0.125 '
+            f'-a {self.scn["nRows"]-1} -t 0 {self.scn["pitch"]} 0 '
+        )
         return text
 
     def post_array(
@@ -404,7 +409,6 @@ class GeometriesHandler:
         return text
 
     def make_checked_module_text(self) -> str:
-
         mod = self.mod
         c = self.settings.apv.cellLevelModuleParams
 

@@ -45,7 +45,7 @@ if __name__ == '__main__':
             'top_down']['vertical_view_angle'] = 45
 
         APV_SystSettings.add_airrails = False
-        #APV_SystSettings.module_form = 'none'
+        # APV_SystSettings.module_form = 'none'
         x_reduction = -((APV_SystSettings.moduleDict['x']
                          + APV_SystSettings.moduleDict['xgap'])
                         * (APV_SystSettings.sceneDict['nMods']))/2+2  # =2*2m=4m

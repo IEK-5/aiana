@@ -110,7 +110,7 @@ class Default:
         'module_to_post_distance_x': 0.5,
         'inner_table_post_distance_y': 1.35  # only used by 'declined_tables'
     }
-
+    # not in above dict to allow for literals (other options):
     mounting_structure_type: Literal[
         'none', 'declined_tables', 'framed_single_axes'] = 'framed_single_axes'
 
@@ -188,9 +188,8 @@ class Default:
     # round up to full meters (nice numbers in heatmaps)
     round_up_field_dimensions: bool = False
 
-    # only for declined tables mounting structure:
-    add_glass_box = False
-    add_airrails = False
+    # both only for declined tables mounting structure:
+    add_rails_between_modules = False
 
 # Other presets inheriting from Default
 
@@ -279,15 +278,16 @@ class APV_Syst_InclinedTables_S_Morschenich(Default):
         'post_thickness': 0.12,  # mounting structure post thickness [m]
         'n_post_x': 11,  # number of posts along x (along row) [-]
         'module_to_post_distance_x': 0,
-        'inner_table_post_distance_y': 1.35  # 3 posts, (2.82-0.12)/2
+        'post_distance_x': 4,
+        'inner_table_post_distance_y': 1.35,  # 3 posts, (2.82-0.12)/2
     }
 
     mounting_structure_type: Default.mounting_structure_type = \
         'declined_tables'
-    add_airrails = True
+    add_rails_between_modules = True
     scene_camera_dicts = Default.scene_camera_dicts.copy()
     scene_camera_dicts['total'] = {'cam_pos_x': -29,   # depth
-                                   'cam_pos_y': 14,   # left / right
+                                   'cam_pos_y': 5,   # left / right
                                    'cam_pos_z': 5.5,     # height
                                    'view_direction_x': 0.9863,
                                    'view_direction_y': -0.1567,
@@ -324,7 +324,7 @@ class APV_Syst_InclinedTables_Juelich(Default):
 
     mounting_structure_type: Default.mounting_structure_type = \
         'declined_tables'
-    add_glass_box = True
+    # add_glass_box = True # for greenhouse, not in use atm
     glass_box_to_APV_distance = 2  # [m]
     scene_camera_dicts = Default.scene_camera_dicts.copy()
     scene_camera_dicts['total'] = {'cam_pos_x': -21,   # depth
