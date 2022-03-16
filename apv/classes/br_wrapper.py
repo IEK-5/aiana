@@ -1,7 +1,7 @@
 from apv.classes.util_classes.settings_grouper import Settings
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
 from apv.classes.weather_data import WeatherData
-from apv.classes.oct_file_creator import OctFileCreator
+from apv.classes.oct_file_handler import OctFileHandler
 from apv.classes.simulator import Simulator
 from apv.classes.evaluator import Evaluator
 from apv.classes.plotter import Plotter
@@ -34,7 +34,7 @@ class BR_Wrapper():
         self.weatherData = WeatherData(self.settings)
         self.ghObj = GeometriesHandler(self.settings,  # self.debug_mode=True
                                        )
-        self.octFileObj = OctFileCreator(
+        self.octFileObj = OctFileHandler(
             self.settings, self.weatherData, self.ghObj,
             # self.debug_mode=True
         )
@@ -43,9 +43,15 @@ class BR_Wrapper():
         self.plotterObj = Plotter(self.settings, self.ghObj)
 
     def create_and_view_octfile(self):
-        self.octFileObj.create_octfile()
+        self.octFileObj.create_octfile(add_groundScanArea=True)
         self.octFileObj.view_octfile()
 
     def simulate_and_evaluate(self):
+        if self.octFileObj.groundScanArea_added:
+            print('Creating octfile again without groundScanArea as object ',
+                  'as this object would falsify the simulation results.')
+            # NOTE falsify, as the edge of the groundScanArea object will
+            # result in darker lines in the edge of the irradiation heatmaps.
+            self.octFileObj.create_octfile()
         self.simulatorObj.run_raytracing_simulation()
         self.evaluatorObj.add_time_stamps_PAR_shadowDepth_to_csv_file()

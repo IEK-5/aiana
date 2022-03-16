@@ -31,6 +31,11 @@ class Simulation:
     # if True, single lines of the scan area will be passed to a job pool
     # worked off by the cpu cores in parallel
 
+    # Accelerad settings ####################
+    # need to be installed first https://nljones.github.io/Accelerad/index.html
+    use_acceleradRT_view = False  # real time scene navigation and viewing
+    use_accelerad_rtrace = False  # GPU paralellization, all line scans at once
+
     # location
     apv_location = location.Location(
         50.86351, 6.52946, altitude=123, tz='Europe/Berlin', name='Morchenich'

@@ -137,11 +137,11 @@ class GeometriesHandler:
         )
 
     def _set_post_x_pos_respecting_cloning(self):
-        modPostDist = self.mount['module_to_post_distance_x']
+        modToPostDist_x = self.mount['module_to_post_distance_x']
         # array cloning distance in x (in y called 'pitch' by BR)
-        self.clone_distance_x = self.singleRow_footprint_x + 2*modPostDist
+        self.clone_distance_x = self.singleRow_footprint_x + 2*modToPostDist_x
         # post start and distance used for building mounting structure
-        self.post_start_x = self.sw_modCorner_x - modPostDist
+        self.post_start_x = self.sw_modCorner_x - modToPostDist_x
 
         if 'post_distance_x' in self.mount:
             self.post_distance_x = self.mount['post_distance_x']
@@ -152,21 +152,15 @@ class GeometriesHandler:
     def _set_scan_lengths_x_y(self):
         """ground scan dimensions (old name: x_field, y_field)"""
 
-        if self.mount['module_to_post_distance_x'] > 0:
-            extra_x = self.mount['post_thickness']
-        else:
-            extra_x = 0
-
         self.scan_length_x = self.allRows_footprint_x \
             + 2*self.settings.apv.ground_scan_margin_x \
-            + self.mount['module_to_post_distance_x'] \
-            + extra_x
+            + 2*self.mount['module_to_post_distance_x'] \
 
         self.scan_length_y = self.allRows_footprint_y \
             + 2*self.settings.apv.ground_scan_margin_y
 
         # round up (ceiling)
-        if self.settings.apv.round_up_field_dimensions:
+        if self.settings.apv.round_up_scan_area_edgeLengths:
             self.scan_length_x = np.ceil(self.scan_length_x)
             self.scan_length_y = np.ceil(self.scan_length_y)
 
@@ -309,7 +303,7 @@ class GeometriesHandler:
         h_post = self.scn["hub_height"] + 0.2
 
         # create posts
-        text = self.post_array(h_post, y_start)
+        text = self._post_array(h_post, y_start)
 
         # create horizontal beams in y direction
         if self.scn['nRows'] > 1:
@@ -328,7 +322,7 @@ class GeometriesHandler:
         )
         return text
 
-    def declined_tables_mount(self) -> str:
+    def declined_tables(self) -> str:
         """
         tilted along y
         origin x: x-center of the "int((nMods+1)/2)"ths module
@@ -344,20 +338,26 @@ class GeometriesHandler:
         lower_post_start_y = middle_post_start_y-post_dist_y
         higher_post_start_y = middle_post_start_y+post_dist_y
 
-        height_shift = post_dist_y*np.sin(
-            self.scn['tilt']*np.pi/180)/2
+        height_shift = post_dist_y*np.tan(self.scn['tilt']*np.pi/180)
 
         # create lower posts
-        text = self.post_array(
+        text = self._post_array(
             self.scn["hub_height"] - height_shift,  # lower post height
             lower_post_start_y)
-        # middle posts
-        text += '\n'+self.post_array(
-            self.scn["hub_height"], middle_post_start_y)
-        # add higher posts
-        text += '\n'+self.post_array(
+
+        # create middle posts
+        # text += '\n'+self._post_array(
+        #    self.scn["hub_height"], middle_post_start_y)
+
+        # create add higher posts
+        text += '\n'+self._post_array(
             self.scn["hub_height"] + height_shift,  # higher post height
             higher_post_start_y)
+
+        if self.settings.apv.mounting_structure_type\
+                == 'declined_tables_with_rails':
+            # add rails
+            text += self._rails_between_modules(higher_post_start_y)
 
         """
         if self.settings.apv.add_glass_box:
@@ -373,28 +373,45 @@ class GeometriesHandler:
 
         return text
 
-    def rails_between_modules(self, n_rails=8, s_rail=0.08, l_x=20*2):
+    def _rails_between_modules(
+        self, y_start, n_rails=7, s_rail=0.08,
+        l_x=20*2, tilt=-14, height=3.8
+    ):
 
         s = self.mount['post_thickness']
+        height = 3.8
         # inclined beams in parallel to y
-        y_start = self.sw_modCorner_y+self.singleRow_length_y
         text = (
             f'\n!genbox {self.mount["material"]} post {s} 4.8 {s}'
-            f' | xform -rx -14 -t {self.post_start_x} {y_start} 3.8 '
+            f' | xform -rx {tilt} -t {self.post_start_x} {y_start} {height} '
             f'-a {self.mount["n_post_x"]*2-1} -t 2 0 0 '
             f'-a {self.scn["nRows"]-1} -t 0 {self.scn["pitch"]} 0 '
         )
         # straight rails in steps parallel to x
-        y_start += 0.25
+        l_x += s
+        y_start += s
+        y_clone_dist = 0.6
+        height += s*(1+np.tan(tilt*np.pi/180))  # to lay on top of beams
+        z_clone_dist = y_clone_dist*np.tan(tilt*np.pi/180)
+
         text += (
             f'\n!genbox {self.mount["material"]} post {l_x} {s_rail} {s_rail}'
-            f' | xform -rx -14 -t {self.post_start_x} {y_start} 3.84 '
-            f'-a {n_rails} -t 0 0.5 -0.125 '
+            f' | xform -rx {tilt} -t {self.post_start_x} {y_start} {height} '
+            f'-a {n_rails} -t 0 {y_clone_dist} {z_clone_dist} '
             f'-a {self.scn["nRows"]-1} -t 0 {self.scn["pitch"]} 0 '
         )
+        # thicker rail:
+        y_start += n_rails*y_clone_dist
+        z = height + n_rails*z_clone_dist
+        text += (
+            f'\n!genbox {self.mount["material"]} post {l_x} {2*s} {s_rail}'
+            f' | xform -rx {tilt} -t {self.post_start_x} {y_start} {z} '
+            f'-a {self.scn["nRows"]-1} -t 0 {self.scn["pitch"]} 0 '
+        )
+
         return text
 
-    def post_array(
+    def _post_array(
             self, post_height: float, post_start_y: float) -> str:
         """ creats an array of posts for each row using
         APV_Systsettings.mountingStructureDict """

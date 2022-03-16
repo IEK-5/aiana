@@ -113,5 +113,5 @@ class Simulator:
         # if csv parent folder is changed from outside)
 
         df.to_csv(self.settings.paths.csv_file_path)
-        print(f'merged file saved in {self.settings.paths.csv_file_path}\n')
+        print(f'merged line scans into {self.settings.paths.csv_file_path}\n')
         self.df_ground_results = df

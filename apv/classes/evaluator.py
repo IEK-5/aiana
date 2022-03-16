@@ -23,8 +23,6 @@ class Evaluator:
         self.simDT = SimDT(self.settings.sim)
 
     def add_time_stamps_PAR_shadowDepth_to_csv_file(self):
-        """merge results to create one complete ground DataFrame
-        """
 
         df: pd.DataFrame = fi.df_from_file_or_folder(
             self.settings.paths.csv_file_path,
@@ -42,7 +40,7 @@ class Evaluator:
 
         df.to_csv(self.settings.paths.csv_file_path)
 
-        print(f'merged file saved in {self.settings.paths.csv_file_path}\n')
+        print(f'Evaluated {self.settings.paths.csv_file_path}\n')
         self.df_ground_results = df
 
     @staticmethod

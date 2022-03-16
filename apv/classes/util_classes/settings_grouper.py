@@ -1,14 +1,16 @@
 from apv.settings.apv_systems import Default as APV_System
 from pathlib import Path
-from apv.settings.sim_settings import Simulation
 from apv.settings.apv_systems import Default as SystSettings
+from apv.settings.view_settings import ViewSettings
+from apv.settings.sim_settings import Simulation
 from apv.settings.user_paths import UserPaths
 
 
 class Settings:
     def __init__(self):
-        self.sim = Simulation()
         self.apv = SystSettings()
+        self.view = ViewSettings()
+        self.sim = Simulation()
         self.set_names_and_paths()
 
     def set_names_and_paths(self):

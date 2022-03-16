@@ -54,8 +54,6 @@ class Evaluator:
         self.irrad_data = pd.DataFrame()
 
     def add_time_stamps_and_eval_quantities_to_merged_line_scans(self):
-        """merge results to create one complete ground DataFrame
-        """
 
         df: pd.DataFrame = fi.df_from_file_or_folder(
             self.temp_results_folder, append_all_in_folder=True,

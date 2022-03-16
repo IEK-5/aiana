@@ -11,7 +11,7 @@ Nach der Radiance Installation in Windows 10 nach „Systemumgebungsvariablen be
 Software training: https://www.youtube.com/watch?v=1X9L-R-RVGA
 PHD defense of Ms. Pelaez: https://www.youtube.com/watch?v=11Jp7GqzLPQ
 
-
+# toml dependencies leads to apv installation error??
 # Overview
 
 number of code lines 02.03.2022
@@ -49,7 +49,7 @@ push to git (no spaces in folder names) and then put following command in bash c
 git ls-files --exclude-standard -- ':!:**/*.[pjs][npv]g' ':!:_tests_and_stuff' ':!:system_studies/before_restructuring_feb22' ':!:*/*only_reference*' ':!:**/*.txt' ':!:**/*.csv' ':!:**/*.pyc' ':!:*__pycache__*' ':!:*__init__*' ':!:*.gitignore*' | xargs wc -l
 )
 
-# HOW TO install the package in vscode
+# HOW TO install the apv package in vscode
 
 - make sure that the file path in the terminal ist the one of the
 package folder (agri-pv), in which "setup.py" is localized. If you have several folders in your workspace right click agri-pv and choose "Open in Integrated Terminal"

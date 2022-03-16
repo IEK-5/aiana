@@ -42,7 +42,7 @@ def make_dirs_if_not_there(folder_paths: str or list):
 def df_from_file_or_folder(
         f_path: Path,
         skiprows=0, index_col=None,
-        delimiter='\t|,|;', squeeze=False,
+        delimiter='\t|,|;',
         append_all_in_folder=False,
         names=None, header='infer', print_reading_messages=True,
         add_source_file_name_to_df=False):
@@ -65,8 +65,7 @@ def df_from_file_or_folder(
             index_col=index_col,
             names=names,
             header=header,
-            engine='python',
-            squeeze=squeeze)
+            engine='python')
         if add_source_file_name_to_df:
             df['source'] = str(f_path).split('\\')[-1]
         return df

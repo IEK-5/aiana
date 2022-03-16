@@ -60,8 +60,9 @@ def write_viewfile_in_vp_format(
         https://www.radiance-online.org/learning/documentation/manual-pages/pdfs/rpict.pdf/view
     """
 
-    scd = scene_camera_dict
+    scd = scene_camera_dict.copy()
 
+    # key conversion from float to string with trailing space for cmd
     for key in scd:
         if key[-1] != ' ':
             scd[key] = str(scd[key]) + ' '
@@ -86,5 +87,6 @@ def write_viewfile_in_vp_format(
             + scd['horizontal_view_angle']
             + '-vv '
             + scd['vertical_view_angle']
-            + '-vs 0 -vl 0'
+            # + '-vs 0 -vl 0' # ist in der demo von acceleradRT nicht drin
+            # braucht man das?
         )

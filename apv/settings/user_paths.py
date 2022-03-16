@@ -15,7 +15,6 @@ class UserPaths:
     data_download_folder: Path = root / 'data_downloads'
     # for plots and tables. See also utils/results_organizer.py
     results_parent_folder: Path = root / 'results'
-
     # check folder existence
     fi.make_dirs_if_not_there(
         [bifacial_radiance_files, data_download_folder, results_parent_folder]

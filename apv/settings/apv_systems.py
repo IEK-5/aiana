@@ -51,12 +51,12 @@ import pandas as pd
             axis the posts within the rows and between different rows are
             each connected by two horzontal structural beams.
 
-    the others [new] are commented inline
+    others are commented inline
     """
 
 
 class Default:
-    """APV_Syst_Morschenich"""
+    """Other presets inheriting from Default"""
     module_name = 'SUNFARMING'
 
     # bifacial_radiance geometry-inputs
@@ -112,7 +112,13 @@ class Default:
     }
     # not in above dict to allow for literals (other options):
     mounting_structure_type: Literal[
-        'none', 'declined_tables', 'framed_single_axes'] = 'framed_single_axes'
+        'none',
+        'declined_tables',         # TODO for now this is fixed to Morschenich.
+        # Maybe add declined_tables with post count
+        # and distance depending on modules again?
+        'declined_tables_with_rails',  # see above
+        'framed_single_axes'
+    ] = 'framed_single_axes'
 
     # NOTE number of apv system clones in x direction
     # (needed for periodic shadows without border effects, where the sun can
@@ -124,44 +130,6 @@ class Default:
     # for 'framed_single_axes':
     enlarge_beams_for_periodic_shadows: bool = False
 
-    scene_camera_dicts: dict = {
-        'total': {'cam_pos_x': -14,   # depth
-                  'cam_pos_y': -1.6,   # left / right
-                  'cam_pos_z': 8,     # height
-                  'view_direction_x': 1.581,
-                  'view_direction_y': 0,
-                  'view_direction_z': -0.519234,
-                  'horizontal_view_angle': 120,  # [degree]
-                  'vertical_view_angle': 90  # [degree]
-                  },
-        'total_north_top': {'cam_pos_x': -20,   # depth
-                            'cam_pos_y': 0,   # left / right
-                            'cam_pos_z': 16,     # height
-                            'view_direction_x': 0,
-                            'view_direction_y': 1,
-                            'view_direction_z': -1,
-                            'horizontal_view_angle': 120,  # [degree]
-                            'vertical_view_angle': 90  # [degree]
-                            },
-        'module_zoom': {'cam_pos_x': -5,   # depth
-                        'cam_pos_y': -1.1,   # left / right
-                        'cam_pos_z': 6.5,     # height
-                        'view_direction_x': 1.581,
-                        'view_direction_y': 0,
-                        'view_direction_z': -2,
-                        'horizontal_view_angle': 120,  # [degree]
-                        'vertical_view_angle': 90  # [degree]
-                        },
-        'top_down': {'cam_pos_x': 0,   # depth
-                     'cam_pos_y': 0,   # left / right
-                     'cam_pos_z': 10,     # height
-                     'view_direction_x': 0,
-                     'view_direction_y': 0.001,
-                     'view_direction_z': -1,
-                     'horizontal_view_angle': 20,  # [degree]
-                     'vertical_view_angle': 20  # [degree]
-                     },
-    }
     # to optionally add a glass plate on the black modules:
     glass_modules: bool = False
 
@@ -169,13 +137,8 @@ class Default:
 
     # NOTE the scan area is placed below the foot print of the apv system,
     # so that the modules projected to groud (foot print) are just inside of it
-    # (all rows, but not the system clones)
-
-    add_groundScanArea_as_object_to_scene: bool = False
-    # NOTE the above can be set to True to see the ground in render preview
-    # (works only for low GHI). But should be set to False for the
-    # ray tracing simulation, since albedo is not applied correctly yet and the
-    # edge of the ground-tile object will make a darker line in the heatmap.
+    # (all rows, but not the system clones). The visualized object will not
+    # influence the simulation results.
 
     # NOTE one-sided margins [m] can be added to enlarge the field
     # (or to reduce by negative values)
@@ -186,12 +149,38 @@ class Default:
     ground_scan_shift_y: float = 0  # positiv: towards north
 
     # round up to full meters (nice numbers in heatmaps)
-    round_up_field_dimensions: bool = False
+    round_up_scan_area_edgeLengths: bool = False
 
-    # both only for declined tables mounting structure:
-    add_rails_between_modules = False
 
-# Other presets inheriting from Default
+class APV_Syst_InclinedTables_S_Morschenich(Default):
+
+    sceneDict = {'tilt': 20,  # 18.34,
+                 'pitch': 7.32,  # 7.46 was a mistake for first 3 sim
+                 'hub_height': 3.8,
+                 'azimuth': 180,
+                 'nMods': 48,  # 24,
+                 'nRows': 4,
+                 }
+
+    moduleDict = {'x': 0.77,
+                  'y': 3.03,  # 0.998,
+                  'xgap': 0.11,
+                  'ygap': 0,
+                  'zgap': 0,  # 0.046,
+                  'numpanels': 1
+                  }
+
+    mountingStructureDict = {
+        'material': 'Metal_Aluminum_Anodized',
+        'post_thickness': 0.12,  # mounting structure post thickness [m]
+        'n_post_x': 11,  # number of posts along x (along row) [-]
+        'module_to_post_distance_x': 0,
+        'post_distance_x': 4,
+        'inner_table_post_distance_y': 1.35,  # 3 posts, (2.82-0.12)/2 #TODO post thickness?
+    }
+
+    mounting_structure_type: Default.mounting_structure_type = \
+        'declined_tables_with_rails'
 
 
 class APV_Morchenich_Checkerboard(Default):
@@ -204,10 +193,6 @@ class APV_Morchenich_Checkerboard(Default):
     # make this depending on sim time to save computation duration
     n_apv_system_clones_in_x: int = 1  # for azimuth = 180: cloned towards east
     n_apv_system_clones_in_negative_x: int = 1  # towards west
-
-    scene_camera_dicts = Default.scene_camera_dicts.copy()
-    scene_camera_dicts['top_down']['horizontal_view_angle'] = 80
-    scene_camera_dicts['top_down']['vertical_view_angle'] = 50
 
     # To reduce sim time and get periodic boundary conditions
     ground_scan_margin_x = 0
@@ -240,10 +225,6 @@ class APV_Morchenich_EastWest(Default):
     mountingStructureDict['n_post_x'] = 6
     mountingStructureDict['module_to_post_distance_x'] = 0
 
-    scene_camera_dicts = Default.scene_camera_dicts.copy()
-    scene_camera_dicts['top_down']['horizontal_view_angle'] = 60
-    scene_camera_dicts['top_down']['vertical_view_angle'] = 60
-
     # y reduction (negative margin)
     x_pitch = moduleDict['x']*11/55
     # 11*(Default.moduleDict['x']+Default.moduleDict['xgap'])
@@ -253,48 +234,6 @@ class APV_Morchenich_EastWest(Default):
     ground_scan_shift_y = -Default.moduleDict['x']/2 + x_pitch
 
     enlarge_beams_for_periodic_shadows: bool = True
-
-
-class APV_Syst_InclinedTables_S_Morschenich(Default):
-
-    sceneDict = {'tilt': 20,  # 18.34,
-                 'pitch': 7.32,  # 7.46 was a mistake for first 3 sim
-                 'hub_height': 3.8,
-                 'azimuth': 180,
-                 'nMods': 48,  # 24,
-                 'nRows': 4,
-                 }
-
-    moduleDict = {'x': 0.77,
-                  'y': 3.03,  # 0.998,
-                  'xgap': 0.11,
-                  'ygap': 0,
-                  'zgap': 0,  # 0.046,
-                  'numpanels': 1
-                  }
-
-    mountingStructureDict = {
-        'material': 'Metal_Aluminum_Anodized',
-        'post_thickness': 0.12,  # mounting structure post thickness [m]
-        'n_post_x': 11,  # number of posts along x (along row) [-]
-        'module_to_post_distance_x': 0,
-        'post_distance_x': 4,
-        'inner_table_post_distance_y': 1.35,  # 3 posts, (2.82-0.12)/2
-    }
-
-    mounting_structure_type: Default.mounting_structure_type = \
-        'declined_tables'
-    add_rails_between_modules = True
-    scene_camera_dicts = Default.scene_camera_dicts.copy()
-    scene_camera_dicts['total'] = {'cam_pos_x': -29,   # depth
-                                   'cam_pos_y': 5,   # left / right
-                                   'cam_pos_z': 5.5,     # height
-                                   'view_direction_x': 0.9863,
-                                   'view_direction_y': -0.1567,
-                                   'view_direction_z': -0.0509,
-                                   'horizontal_view_angle': 60,  # [degree]
-                                   'vertical_view_angle': 40  # [degree]
-                                   }
 
 
 class APV_Syst_InclinedTables_Juelich(Default):
@@ -326,16 +265,6 @@ class APV_Syst_InclinedTables_Juelich(Default):
         'declined_tables'
     # add_glass_box = True # for greenhouse, not in use atm
     glass_box_to_APV_distance = 2  # [m]
-    scene_camera_dicts = Default.scene_camera_dicts.copy()
-    scene_camera_dicts['total'] = {'cam_pos_x': -21,   # depth
-                                   'cam_pos_y': 6.9,   # left / right
-                                   'cam_pos_z': 1,     # height
-                                   'view_direction_x': 0.9863,
-                                   'view_direction_y': -0.1567,
-                                   'view_direction_z': -0.0509,
-                                   'horizontal_view_angle': 60,  # [degree]
-                                   'vertical_view_angle': 40  # [degree]
-                                   }
 
 
 class SimpleSingleCheckerBoard(Default):

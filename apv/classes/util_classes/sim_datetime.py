@@ -12,7 +12,7 @@ class SimDT:
         self.sim_dt_local: datetime = None
         self.sim_dt_utc: datetime = None
         self.sim_dt_utc_pd: pd.Timestamp = None
-        
+
         self.startdt_utc: datetime = None
         self.enddt_utc: datetime = None
         self.times: pd.Timestamp = None
@@ -36,7 +36,8 @@ class SimDT:
 
         self.times = pd.date_range(
             start=self.startdt_utc, end=self.enddt_utc,
-            freq=f'{self.SimSettings.time_step_in_minutes}min', closed='right')
+            freq=f'{self.SimSettings.time_step_in_minutes}min',
+            inclusive='right')
 
     def convert_settings_localtime_to_UTC(
             self, date_time_str: str, tz: str) -> datetime:

@@ -12,6 +12,8 @@ from typing import Literal
 from pathlib import Path
 
 import bifacial_radiance as br
+# import apv.bifacial_radiance.main as br
+# import apv.bifacial_radiance.module as br_module
 from apv.utils import radiance_utils
 from apv.classes.weather_data import WeatherData
 from apv.classes.util_classes.settings_grouper import Settings
@@ -20,7 +22,7 @@ from apv.classes.util_classes.geometries_handler import GeometriesHandler
 from apv.settings.apv_systems import APV_Syst_InclinedTables_S_Morschenich
 
 
-class OctFileCreator:
+class OctFileHandler:
     """
     Attributes:
         simSettings (apv.settings.sim_settings.Simulation):
@@ -56,8 +58,9 @@ class OctFileCreator:
         # for custom radiance geometry descriptions:
         self.ghObj = ghObj
         self.debug_mode = debug_mode
+        self.groundScanArea_added = False
 
-    def create_octfile(self):
+    def create_octfile(self, add_groundScanArea=False):
         """creates pv modules and mounting structure (optional)"""
 
         # create a bifacial_radiance Radiance object
@@ -78,24 +81,27 @@ class OctFileCreator:
 
         customObjects = {}
         # north arrow
-        if self.settings.apv.module_form is not 'none':
+        if self.settings.apv.module_form != 'none':
             customObjects['modules'] = self.get_radtext_of_all_modules
 
         if self.debug_mode:
             customObjects['north_arrow'] = self.ghObj.north_arrow
 
         # scan area
-        if self.settings.apv.add_groundScanArea_as_object_to_scene:
+        if add_groundScanArea:
             customObjects['scan_area'] = self.ghObj.groundscan_area_and_sensors
+            self.groundScanArea_added = True
+        else:
+            self.groundScanArea_added = False
 
         # mounting structure
         structure_type = self.settings.apv.mounting_structure_type
-        if structure_type == 'declined_tables':
-            customObjects['structure'] = self.ghObj.declined_tables_mount
+        if (structure_type == 'declined_tables') \
+                or (structure_type == 'declined_tables_with_rails'):
+            customObjects['structure'] = self.ghObj.declined_tables
         elif structure_type == 'framed_single_axes':
             customObjects['structure'] = self.ghObj.framed_single_axes_mount
-        if self.settings.apv.add_rails_between_modules:
-            customObjects['structure_rails'] = self.ghObj.rails_between_modules
+        # NOTE else: structure_type == 'none' --> add nothing
 
         cloning_rad_text = self.ghObj.get_rad_txt_for_cloning_the_apv_system()
         extra_radtext_to_apply_on_a_radObject = {
@@ -130,17 +136,32 @@ class OctFileCreator:
                 being located in the view_fp parent directory (e.g. 'Demo1')
 
             """
+
+        file_format = 'vf' if self.settings.sim.use_acceleradRT_view else 'vp'
+
         view_fp = self.settings.paths.bifacial_radiance_files / Path(
-            'views/'+view_name+'.vp')
-        scd = self.settings.apv.scene_camera_dicts[view_name]
+            f'views/{view_name}.{file_format}')
+        scd = self.settings.view.scene_camera_dicts[view_name]
         radiance_utils.write_viewfile_in_vp_format(scd, view_fp, view_type)
 
         if oct_file_name is None:
             oct_file_name = self.settings.names.oct_fn
 
         print(f'Viewing {oct_file_name}.')
-        subprocess.call(
-            ['rvu', '-vf', view_fp, '-e', '.01', oct_file_name])
+
+        x = self.settings.view.accelerad_img_width
+        y = int(x * scd['vertical_view_angle'] / scd['horizontal_view_angle'])
+        if self.settings.sim.use_acceleradRT_view:
+            subprocess.call(
+                ['AcceleradRT', '-vf', view_fp, '-ab', '3', '-aa', '0',
+                 '-ad', '1', '-x', str(x), '-y', str(y), '-s', '10000',
+                 '-log', '0',  # turns off log scale of contrast
+                 '-f-',  # turn false color off, default: on (-f+)
+                 # https://nljones.github.io/Accelerad/rt.html#commandline
+                 oct_file_name])
+        else:
+            subprocess.call(
+                ['rvu', '-vf', view_fp, '-e', '.01', oct_file_name])
 
     def _create_materials(self):
         # self.makeCustomMaterial(mat_name='dark_glass', mat_type='glass',
@@ -279,7 +300,7 @@ class OctFileCreator:
 # testing
 if __name__ == '__main__':
     # azimuth and cloning
-    octFileCreator = OctFileCreator(debug_mode=True)
+    octFileCreator = OctFileHandler(debug_mode=True)
     # octFileCreator.settings.apv.n_apv_system_clones_in_negative_x = 1
     for azimuth in [180]:  # [90, 135, 180, 270]:
         # octFileCreator.settings.apv = APV_Syst_InclinedTables_S_Morschenich()
