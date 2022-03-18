@@ -27,14 +27,16 @@ class Simulation:
     # also used as aggregation function for satelite watherdata pivoting to TMY
     # min: extreme cloudy day, max: sunny day with distant high bright clouds
 
-    use_multi_processing = True
+    use_CPU_multi_processing = True
     # if True, single lines of the scan area will be passed to a job pool
     # worked off by the cpu cores in parallel
 
     # Accelerad settings ####################
     # need to be installed first https://nljones.github.io/Accelerad/index.html
     use_acceleradRT_view = False  # real time scene navigation and viewing
-    use_accelerad_rtrace = False  # GPU paralellization, all line scans at once
+    use_accelerad_GPU_processing = False  # GPU paralellization, all line scans
+    # at once. GPU multiprocessing is not compatible with CPU multiprocessing
+    # and will thus ignore use_CPU_multi_processing setting, if True
 
     # location
     apv_location = location.Location(
@@ -65,7 +67,7 @@ class Simulation:
     cm_quantity: Literal[
         'radiation', 'PAR', 'shadow_depth', 'DLI'] = 'radiation'
 
-    plot_title_components: list = ['position', 'weather', 'datetime']
+    plot_title_components: list = ['weather', 'datetime']
     # all options: ['weather', 'module_form', 'resolution',
     #                'position', 'agg_func', 'datetime']
     scan_position: Literal['north', 'center', 'south', 'east'] = 'south'
@@ -91,9 +93,6 @@ class Simulation:
 
     # cumulative is done at the moment via for loop of single moments
     cumulative: bool = False
-    # ray tracing accuracy used in br.analysisObj.analysis()
-    ray_tracing_accuracy = 'low'  # 'high' does not improve accuracy much but
-    # increases simtime by 3x-4x
 
     irradiance_data_source: Literal['EPW', 'ADS_satellite'] = 'ADS_satellite'
     # >>> we dont use EPW anymore, bad data

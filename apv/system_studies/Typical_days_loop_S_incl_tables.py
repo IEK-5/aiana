@@ -10,7 +10,6 @@ or it will make problems with multi processing
 from apv.classes.weather_data import WeatherData
 import pytictoc
 from pathlib import Path
-import apv
 import os
 from apv.classes.util_classes.sim_datetime import SimDT
 from apv.classes.util_classes.settings_grouper import Settings
@@ -23,11 +22,16 @@ if __name__ == '__main__':
     # ############ SIM SETTINGS #############
     settings.sim.study_name = f'APV_Morschenich_S_inclinedTables'
     settings.sim.scan_position = 'north'
+    settings.sim.plot_title_components = ['weather', 'position', 'datetime']
     settings.sim.use_typDay_perMonth_for_irradianceCalculation = True
     settings.sim.use_typDay_perMonth_for_irradianceCalculation = True
     settings.sim.spatial_resolution = 0.1
     settings.sim.time_step_in_minutes = 5
     settings.sim.TMY_irradiance_aggfunc = 'mean'
+
+    settings.sim.use_acceleradRT_view = True
+    settings.sim.use_accelerad_GPU_processing = True
+
     #########################################
     # ########### settings.apv:  ####
     settings.apv = APV_Syst_InclinedTables_S_Morschenich()
@@ -82,18 +86,18 @@ if __name__ == '__main__':
     # months = range(1, 13)
     # hours = [19]
     hours = range(2, 24, 1)
-    hours = range(7, 13, 1)
+    #hours = range(7, 13, 1)
     # minutes = [10]
     minutes = range(0, 60, settings.sim.time_step_in_minutes)
     # minutes = range(0, 1, settings.sim.time_step_in_minutes)
     # minute 60 is and has to be exclusive
 
-    enough_light = False  # (for ghi filter)
+    enough_light = False  # (init value for ghi filter)
 
     for month in months:
         day = 15  # (int(df_all['day_nearest_to_mean'].loc[month]))
         settings.sim.results_subfolder = create_results_subfolder(
-            month, settings.sim.scan_position)
+            month, settings.sim.scan_pposition)
 
         weatherData = WeatherData(settings)
 

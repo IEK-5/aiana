@@ -10,13 +10,13 @@ if __name__ == '__main__':
 
     settings = Settings()
     settings.sim.sim_date_time = '06-15_12:00'
-    settings.sim.spatial_resolution = 0.4
+    settings.sim.spatial_resolution = 0.1
     settings.sim.use_typDay_perMonth_for_irradianceCalculation = False
-    settings.sim.use_multi_processing = False
+    settings.sim.use_CPU_multi_processing = False
 
-    # settings.apv = APV_Syst_InclinedTables_S_Morschenich()
+    settings.apv = APV_Syst_InclinedTables_S_Morschenich()
     settings.sim.use_acceleradRT_view = True
-    settings.sim.use_accelerad_rtrace = True
+    settings.sim.use_accelerad_GPU_processing = True
 
     """    brObj = BR_Wrapper(settings)
     brObj.octFileObj.create_octfile()
@@ -74,6 +74,7 @@ if __name__ == '__main__':
     # (TypeError: 'NoneType' object is not subscriptable)
     brObj.simulate_and_evaluate()
     # #
+    brObj = BR_Wrapper(settings)
     brObj.plotterObj.ground_heatmap(  # cm_unit='shadow_depth'
     )
     # #

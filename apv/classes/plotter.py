@@ -25,7 +25,8 @@ class Plotter:
         cm_unit: str = None,
         cumulative: bool = None,
         df_col_limits: pd.DataFrame = None,
-        destination_file_path: Path = None
+        destination_file_path: Path = None,
+        dpi=400
     ):
         """plots the ground insolation as a heat map and saves it into
             the results/plots folder.
@@ -82,7 +83,7 @@ class Plotter:
             destination_file_path = self.settings.paths.results_folder / Path(
                 f'{self.settings.names.csv_fn[:-4]}_{cm_unit}.jpg'
             )
-        fi.save_fig(fig, destination_file_path)
+        fi.save_fig(fig, destination_file_path, dpi=dpi)
 
     def return_weather_description(self):
         if self.settings.sim.TMY_irradiance_aggfunc == 'min':

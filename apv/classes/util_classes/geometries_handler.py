@@ -52,7 +52,7 @@ class GeometriesHandler:
     post_distance_x: float
 
     ygrid: list[int]
-    groundscan: dict
+    ground_lineScan: dict
     # frontscan: dict
     # backscan: dict
 
@@ -70,7 +70,7 @@ class GeometriesHandler:
         self._set_APVSystCenter_to_origin_offsets()
         self._set_x_y_coordinates_of_modCorner_and_scanArea_anchors()
         self._set_y_grid_and_sensors()
-        self._set_groundscan_dict()
+        self._set_groundscan_dicts()
         self._set_post_x_pos_respecting_cloning()
 
     def _adjust_settings(self):
@@ -218,7 +218,7 @@ class GeometriesHandler:
         self.sensors_x = int(
             self.scan_length_x / self.settings.sim.spatial_resolution)+1
 
-    def _set_groundscan_dict(self):
+    def _set_groundscan_dicts(self):
         """
         groundscan (dict): dictionary containing the XYZ-start and
         -increments values for a bifacial_radiance linescan.
@@ -226,19 +226,23 @@ class GeometriesHandler:
         The origin (x=0, y=0) of the PV facility is in its center.
         """
 
-        sx_xinc = self.settings.sim.spatial_resolution
-        self.groundscan = {
+        xy_inc = self.settings.sim.spatial_resolution
+        self.ground_lineScan = {
             'xstart':  self.scan_area_anchor_x,  # bottom left for azimuth 180
             'ystart': self.scan_area_anchor_y,
             # ystart will be set by looping ygrid for multiprocessing
             'zstart': 0.001,  # 0.05,
-            'xinc': 0, 'yinc': 0, 'zinc': 0,
-            'sx_xinc': sx_xinc, 'sx_yinc': 0, 'sx_zinc': 0,
+            'xinc': xy_inc, 'yinc': 0, 'zinc': 0,
+            'sx_xinc': 0, 'sx_yinc': 0, 'sx_zinc': 0,
             # NOTE Sensor x-coordinate = xstart + iy*xinc + ix*sx_xinc,
             # whereby iy und ix are looped over range(Ny) and range(Nx)
             'Nx': self.sensors_x, 'Ny': 1, 'Nz': 1,
             'orient': '0 0 -1'
         }
+
+        self.ground_areaScan = self.ground_lineScan.copy()
+        self.ground_areaScan['yinc'] = xy_inc
+        self.ground_areaScan['Ny'] = len(self.ygrid)
 
         print(f'\n sensor grid:\nx: {self.sensors_x}, y: {len(self.ygrid)}, '
               f'total: {self.sensors_x * len(self.ygrid)}')
@@ -248,7 +252,7 @@ class GeometriesHandler:
     # =========================================================================
 
     def groundscan_area_and_sensors(self) -> str:
-        g = self.groundscan
+        g = self.ground_areaScan
         # ground scan area
         text = (
             f'!genbox grass field {self.scan_length_x} {self.scan_length_y} 0.00001'
@@ -259,8 +263,8 @@ class GeometriesHandler:
         text += (
             f'\n!genbox red sensor {s} {s} {s/2} '
             f'| xform -t {g["xstart"]} {g["ystart"]} 0 '
-            f'-a {self.sensors_x} -t {g["sx_xinc"]} 0 0 '
-            f'-a {len(self.ygrid)} -t 0 {g["sx_xinc"]} 0'  # x- and y-inc equal
+            f'-a {g["Nx"]} -t {g["xinc"]} 0 0 '
+            f'-a {g["Ny"]} -t 0 {g["yinc"]} 0'
         )
 
         if self.debug_mode:
