@@ -3,7 +3,7 @@ if __name__ == '__main__':
     import apv
 
     SimSettings = apv.settings.sim_settings.Simulation()
-    SimSettings.sim_name = 'declined_tables_and_glassbox'
+    SimSettings.sim_name = 'inclined_tables_and_glassbox'
     SimSettings.spatial_resolution = 1
     APV_SystSettings = \
         apv.settings.apv_systems.APV_Syst_InclinedTables_Juelich()

@@ -21,7 +21,6 @@ if __name__ == '__main__':
     # Insert start end-date of the year as [month,day,hour]
     SimSettings.sky_gen_mode = 'gendaylit'
     APV_SystSettings.moduleDict['xgap'] = 0.02
-    # APV_SystSettings.mounting_structure_type = 'declined_tables'
     # APV_SystSettings.sceneDict['nRows'] = 3
 
     # APV_SystSettings.sceneDict['nMods'] = 4

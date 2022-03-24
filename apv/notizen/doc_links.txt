@@ -1,3 +1,7 @@
+# radiance source code, still under developement
+https://github.com/LBNL-ETA/Radiance/tree/master
+
+
 #
 uml flow charts: (unified modeling language)
 https://en.wikipedia.org/wiki/Unified_Modeling_Language

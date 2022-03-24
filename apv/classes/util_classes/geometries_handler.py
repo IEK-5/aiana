@@ -141,7 +141,8 @@ class GeometriesHandler:
         # array cloning distance in x (in y called 'pitch' by BR)
         self.clone_distance_x = self.singleRow_footprint_x + 2*modToPostDist_x
         # post start and distance used for building mounting structure
-        self.post_start_x = self.sw_modCorner_x - modToPostDist_x
+        self.post_start_x = self.sw_modCorner_x - modToPostDist_x \
+            - self.mount['post_thickness']/2
 
         if 'post_distance_x' in self.mount:
             self.post_distance_x = self.mount['post_distance_x']
@@ -192,14 +193,13 @@ class GeometriesHandler:
             (str): radiance text
         """
 
-        shift_x_array_start = \
-            -self.settings.apv.n_apv_system_clones_in_negative_x \
+        shift_x_array_start = -self.mount['n_apv_system_clones_in_negative_x'] \
             * self.clone_distance_x
 
         # total count n of cloned system segments
         # (segment = structure + modules without a gap in x direction)
-        n_system_segments_x = self.settings.apv.n_apv_system_clones_in_x \
-            + 1 + self.settings.apv.n_apv_system_clones_in_negative_x
+        n_system_segments_x = self.mount['n_apv_system_clones_in_x'] \
+            + 1 + self.mount['n_apv_system_clones_in_negative_x']
 
         if n_system_segments_x > 1:
             return (f'!xform -t {shift_x_array_start} 0 0 '
@@ -289,11 +289,10 @@ class GeometriesHandler:
         correct rotation is done later
         """
 
-        material = 'Metal_Aluminum_Anodized'
-
         s_beam = 0.15  # beam thickness
         d_beam = 0.5  # beam distance
 
+        material = self.mount['material']
         beamlength_x = self.post_distance_x
 
         if self.settings.apv.enlarge_beams_for_periodic_shadows:
@@ -326,15 +325,14 @@ class GeometriesHandler:
         )
         return text
 
-    def declined_tables(self) -> str:
+    def inclined_tables(self) -> str:
         """
         tilted along y
         origin x: x-center of the "int((nMods+1)/2)"ths module
         origin y: nRow uneven: y-center of the center row
                 nRow even: y_center of the the row south to the system center
         """
-        # overwrite for Morschenich special case
-        self.post_start_x = -20+self.center_offset_x
+
         post_dist_y = self.mount['inner_table_post_distance_y']
 
         # post starts in y:
@@ -358,17 +356,12 @@ class GeometriesHandler:
             self.scn["hub_height"] + height_shift,  # higher post height
             higher_post_start_y)
 
-        if self.settings.apv.mounting_structure_type\
-                == 'declined_tables_with_rails':
-            # add rails
-            text += self._rails_between_modules(higher_post_start_y)
-
         """
         if self.settings.apv.add_glass_box:
             t_y = (self.sw_modCorner_y + self.allRows_footprint_y
                    + self.settings.apv.glass_box_to_APV_distance)
             # variable cannot be found because not in default()
-            # but in declined tables apv system settings
+            # but in inclined tables apv system settings
 
             t_x = self.allRows_footprint_x
             text += (f'\n!genbox stock_glass glass_wall {t_x} 0.005 5'
@@ -377,10 +370,28 @@ class GeometriesHandler:
 
         return text
 
+    def morschenich_fixed(self) -> str:
+        """
+        change post_start_x and add rails
+        """
+        # overwrite for Morschenich special case
+        self.post_start_x = -20+self.center_offset_x
+        text = self.inclined_tables()
+
+        # add rails
+        post_dist_y = self.mount['inner_table_post_distance_y']
+        middle_post_start_y = self.sw_modCorner_y+self.singleRow_footprint_y/2
+        y_start = middle_post_start_y+post_dist_y
+        text += self._rails_between_modules(y_start)
+
+        return text
+
     def _rails_between_modules(
-        self, y_start, n_rails=7, s_rail=0.08,
+        self, y_start: float, n_rails=7, s_rail=0.08,
         l_x=20*2, tilt=-14, height=3.8
     ):
+        """y_start = height of the (upper) height anchor of the rails
+        (upper for the default negative tilt)"""
 
         s = self.mount['post_thickness']
         height = 3.8

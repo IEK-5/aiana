@@ -3,7 +3,7 @@ from typing import Literal
 from pathlib import Path
 import pandas as pd
 """
-    all settings can also be overwritten in a working file
+    all settings can also be oself.verwritten in a working file
     as long as a br_wrapperObj is initializated afterwards.
     See system_studies/apv_main.py for a simple example
 
@@ -56,153 +56,162 @@ import pandas as pd
 
 
 class Default:
-    """Other presets inheriting from Default"""
-    module_name = 'SUNFARMING'
+    """Other presets inherit from this Default"""
 
-    # bifacial_radiance geometry-inputs
+    def __init__(self):
+        self.sceneDict = {'tilt': 20,  # explanations above
+                          'pitch': 10,
+                          'hub_height': 4.5,
+                          'azimuth': 180,
+                          'nMods': 10,
+                          'nRows': 3,
+                          }
 
-    sceneDict = {'tilt': 20,  # explanations above
-                 'pitch': 10,
-                 'hub_height': 4.5,
-                 'azimuth': 180,
-                 'nMods': 10,
-                 'nRows': 3,
-                 }
+        self.module_name = 'SUNFARMING'
 
-    moduleDict = {'x': 0.998,
-                  'y': 1.980,
-                  'xgap': 0.05,
-                  'ygap': 0.05,
-                  'zgap': 0,
-                  'numpanels': 2
-                  }
+        # bifacial_radiance geometry-inputs
 
-    moduleSpecs: pd.Series = pd.read_csv(
-        Path(__file__).parent.parent.resolve()  # apv package location
-        / Path(
-            'resources/pv_modules/Sanyo240_moduleSpecs_guestimate.txt'),
-        delimiter='\t'
-    ).T[0]
+        self.moduleDict = {'x': 0.998,
+                           'y': 1.980,
+                           'xgap': 0.05,
+                           'ygap': 0.05,
+                           'zgap': 0,
+                           'numpanels': 2
+                           }
 
-    cellLevelModuleParams = {
-        'numcellsx': 6,  # has to be an even number at the moment
-        'numcellsy': 12,  # has to be an even number at the moment
-        'xcellgap': 0.02,
-        'ycellgap': 0.02
-    }
+        self.moduleSpecs: pd.Series = pd.read_csv(
+            Path(__file__).parent.parent.resolve()  # apv package location
+            / Path(
+                'resources/pv_modules/Sanyo240_moduleSpecs_guestimate.txt'),
+            delimiter='\t'
+        ).T[0]
 
-    module_form: Literal[
-        'std',
-        'cell_level',
-        'cell_level_checker_board',
-        'EW_fixed',  # at the moment second modul of roof is created in the
-        # text input for br.radObj.make_module(),
-        # and the tilt is happening later in br.radObj.make_scene()
-        # the second module is facing upwards-down, might be a problem later
-        'cell_level_EW_fixed',
-        'none'
-    ] = 'std'
+        self.cellLevelModuleParams = {
+            'numcellsx': 6,  # has to be an even number at the moment
+            'numcellsy': 12,  # has to be an even number at the moment
+            'xcellgap': 0.02,
+            'ycellgap': 0.02
+        }
 
-    mountingStructureDict = {
-        'material': 'Metal_Aluminum_Anodized',
-        'post_thickness': 0.25,  # mounting structure post thickness [m]
-        'n_post_x': 2,  # number of posts along x (along row) [-]
-        'module_to_post_distance_x': 0.5,
-        'inner_table_post_distance_y': 1.35  # only used by 'declined_tables'
-    }
-    # not in above dict to allow for literals (other options):
-    mounting_structure_type: Literal[
-        'none',
-        'declined_tables',         # TODO for now this is fixed to Morschenich.
-        # Maybe add declined_tables with post count
-        # and distance depending on modules again?
-        'declined_tables_with_rails',  # see above
-        'framed_single_axes'
-    ] = 'framed_single_axes'
+        self.module_form: Literal[
+            'std',
+            'cell_level',
+            'cell_level_checker_board',
+            'EW_fixed',  # at the moment second modul of roof is created in the
+            # text input for br.radObj.make_module(),
+            # and the tilt is happening later in br.radObj.make_scene()
+            # the second module is facing upwards-down, might be a problem later
+            'cell_level_EW_fixed',
+            'none'
+        ] = 'std'
 
-    # NOTE number of apv system clones in x direction
-    # (needed for periodic shadows without border effects, where the sun can
-    # shine on the ground from the side in the morning and evening):
+        self.mountingStructureDict = {
+            'material': 'Metal_Aluminum_Anodized',
+            'post_thickness': 0.25,  # mounting structure post thickness [m]
+            'n_post_x': 2,  # number of posts along x (along row) [-]
+            'module_to_post_distance_x': 0.5,
+            'inner_table_post_distance_y': 1.35,  # only used by 'inclined_tables'
+            'n_apv_system_clones_in_x': 0,  # number of apv system clones in x-
+            # direction (for azimuth = 180: cloned towards east)
+            'n_apv_system_clones_in_negative_x': 0,
+        }
+        # not in above dict to allow for literals (other options):
+        self.mounting_structure_type: Literal[
+            'none',
+            'framed_single_axes',
+            'inclined_tables',
+            'morschenich_fixed',  # NOTE this one should only be used in the
+            # APV_Syst_InclinedTables_S_Morschenich Child
+        ] = 'framed_single_axes'
 
-    n_apv_system_clones_in_x: int = 0  # for azimuth = 180: cloned towards east
-    n_apv_system_clones_in_negative_x: int = 0  # towards west
+        # for 'framed_single_axes':
+        self.enlarge_beams_for_periodic_shadows: bool = False
 
-    # for 'framed_single_axes':
-    enlarge_beams_for_periodic_shadows: bool = False
+        # to optionally add a glass plate on the black modules:
+        self.glass_modules: bool = False
 
-    # to optionally add a glass plate on the black modules:
-    glass_modules: bool = False
+        # ### ground scan area settings
 
-    # ### ground scan area settings
+        # NOTE the scan area is placed below the foot print of the apv system,
+        # so that the modules projected to groud (foot print) are just inside of it
+        # (all rows, but not the system clones). The visualized object will not
+        # influence the simulation results.
 
-    # NOTE the scan area is placed below the foot print of the apv system,
-    # so that the modules projected to groud (foot print) are just inside of it
-    # (all rows, but not the system clones). The visualized object will not
-    # influence the simulation results.
+        # NOTE one-sided margins [m] can be added to enlarge the field
+        # (or to reduce by negative values)
+        self.ground_scan_margin_x: float = 0
+        self.ground_scan_margin_y: float = 0
+        # shift scan area [m]
+        self.ground_scan_shift_x: float = 0  # positiv: towards east
+        self.ground_scan_shift_y: float = 0  # positiv: towards north
 
-    # NOTE one-sided margins [m] can be added to enlarge the field
-    # (or to reduce by negative values)
-    ground_scan_margin_x: float = 0
-    ground_scan_margin_y: float = 0
-    # shift scan area [m]
-    ground_scan_shift_x: float = 0  # positiv: towards east
-    ground_scan_shift_y: float = 0  # positiv: towards north
-
-    # round up to full meters (nice numbers in heatmaps)
-    round_up_scan_area_edgeLengths: bool = False
+        # round up to full meters (nice numbers in heatmaps)
+        self.round_up_scan_area_edgeLengths: bool = False
 
 
 class APV_Syst_InclinedTables_S_Morschenich(Default):
 
-    sceneDict = {'tilt': 20,  # 18.34,
-                 'pitch': 7.32,  # 7.46 was a mistake for first 3 sim
-                 'hub_height': 3.8,
-                 'azimuth': 180,
-                 'nMods': 48,  # 24,
-                 'nRows': 4,
-                 }
+    def __init__(self):
+        super().__init__()
 
-    moduleDict = {'x': 0.77,
-                  'y': 3.03,  # 0.998,
-                  'xgap': 0.11,
-                  'ygap': 0,
-                  'zgap': 0,  # 0.046,
-                  'numpanels': 1
-                  }
+        self.sceneDict = {'tilt': 20,  # 18.34,
+                          'pitch': 7.32,  # 7.46 was a mistake for first 3 sim
+                          'hub_height': 3.8,
+                          'azimuth': 180,
+                          'nMods': 48,  # 24,
+                          'nRows': 4,
+                          }
 
-    mountingStructureDict = {
-        'material': 'Metal_Aluminum_Anodized',
-        'post_thickness': 0.12,  # mounting structure post thickness [m]
-        'n_post_x': 11,  # number of posts along x (along row) [-]
-        'module_to_post_distance_x': 0,
-        'post_distance_x': 4,
-        'inner_table_post_distance_y': 1.35,  # 3 posts, (2.82-0.12)/2 #TODO post thickness?
-    }
+        self.moduleDict = {'x': 0.77,
+                           'y': 3.03,  # 0.998,
+                           'xgap': 0.11,
+                           'ygap': 0,
+                           'zgap': 0,  # 0.046,
+                           'numpanels': 1
+                           }
 
-    mounting_structure_type: Default.mounting_structure_type = \
-        'declined_tables_with_rails'
+        self.mountingStructureDict = {
+            'material': 'Metal_Aluminum_Anodized',
+            'post_thickness': 0.12,  # mounting structure post thickness [m]
+            'n_post_x': 11,  # number of posts along x (along row) [-]
+            'module_to_post_distance_x': 0,
+            'post_distance_x': 4,  # leave key out for adaption to modules
+            # e.g. via negative 'module_to_post_distance_x'
+            'inner_table_post_distance_y': 1.35,  # 3 posts, (2.82-0.12)/2 #TODO post thickness?
+        }
+
+        self.mounting_structure_type = 'morschenich_fixed'
 
 
+"""
 class APV_Morchenich_Checkerboard(Default):
+
+    def __init__(self):
+        super().__init__()
+        self.sceneDict['nRows'] = 5
+
+        # To reduce sim time and get periodic boundary conditions
+        self.ground_scan_margin_x = 0
+        # y reduction (negative margin)
+        self.ground_scan_margin_y = (
+            -self.sceneDict['pitch'] * (
+                self.sceneDict['nRows']/2-1)-Default.moduleDict['y'])
+
+        # north shift is needed for winter to get
+        # periodic boundary conditions in this setup (geometry etc)
+        self.ground_scan_shift_y = self.sceneDict['pitch']
+
     module_form: Default.module_form = 'cell_level_checker_board'
     # set gap in std module form = 1m
-    sceneDict = Default.sceneDict.copy()
-    sceneDict['nRows'] = 5
+
+    #sceneDict = sceneDict.copy()
+    #sceneDict['nRows'] = 5
 
     # 3 clones are needed towards sun for periodic boundary conditions
     # make this depending on sim time to save computation duration
     n_apv_system_clones_in_x: int = 1  # for azimuth = 180: cloned towards east
     n_apv_system_clones_in_negative_x: int = 1  # towards west
 
-    # To reduce sim time and get periodic boundary conditions
-    ground_scan_margin_x = 0
-    # y reduction (negative margin)
-    ground_scan_margin_y = (
-        -sceneDict['pitch'] * (sceneDict['nRows']/2-1)-Default.moduleDict['y'])
-
-    # north shift is needed for winter to get
-    # periodic boundary conditions in this setup (geometry etc)
-    ground_scan_shift_y = sceneDict['pitch']
     enlarge_beams_for_periodic_shadows: bool = True
 
 
@@ -262,7 +271,7 @@ class APV_Syst_InclinedTables_Juelich(Default):
     }
 
     mounting_structure_type: Default.mounting_structure_type = \
-        'declined_tables'
+        'inclined_tables'
     # add_glass_box = True # for greenhouse, not in use atm
     glass_box_to_APV_distance = 2  # [m]
 
@@ -289,3 +298,19 @@ class SimpleSingleCheckerBoard(Default):
                   }
 
     mounting_structure_type: Default.mounting_structure_type = 'none'
+"""
+
+
+class APV_ForTesting(Default):
+    def __init__(self):
+        super().__init__()
+
+        self.sceneDict = {'tilt': 30,
+                          'pitch': 5,  # "row width"
+                          'hub_height': 5,
+                          'azimuth': 180,
+                          'nMods': 4,
+                          'nRows': 2}
+
+        self.mounting_structure_type = 'framed_single_axes'
+        self.mountingStructureDict['module_to_post_distance_x'] = 0.5

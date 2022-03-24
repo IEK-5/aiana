@@ -43,6 +43,12 @@ class Simulator:
         tictoc = pytictoc.TicToc()
         tictoc.tic()
 
+        # eventually create results (parent) folder existence
+        fi.make_dirs_if_not_there(self.settings.paths.csv_parent_folder)
+        # #NOTE done here to avoid creating empty folders,
+        # if csv parent folder is changed from outside)
+
+        # check for results file
         csv_file_path = self.settings.paths.csv_file_path
         if csv_file_path.exists() and not skip_if_result_exists:
             print(f'\nSimulation result {csv_file_path} already there.\n')
@@ -76,6 +82,7 @@ class Simulator:
         )
         linepts = self._write_linepts(scanDict)
         groundDict = self._irrPlot(self.settings.names.oct_fn, linepts)
+
         self.analObj._saveResults(
             groundDict, savefile=self.settings.paths.csv_file_path)
         return 'Area scan done.'
@@ -131,10 +138,6 @@ class Simulator:
             self.temp_results_folder, append_all_in_folder=True,
             print_reading_messages=False)
         df = df.reset_index()
-
-        fi.make_dirs_if_not_there(self.settings.paths.csv_parent_folder)
-        # #NOTE done here to avoid creating empty folders,
-        # if csv parent folder is changed from outside)
 
         df.to_csv(self.settings.paths.csv_file_path)
         print(f'merged line scans into {self.settings.paths.csv_file_path}\n')

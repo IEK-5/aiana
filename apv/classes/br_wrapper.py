@@ -42,9 +42,19 @@ class BR_Wrapper():
         self.evaluatorObj = Evaluator(self.settings, self.weatherData)
         self.plotterObj = Plotter(self.settings, self.ghObj)
 
-    def create_and_view_octfile(self):
-        self.octFileObj.create_octfile(add_groundScanArea=True)
-        self.octFileObj.view_octfile()
+    def create_and_view_octfile(
+            self, topDownParallel_view=False,
+            add_groundScanArea=True,
+            add_NorthArrows=False):
+
+        self.octFileObj.create_octfile(add_groundScanArea, add_NorthArrows)
+
+        if topDownParallel_view:
+            self.octFileObj.view_octfile(
+                view_name='top_down', view_type='parallel'
+            )
+        else:
+            self.octFileObj.view_octfile()
 
     def simulate_and_evaluate(self):
         if self.octFileObj.groundScanArea_added:

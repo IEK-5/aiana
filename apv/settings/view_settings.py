@@ -8,7 +8,7 @@ class ViewSettings:
     accelerad_img_width: int = 1400  # [pixel]
     # NOTE img_height is calculated from the view angles to avoid distortion
 
-    scene_camera_dicts: dict = {
+    scene_camera_dicts: dict = {  # TODO besser auch norden hinten machen
         'total': {'cam_pos_x': 19.8,   # depth
                   'cam_pos_y': -22.4,   # left / right
                   'cam_pos_z': 18.8,     # height
@@ -24,8 +24,8 @@ class ViewSettings:
                      'view_direction_x': 0,
                      'view_direction_y': 0.001,
                      'view_direction_z': -1,
-                     'horizontal_view_angle': 20,  # [degree]
-                     'vertical_view_angle': 20,  # [degree]
+                     'horizontal_view_angle': 64,  # [degree]
+                     'vertical_view_angle': 36,  # [degree]
                      },
     }
 

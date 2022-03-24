@@ -60,7 +60,7 @@ class OctFileHandler:
         self.debug_mode = debug_mode
         self.groundScanArea_added = False
 
-    def create_octfile(self, add_groundScanArea=False):
+    def create_octfile(self, add_groundScanArea=False, add_NorthArrow=False):
         """creates pv modules and mounting structure (optional)"""
 
         # create a bifacial_radiance Radiance object
@@ -84,7 +84,7 @@ class OctFileHandler:
         if self.settings.apv.module_form != 'none':
             customObjects['modules'] = self.get_radtext_of_all_modules
 
-        if self.debug_mode:
+        if add_NorthArrow:
             customObjects['north_arrow'] = self.ghObj.north_arrow
 
         # scan area
@@ -96,9 +96,10 @@ class OctFileHandler:
 
         # mounting structure
         structure_type = self.settings.apv.mounting_structure_type
-        if (structure_type == 'declined_tables') \
-                or (structure_type == 'declined_tables_with_rails'):
-            customObjects['structure'] = self.ghObj.declined_tables
+        if structure_type == 'inclined_tables':
+            customObjects['structure'] = self.ghObj.inclined_tables
+        elif structure_type == 'morschenich_fixed':
+            customObjects['structure'] = self.ghObj.morschenich_fixed
         elif structure_type == 'framed_single_axes':
             customObjects['structure'] = self.ghObj.framed_single_axes_mount
         # NOTE else: structure_type == 'none' --> add nothing
@@ -200,7 +201,7 @@ class OctFileHandler:
         else:
             correction_angle = 180  # this will make north into the top in rvu
 
-        # we want modules face always to south in rvu (azi = 180°)
+        # we want north to be always ahead in front of us in view (azi = 180°)
         # if panel azi is e.g. 200°, we rotate sky by -20°
         sunaz_modified = self.weatherData.sunaz + correction_angle\
             - self.settings.apv.sceneDict["azimuth"]

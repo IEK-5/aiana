@@ -58,26 +58,24 @@ if __name__ == '__main__':
         * settings.sim.plots_shifts_xy[settings.sim.scan_position][1]\
         + settings.apv.mountingStructureDict['inner_table_post_distance_y']
 
-    def create_results_subfolder(month, posi):
-        return Path(settings.sim.study_name, settings.apv.module_form
-                    + f'_res-{settings.sim.spatial_resolution}m'
-                    + f'_step-{settings.sim.time_step_in_minutes}min'
-                    + f'_TMY_aggfunc-{settings.sim.TMY_irradiance_aggfunc}',
-                    f'month-{month}_{posi}-position'  # _correctedSensorOrientation'
-                    )
+    def create_results_subfolderPath(month, posi):
+        return Path(
+            settings.sim.study_name, settings.apv.module_form
+            + f'_res-{settings.sim.spatial_resolution}m'
+            + f'_step-{settings.sim.time_step_in_minutes}min'
+            + f'_TMY_aggfunc-{settings.sim.TMY_irradiance_aggfunc}',
+            f'month-{month}_{posi}-position'  # _correctedSensorOrientation'
+        )
 
     # only for view_scene, will be overwritten by for loops
     settings.sim.sim_date_time = '06-15_12:00'
-    settings.sim.results_subfolder = create_results_subfolder(
+    settings.sim.results_subfolder = create_results_subfolderPath(
         6, settings.sim.scan_position)
     brObj = BR_Wrapper(settings)
 
     # #
-    brObj.octFileObj.create_octfile()
-    # #
-    brObj.octFileObj.view_octfile(
-        view_name='top_down', view_type='parallel'
-    )
+    brObj.create_and_view_octfile(#topDownParallel_view=True
+                                  )
 
 # #
 
@@ -96,8 +94,8 @@ if __name__ == '__main__':
 
     for month in months:
         day = 15  # (int(df_all['day_nearest_to_mean'].loc[month]))
-        settings.sim.results_subfolder = create_results_subfolder(
-            month, settings.sim.scan_pposition)
+        settings.sim.results_subfolder = create_results_subfolderPath(
+            month, settings.sim.scan_position)
 
         weatherData = WeatherData(settings)
 
@@ -123,30 +121,23 @@ if __name__ == '__main__':
                         settings.sim.startdt = settings.sim.sim_date_time
                         enough_light = True
 
-                    # to measure elapsed time:
-                    tictoc = pytictoc.TicToc()
-                    tictoc.tic()
                     # to update time settings in all sub classes of BR_Wrapper:
                     brObj = BR_Wrapper(settings)
 
                     ########
-                    # brObj.octFileObj.create_octfile()
-
-                    # brObj.octFileObj.view_octfile(
-                    #    view_name='top_down', view_type='parallel')
-                    # brObj.simulate_and_evaluate()
+                    brObj.octFileObj.create_octfile()
+                    brObj.simulate_and_evaluate()
                     ########
 
-                    df_limits = fi.get_min_max_of_cols_in_several_csv_files(
-                        [r"C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich_S_inclinedTables\std_res-0.1m_step-5min_TMY_aggfunc-mean\month-6_north-position_correctedSensorOrientation\data\ground_results_06-15_07h40.csv",
-                         r"C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich_S_inclinedTables\std_res-0.1m_step-5min_TMY_aggfunc-mean\month-6_north-position\data\ground_results_06-15_07h40.csv"]).round(1)
+                    #df_limits = fi.get_min_max_of_cols_in_several_csv_files(
+                    #    [r"C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich_S_inclinedTables\std_res-0.1m_step-5min_TMY_aggfunc-mean\month-6_north-position_correctedSensorOrientation\data\ground_results_06-15_07h40.csv",
+                    #     r"C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich_S_inclinedTables\std_res-0.1m_step-5min_TMY_aggfunc-mean\month-6_north-position\data\ground_results_06-15_07h40.csv"]).round(1)
 
                     for cm_unit in ['radiation', 'shadow_depth']:
                         brObj.plotterObj.ground_heatmap(
                             cm_unit=cm_unit,
-                            df_col_limits=df_limits
+                            #df_col_limits=df_limits
                         )
-                    tictoc.toc()
 
 
 # #
@@ -162,7 +153,7 @@ if __name__ == '__main__':
             for position in positions:
                 settings.sim.scan_position = position
                 settings.sim.TMY_irradiance_aggfunc = agg_func
-                settings.sim.results_subfolder = create_results_subfolder(
+                settings.sim.results_subfolder = create_results_subfolderPath(
                     month, settings.sim.scan_position)
                 # refresh other pathes #TODO |M automate via @property?
                 settings.set_names_and_paths()

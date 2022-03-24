@@ -61,7 +61,10 @@ class Plotter:
 
         ticklabels_skip_count_number = int(
             round(self.ghObj.scan_length_x, 0)
-            / (8*self.settings.sim.spatial_resolution))
+            / (4*self.settings.sim.spatial_resolution))
+        # the finer the resolution (lower), the more ticks labels
+        # need to be skipped (higher) thats why count = 1/res
+
         if ticklabels_skip_count_number < 2:
             ticklabels_skip_count_number = "auto"
 

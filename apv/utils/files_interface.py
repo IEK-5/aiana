@@ -25,7 +25,7 @@ def make_dirs_if_not_there(folder_paths: str or list):
     if they are not there yet.
 
     Args:
-        folder_paths (str or list of strings)
+        folder_paths (str or Path or list of strings/Paths)
     """
     # unify Arg to list type
     if type(folder_paths) != list:

@@ -18,7 +18,7 @@ if __name__ == '__main__':
     SimSettings.spatial_resolution = 1
     # SimSettings.sky_gen_mode = 'gendaylit'
 
-    SimSettings.sim_name = 'declined_tables_and_glassbox'
+    SimSettings.sim_name = 'inclined_tables_and_glassbox'
     SimSettings.use_multi_processing = False
     brObj = apv.classes.br_wrapper.BR_Wrapper(SimSettings, APV_SystSettings)
     brObj.setup_br()
