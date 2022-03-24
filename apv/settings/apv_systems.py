@@ -45,7 +45,7 @@ import pandas as pd
 
     mounting_structure_type [new]:
         none: no structure
-        declined_tables: 4 posts per row are near the module row edges
+        inclined_tables: 'n_post_x' posts per row are near the module row edges
             with different heights to compensate the module tilt
         framed_single_axes: 'n_post_x' posts per row are placed along the tilt
             axis the posts within the rows and between different rows are
@@ -59,6 +59,7 @@ class Default:
     """Other presets inherit from this Default"""
 
     def __init__(self):
+        # ### bifacial_radiance geometry-inputs
         self.sceneDict = {'tilt': 20,  # explanations above
                           'pitch': 10,
                           'hub_height': 4.5,
@@ -66,10 +67,6 @@ class Default:
                           'nMods': 10,
                           'nRows': 3,
                           }
-
-        self.module_name = 'SUNFARMING'
-
-        # bifacial_radiance geometry-inputs
 
         self.moduleDict = {'x': 0.998,
                            'y': 1.980,
@@ -79,13 +76,6 @@ class Default:
                            'numpanels': 2
                            }
 
-        self.moduleSpecs: pd.Series = pd.read_csv(
-            Path(__file__).parent.parent.resolve()  # apv package location
-            / Path(
-                'resources/pv_modules/Sanyo240_moduleSpecs_guestimate.txt'),
-            delimiter='\t'
-        ).T[0]
-
         self.cellLevelModuleParams = {
             'numcellsx': 6,  # has to be an even number at the moment
             'numcellsy': 12,  # has to be an even number at the moment
@@ -93,6 +83,7 @@ class Default:
             'ycellgap': 0.02
         }
 
+        # ### new input
         self.module_form: Literal[
             'std',
             'cell_level',
@@ -124,29 +115,36 @@ class Default:
             # APV_Syst_InclinedTables_S_Morschenich Child
         ] = 'framed_single_axes'
 
+        # ### ground scan area settings
+        self.gScan_area: dict = {
+            'ground_scan_margin_x': 0,  # [m]
+            'ground_scan_margin_y': 0,  # [m]
+            'ground_scan_shift_x': 0,  # [m] positiv: towards east
+            'ground_scan_shift_y': 0,  # [m] positiv: towards north
+            'round_up_scan_area_edgeLengths': False  # round up to full meters
+        }  # NOTE the gScan area is placed below the foot print of the modules,
+        # so that the modules projected to groud (foot print) are just inside
+        # of it (all rows, but not the system clones). The visualized object
+        # will not be included in the ray tracing simulation and thus not
+        # influence the results.
+        # One-sided margins [m] can be added to enlarge the field
+        # (or to reduce by negative values).
+
+        # ### less important or not in use
+        self.module_name = 'SUNFARMING'  # we use only this module type atm
+
         # for 'framed_single_axes':
         self.enlarge_beams_for_periodic_shadows: bool = False
 
         # to optionally add a glass plate on the black modules:
         self.glass_modules: bool = False
 
-        # ### ground scan area settings
-
-        # NOTE the scan area is placed below the foot print of the apv system,
-        # so that the modules projected to groud (foot print) are just inside of it
-        # (all rows, but not the system clones). The visualized object will not
-        # influence the simulation results.
-
-        # NOTE one-sided margins [m] can be added to enlarge the field
-        # (or to reduce by negative values)
-        self.ground_scan_margin_x: float = 0
-        self.ground_scan_margin_y: float = 0
-        # shift scan area [m]
-        self.ground_scan_shift_x: float = 0  # positiv: towards east
-        self.ground_scan_shift_y: float = 0  # positiv: towards north
-
-        # round up to full meters (nice numbers in heatmaps)
-        self.round_up_scan_area_edgeLengths: bool = False
+        self.moduleSpecs: pd.Series = pd.read_csv(
+            Path(__file__).parent.parent.resolve()  # apv package location
+            / Path(
+                'resources/pv_modules/Sanyo240_moduleSpecs_guestimate.txt'),
+            delimiter='\t'
+        ).T[0]
 
 
 class APV_Syst_InclinedTables_S_Morschenich(Default):

@@ -152,16 +152,15 @@ class GeometriesHandler:
 
     def _set_scan_lengths_x_y(self):
         """ground scan dimensions (old name: x_field, y_field)"""
-
         self.scan_length_x = self.allRows_footprint_x \
-            + 2*self.settings.apv.ground_scan_margin_x \
+            + 2*self.settings.apv.gScan_area['ground_scan_margin_x'] \
             + 2*self.mount['module_to_post_distance_x'] \
 
         self.scan_length_y = self.allRows_footprint_y \
-            + 2*self.settings.apv.ground_scan_margin_y
+            + 2*self.settings.apv.gScan_area['ground_scan_margin_y']
 
         # round up (ceiling)
-        if self.settings.apv.round_up_scan_area_edgeLengths:
+        if self.settings.apv.gScan_area['round_up_scan_area_edgeLengths']:
             self.scan_length_x = np.ceil(self.scan_length_x)
             self.scan_length_y = np.ceil(self.scan_length_y)
 
@@ -183,9 +182,9 @@ class GeometriesHandler:
 
         # south west corners of the ground scan area
         self.scan_area_anchor_x = -self.scan_length_x/2 + self.center_offset_x \
-            + self.settings.apv.ground_scan_shift_x
+            + self.settings.apv.gScan_area['ground_scan_shift_x']
         self.scan_area_anchor_y = -self.scan_length_y/2 + self.center_offset_y \
-            + self.settings.apv.ground_scan_shift_y
+            + self.settings.apv.gScan_area['ground_scan_shift_y']
 
     def get_rad_txt_for_cloning_the_apv_system(self) -> str:
         """Usefull for periodic boundary conditions.

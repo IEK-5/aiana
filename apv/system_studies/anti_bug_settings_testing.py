@@ -44,6 +44,11 @@ class Tester:
             self.settings.apv.sceneDict[key] = test_sceneDict[key]
             self._view_oct_then_resetSettings()
 
+    def test_moduleDict(self, moduleDict: dict):
+        for key in moduleDict.keys():
+            self.settings.apv.moduleDict[key] = moduleDict[key]
+            self._view_oct_then_resetSettings()
+
     def test_mountingStructureDict(
             self, mounting_structure_types: list, mountingStructureDict: dict):
         """nested for-loops for type and dict"""
@@ -58,27 +63,47 @@ class Tester:
                     mountingStructureDict[key]
                 self._view_oct_then_resetSettings()
 
+    def test_groundScanAreaDict(self, gScan_area: dict):
+        for key in gScan_area.keys():
+            self.settings.apv.gScan_area[key] = gScan_area[key]
+            self._view_oct_then_resetSettings()
+
 
 if __name__ == '__main__':
     testerObj = Tester()
+    testerObj.test_moduleDict({'x': 0.5,
+                               'y': 1,
+                               'xgap': 1,
+                               'ygap': 1,
+                               'zgap': 1,
+                               'numpanels': 4})
+
+    # #
+    testerObj.test_groundScanAreaDict({
+        'ground_scan_margin_x': 5,  # [m]
+        'ground_scan_margin_y': 5,  # [m]
+        'ground_scan_shift_x': 5,  # [m] positiv: towards east
+        'ground_scan_shift_y': 5,  # [m] positiv: towards north
+        'round_up_scan_area_edgeLengths': True  # round up to full meters
+    })
+
+    # #
     mounting_structure_types = [
         # 'none',
         'framed_single_axes',
         'inclined_tables',
     ]
-    mountingStructureDict = {
-        'n_apv_system_clones_in_x': 1,
-        'n_apv_system_clones_in_negative_x': 1,
-        'material': 'black',
-        'post_thickness': 1,
-        'n_post_x': 3,
-        'module_to_post_distance_x': 2,
-        'post_distance_x': 2,
-        'inner_table_post_distance_y': 0.5,  # only for inclined_table
-    }
-
     testerObj.test_mountingStructureDict(
-        mounting_structure_types, mountingStructureDict)
+        mounting_structure_types, {
+            'n_apv_system_clones_in_x': 1,
+            'n_apv_system_clones_in_negative_x': 1,
+            'material': 'black',
+            'post_thickness': 1,
+            'n_post_x': 3,
+            'module_to_post_distance_x': 2,
+            'post_distance_x': 2,
+            'inner_table_post_distance_y': 0.5,  # only for inclined_table
+        })
     # #
     testerObj.view_in_rvu_then_in_acceleradRT()
     # #
@@ -91,13 +116,12 @@ if __name__ == '__main__':
 # #
 if __name__ == '__main__':
     testerObj = Tester()
-    sceneDict = {'tilt': 70,
-                 'pitch': 20,
-                 'hub_height': 12,
-                 'nMods': 10,
-                 'nRows': 5
-                 }
-    testerObj.test_sceneDict(sceneDict)
+    testerObj.test_sceneDict({'tilt': 70,
+                              'pitch': 20,
+                              'hub_height': 12,
+                              'nMods': 10,
+                              'nRows': 5
+                              })
 
     # #
     # settings.apv.n_apv_system_clones_in_x = 2
