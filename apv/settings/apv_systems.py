@@ -98,7 +98,8 @@ class Default:
 
         self.mountingStructureDict = {
             'material': 'Metal_Aluminum_Anodized',
-            'post_thickness': 0.25,  # mounting structure post thickness [m]
+            'post_thickness_x': 0.2,  # mounting structure post thickness [m]
+            'post_thickness_y': 0.2,  # in y
             'n_post_x': 2,  # number of posts along x (along row) [-]
             'module_to_post_distance_x': 0.5,
             'inner_table_post_distance_y': 1.35,  # only used by 'inclined_tables'
@@ -168,15 +169,17 @@ class APV_Syst_InclinedTables_S_Morschenich(Default):
                            'numpanels': 1
                            }
 
-        self.mountingStructureDict = {
+        self.mountingStructureDict.update({
             'material': 'Metal_Aluminum_Anodized',
-            'post_thickness': 0.12,  # mounting structure post thickness [m]
+            'post_thickness_x': 0.04,  # mounting structure post thickness [m]
+            'post_thickness_y': 0.12,  # in y
             'n_post_x': 11,  # number of posts along x (along row) [-]
             'module_to_post_distance_x': 0,
             'post_distance_x': 4,  # leave key out for adaption to modules
             # e.g. via negative 'module_to_post_distance_x'
-            'inner_table_post_distance_y': 1.35,  # 3 posts, (2.82-0.12)/2 #TODO post thickness?
-        }
+            'inner_table_post_distance_y': 1.35,
+            # at outer frame for 3 posts: (2.82-0.12)/2 = 1.35
+        })
 
         self.mounting_structure_type = 'morschenich_fixed'
 
@@ -263,7 +266,7 @@ class APV_Syst_InclinedTables_Juelich(Default):
 
     mountingStructureDict = {
         'material': 'Metal_Aluminum_Anodized',
-        'post_thickness': 0.15,  # mounting structure post thickness [m]
+        'post_thickness_y': 0.15,  # mounting structure post thickness [m]
         'n_post_x': 3,  # number of posts along x (along row) [-]
         'module_to_post_distance_x': 0
     }

@@ -68,6 +68,9 @@ class Simulation:
         # quantity on the color map of the heatmap of the results (output)
         self.cm_quantity: Literal[
             'radiation', 'PAR', 'shadow_depth', 'DLI'] = 'radiation'
+        # !!! NOTE 'DLI' is only for daily cumulative data, no single timesteps
+
+        self.plot_dpi: int = 500  # dots per inch in the result heatmaps
 
         self.plot_title_components: list = ['weather', 'datetime']
         # all options: ['weather', 'module_form', 'resolution',

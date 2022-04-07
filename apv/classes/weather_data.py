@@ -85,9 +85,8 @@ class WeatherData:
         self.time_step = self.settings.sim.time_step_in_minutes
         self.fn_resampled = str(self.download_file_path).split(
             '\\')[-1].replace('1minute', f'{self.time_step}minute')
-        self.weather_folder_path = \
-            self.settings.paths.bifacial_radiance_files \
-            / Path('satellite_weatherData')
+        self.weather_folder_path = self.settings.paths.root / Path(
+            'satellite_weatherData')
         self.resampled_insolation_data_path: Path = \
             self.weather_folder_path/self.fn_resampled
 

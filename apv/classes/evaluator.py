@@ -1,3 +1,4 @@
+from pathlib import Path
 import pandas as pd
 from apv.classes.weather_data import WeatherData
 from apv.classes.util_classes.sim_datetime import SimDT
@@ -142,8 +143,10 @@ class Evaluator:
                   cumulative_GHI)
         return df
 
-    def cumulate_gendaylit_results(
-            self, file_folder_to_merge, cum_csv_path, add_DLI=False):
+    def cumulate_gendaylit_results(self,
+                                   file_folder_to_merge: Path,
+                                   cum_csv_path: Path,
+                                   add_DLI=False):
         """add_DLI should only be set True, if cumulated timespan is a day"""
 
         # load all single results and append

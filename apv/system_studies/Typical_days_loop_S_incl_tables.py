@@ -1,9 +1,5 @@
 # #
-# 1. max
-# 2. ost mean
-# 3. north mean,
-# 4. south mean
-# #
+
 """dont do test code outside of if __name__=='__main__'
 or it will make problems with multi processing
 """
@@ -20,13 +16,15 @@ import apv.utils.files_interface as fi
 if __name__ == '__main__':
     settings = Settings()
     # ############ SIM SETTINGS #############
-    settings.sim.study_name = f'APV_Morschenich_S_inclinedTables'
-    settings.sim.scan_position = 'north'
-    settings.sim.plot_title_components = ['weather', 'position', 'datetime']
+    settings.sim.study_name = f'APV_Morschenich_S_inclinedTables2'
+    # settings.sim.scan_position = 'north'
+    settings.sim.plot_title_components = [
+        # 'weather', 'position',
+        'datetime'
+    ]
     settings.sim.use_typDay_perMonth_for_irradianceCalculation = True
-    settings.sim.use_typDay_perMonth_for_irradianceCalculation = True
-    settings.sim.spatial_resolution = 0.1
-    settings.sim.time_step_in_minutes = 5
+    settings.sim.spatial_resolution = 1#0.04
+    settings.sim.time_step_in_minutes = 2
     settings.sim.TMY_irradiance_aggfunc = 'mean'
 
     settings.sim.use_acceleradRT_view = True
@@ -43,6 +41,7 @@ if __name__ == '__main__':
     # settings.apv.add_groundScanArea_as_object_to_scene = True
     # ================== =============== ================== ===============
 
+    """
     x_reduction = -((settings.apv.moduleDict['x']
                      + settings.apv.moduleDict['xgap'])
                     * (settings.apv.sceneDict['nMods']))/2+2  # =2*2m=4m
@@ -57,6 +56,7 @@ if __name__ == '__main__':
         settings.apv.sceneDict['pitch'] \
         * settings.sim.plots_shifts_xy[settings.sim.scan_position][1]\
         + settings.apv.mountingStructureDict['inner_table_post_distance_y']
+    """
 
     def create_results_subfolderPath(month, posi):
         return Path(
@@ -64,30 +64,31 @@ if __name__ == '__main__':
             + f'_res-{settings.sim.spatial_resolution}m'
             + f'_step-{settings.sim.time_step_in_minutes}min'
             + f'_TMY_aggfunc-{settings.sim.TMY_irradiance_aggfunc}',
-            f'month-{month}_{posi}-position'  # _correctedSensorOrientation'
+            f'month-{month}'  # _{posi}-position'  # _correctedSensorOrientation'
         )
 
     # only for view_scene, will be overwritten by for loops
-    settings.sim.sim_date_time = '06-15_12:00'
+    month = 4
+    settings.sim.sim_date_time = f'{month:02}-15_12:00'
     settings.sim.results_subfolder = create_results_subfolderPath(
-        6, settings.sim.scan_position)
+        month, settings.sim.scan_position)
     brObj = BR_Wrapper(settings)
 
-    # #
-    brObj.create_and_view_octfile(#topDownParallel_view=True
-                                  )
+    ##
+    brObj.create_and_view_octfile(  # topDownParallel_view=True
+    )
 
 # #
 
 if __name__ == '__main__':
-    months = [6]
+    months = [4, 6]
     # months = range(1, 13)
     # hours = [19]
     hours = range(2, 24, 1)
-    #hours = range(7, 13, 1)
+    #hours = range(20, 21, 1)
     # minutes = [10]
     minutes = range(0, 60, settings.sim.time_step_in_minutes)
-    # minutes = range(0, 1, settings.sim.time_step_in_minutes)
+    #minutes = range(35, 60, settings.sim.time_step_in_minutes)
     # minute 60 is and has to be exclusive
 
     enough_light = False  # (init value for ghi filter)
@@ -129,14 +130,14 @@ if __name__ == '__main__':
                     brObj.simulate_and_evaluate()
                     ########
 
-                    #df_limits = fi.get_min_max_of_cols_in_several_csv_files(
+                    # df_limits = fi.get_min_max_of_cols_in_several_csv_files(
                     #    [r"C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich_S_inclinedTables\std_res-0.1m_step-5min_TMY_aggfunc-mean\month-6_north-position_correctedSensorOrientation\data\ground_results_06-15_07h40.csv",
                     #     r"C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich_S_inclinedTables\std_res-0.1m_step-5min_TMY_aggfunc-mean\month-6_north-position\data\ground_results_06-15_07h40.csv"]).round(1)
 
-                    for cm_unit in ['radiation', 'shadow_depth']:
+                    for cm_unit in ['radiation']:
                         brObj.plotterObj.ground_heatmap(
                             cm_unit=cm_unit,
-                            #df_col_limits=df_limits
+                            # df_col_limits=df_limits
                         )
 
 
@@ -146,6 +147,59 @@ if __name__ == '__main__':
 # ======================================================
 
 # #
+# simple
+
+
+if __name__ == '__main__':
+    month = 4
+    settings.sim.plot_dpi = 600
+    settings.sim.sim_date_time = f'{month:02}-15_12:00'
+    # TODO pitfall allert: settings.sim.results_subfolder has to be set again
+    settings.sim.results_subfolder = create_results_subfolderPath(
+        month, settings.sim.scan_position)
+
+    # def get_cum_csv_path():
+    results_folder_cum = \
+        settings.paths.results_folder.parent.parent / 'cumulative'
+
+    fi.make_dirs_if_not_there(results_folder_cum)
+
+    brObj = BR_Wrapper(settings)
+    cum_file_name = brObj.plotterObj.return_plot_title(
+        title_comps=['datetime', 'resolution'],
+        # title_comps=['weather', 'position'],
+        cumulative=True)  # +' - month '+str(month)
+    cum_file_name = cum_file_name.replace('\n', ' - ').replace(':', '')
+    title = 'cumulated day (15$^{th}$)' + f' in month {month}'
+    cum_file_name = title.replace('(15$^{th}$)', '15th')
+    cum_csv_path = results_folder_cum / f'{cum_file_name}.csv'
+
+    def get_df_merged(cum_csv_path: Path):
+        if cum_csv_path.exists():  # and not debug_mode...
+            return fi.df_from_file_or_folder(cum_csv_path)
+        else:  # cummulate:
+            # TODO speed up? cant append blindly directly after sim, as want to be able to redo only certain time steps
+            return brObj.evaluatorObj.cumulate_gendaylit_results(
+                brObj.settings.paths.csv_parent_folder,
+                cum_csv_path, add_DLI=True
+            )
+    df_merged = get_df_merged(cum_csv_path)
+    # brObj.plotterObj.ground_heatmap(cumulative=True) #TODO alow this way
+
+    brObj.plotterObj.ground_heatmap(
+        df_merged,
+        destination_file_path=Path(str(cum_csv_path).replace('csv', 'jpg')),
+        cumulative=True,
+        cm_unit='DLI',
+        plot_title=title,
+        north_arrow_xy_posi=(-0.14, 1.16),
+        set_col_bar_min_to_zero=True
+    )
+# #
+test = df_merged.sort_values(by=['y', 'x'])
+test.agg([min, max])
+# #
+# comlex
 if __name__ == '__main__':
     def meta_cumulate(agg_funcs: list, positions: list, equalColLims=False):
         month = 6
@@ -180,26 +234,9 @@ if __name__ == '__main__':
                     settings.paths.csv_parent_folder)
 
                 ##############################################################
-                results_folder_cum = \
-                    settings.paths.results_folder.parent.parent / 'cumulative'
 
-                fi.make_dirs_if_not_there(results_folder_cum)
-
-                brObj = BR_Wrapper(settings)
-                cum_file_name = brObj.plotterObj.return_plot_title(
-                    title_comps=['weather', 'position'],
-                    cumulative=True)  # +' - month '+str(month)
-                cum_file_name = cum_file_name.replace('\n', ' - ').replace(':', '')
-                cum_csv_path = results_folder_cum / f'{cum_file_name}.csv'
-
-                if cum_csv_path.exists():  # and not debug_mode...
-                    df_merged = fi.df_from_file_or_folder(
-                        cum_csv_path)
-                else:  # cummulate:
-                    df_merged = brObj.evaluatorObj.cumulate_gendaylit_results(
-                        settings.paths.csv_parent_folder,
-                        cum_csv_path, add_DLI=True
-                    )
+                cum_csv_path = get_cum_csv_path()
+                df_merged = get_df_merged(cum_csv_path)
 
                 # gather file pathes to get min, max  for equal color maps
                 csv_files = []

@@ -24,9 +24,12 @@ class Plotter:
         df: pd.DataFrame = None,
         cm_unit: str = None,
         cumulative: bool = None,
-        df_col_limits: pd.DataFrame = None,
         destination_file_path: Path = None,
-        dpi=400
+        plot_dpi: int = None,
+        plot_title: str = None,
+        north_arrow_xy_posi: tuple = (-0.14, 1.2),
+        set_col_bar_min_to_zero=False,
+        df_col_limits: pd.DataFrame = None,
     ):
         """plots the ground insolation as a heat map and saves it into
             the results/plots folder.
@@ -52,8 +55,18 @@ class Plotter:
         if cm_unit is None:
             cm_unit = self.settings.sim.cm_quantity
 
+        if plot_dpi is None:
+            plot_dpi = self.settings.sim.plot_dpi
+
         if cumulative is None:
             cumulative = self.settings.sim.cumulative
+        if plot_title is None:
+            plot_title = self.return_plot_title(cumulative)
+
+        if set_col_bar_min_to_zero:
+            if df_col_limits is None:
+                df_col_limits = df.agg([min, max])
+            df_col_limits.loc['min', cm_unit] = 0
 
         label_and_cm_input: dict = self.get_label_and_cm_input(
             cm_unit=cm_unit, cumulative=cumulative,
@@ -68,25 +81,29 @@ class Plotter:
         if ticklabels_skip_count_number < 2:
             ticklabels_skip_count_number = "auto"
 
+        # round to 10th of mm to avoid a bug that same coordinates are not
+        # treated as one due to floating precicion behaviour:
+        df = df.round({'x': 4, 'y': 4})
+
         fig = plotting.plot_heatmap(
             df=df, x='x', y='y', c=label_and_cm_input['z'],
             cm=label_and_cm_input['colormap'],
             x_label='x [m]', y_label='y [m]',
             z_label=label_and_cm_input['z_label'],
-            plot_title=self.return_plot_title(cumulative),
+            plot_title=plot_title,
             ticklabels_skip_count_number=ticklabels_skip_count_number,
             vmin=label_and_cm_input['vmin'],
             vmax=label_and_cm_input['vmax'],
         )
 
-        fig.axes[1] = plotting.add_north_arrow(
-            fig.axes[1], self.settings.apv.sceneDict['azimuth'])
+        fig.axes[0] = plotting.add_north_arrow(
+            fig.axes[0], xy=north_arrow_xy_posi)
 
         if destination_file_path is None:
             destination_file_path = self.settings.paths.results_folder / Path(
                 f'{self.settings.names.csv_fn[:-4]}_{cm_unit}.jpg'
             )
-        fi.save_fig(fig, destination_file_path, dpi=dpi)
+        fi.save_fig(fig, destination_file_path, dpi=plot_dpi)
 
     def return_weather_description(self):
         if self.settings.sim.TMY_irradiance_aggfunc == 'min':

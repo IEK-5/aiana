@@ -71,6 +71,7 @@ class Tester:
 
 if __name__ == '__main__':
     testerObj = Tester()
+    # #
     testerObj.test_moduleDict({'x': 0.5,
                                'y': 1,
                                'xgap': 1,
@@ -94,11 +95,13 @@ if __name__ == '__main__':
         'inclined_tables',
     ]
     testerObj.test_mountingStructureDict(
-        mounting_structure_types, {
+        mounting_structure_types,
+        {  # mountingStructureDict:
             'n_apv_system_clones_in_x': 1,
             'n_apv_system_clones_in_negative_x': 1,
             'material': 'black',
-            'post_thickness': 1,
+            'post_thickness_x': 1,
+            'post_thickness_y': 1,
             'n_post_x': 3,
             'module_to_post_distance_x': 2,
             'post_distance_x': 2,
@@ -108,9 +111,10 @@ if __name__ == '__main__':
     testerObj.view_in_rvu_then_in_acceleradRT()
     # #
     # show Morschenich APV
+    testerObj.settings.sim.spatial_resolution = 0.2
     testerObj.settings.apv = APV_Syst_InclinedTables_S_Morschenich()
     BR_Wrapper(testerObj.settings).create_and_view_octfile()
-    testerObj.settings.apv = APV_ForTesting()
+    testerObj.settings.apv = APV_ForTesting()  # reset
     # #
     testerObj.test_panelAzimuth([90, 180, 270])
 # #

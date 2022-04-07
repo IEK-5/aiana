@@ -19,7 +19,8 @@ EPW Docs:
 
 gendaymtx:
 https://www.radiance-online.org//learning/documentation/manual-pages/pdfs/gendaymtx.pdf
-
+gendaylit:
+https://floyd.lbl.gov/radiance/gendaylit.1.html  takes irradiance as input !
 
 radiance accuracy settings:
 http://designbuilder.co.uk/helpv3.0/Content/Daylighting%20Calculation%20Options.htm
@@ -28,8 +29,7 @@ http://designbuilder.co.uk/helpv3.0/Content/Daylighting%20Calculation%20Options.
 
 
 
-gendaylit takes irradiance as input !
-https://floyd.lbl.gov/radiance/gendaylit.1.html
+
 
 and ads satellite returns irradiation as output
 

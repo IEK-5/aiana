@@ -310,8 +310,6 @@ class Evaluator:
             self.irrad_data['dni'] = self.irrad_data['ghi'] \
                 - self.irrad_data['dhi']
 
-
-
     @staticmethod
     def monthly_avg_std(
         data: pd.DataFrame, column, group_by

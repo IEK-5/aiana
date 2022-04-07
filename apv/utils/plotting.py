@@ -95,7 +95,6 @@ def plot_heatmap(
 
 def add_north_arrow(
     ax,
-    azimuth,
     text="N",
     xy=(1.4, 1.3),
     text_color="black",
@@ -127,7 +126,7 @@ def add_north_arrow(
     ax.annotate(
         text,
         xy=xy,
-        xytext=(xy[0]+0.3, xy[1]),
+        xytext=(xy[0], xy[1]),
         color=text_color,
         horizontalalignment='left',
         ha=ha,
@@ -138,9 +137,9 @@ def add_north_arrow(
     # Arrow
     ax.text(
         xy[0],
-        xy[1] - 0.05, "    ", ha=ha, va=va, rotation=90, size=5,
-        bbox=dict(boxstyle='rarrow, pad=0.5', fc='black',
-                  ec=arrow_color, lw=1), transform=ax.transAxes)
+        xy[1] - 0.1, "    ", ha=ha, va=va, rotation=90, size=5,
+        bbox=dict(boxstyle='rarrow, pad=0.4', fc='black',
+                  ec=arrow_color, lw=0.5), transform=ax.transAxes)
 
     return ax
 
