@@ -39,8 +39,8 @@ import pandas as pd
         cell_level: (cells are created as tiles seperated by the gaps)[from BR]
         [new]:
         cell_level_checker_board: cells are left out in a checker board pattern
-        EW_fixed: two std modules are facing to east-west in a roof top shape
-        cell_level_EW_fixed: combination of cell_level and EW_fixed
+        roof_for_EW: two std modules are facing to east-west in a roof top shape
+        cell_level_roof_for_EW: combination of cell_level and roof_for_EW
         none: no modules (so e.g. only the mounting structure)
 
     mounting_structure_type [new]:
@@ -88,11 +88,12 @@ class Default:
             'std',
             'cell_level',
             'cell_level_checker_board',
-            'EW_fixed',  # at the moment second modul of roof is created in the
+            'roof_for_EW',  # glass is still as std, not as EW roof at the moment
+            # and at the moment second modul of roof is created in the
             # text input for br.radObj.make_module(),
             # and the tilt is happening later in br.radObj.make_scene()
             # the second module is facing upwards-down, might be a problem later
-            'cell_level_EW_fixed',
+            'cell_level_roof_for_EW',  # not in use atm
             'none'
         ] = 'std'
 
@@ -139,6 +140,9 @@ class Default:
 
         # to optionally add a glass plate on the black modules:
         self.glass_modules: bool = False
+        # NOTE Adding glass (settings.apv.glass_modules = TRUE) creates it as
+        # for module_form = 'std', which is nice for cell level
+        # and for checker board but not suitable for roof.
 
         self.moduleSpecs: pd.Series = pd.read_csv(
             Path(__file__).parent.parent.resolve()  # apv package location
@@ -161,9 +165,9 @@ class APV_Syst_InclinedTables_S_Morschenich(Default):
                           'nRows': 4,
                           }
 
-        self.moduleDict = {'x': 0.77,
+        self.moduleDict = {'x': 0.83,
                            'y': 3.03,  # 0.998,
-                           'xgap': 0.11,
+                           'xgap': 0.05,
                            'ygap': 0,
                            'zgap': 0,  # 0.046,
                            'numpanels': 1
@@ -171,7 +175,7 @@ class APV_Syst_InclinedTables_S_Morschenich(Default):
 
         self.mountingStructureDict.update({
             'material': 'Metal_Aluminum_Anodized',
-            'post_thickness_x': 0.04,  # mounting structure post thickness [m]
+            'post_thickness_x': 0.041,  # mounting structure post thickness [m]
             'post_thickness_y': 0.12,  # in y
             'n_post_x': 11,  # number of posts along x (along row) [-]
             'module_to_post_distance_x': 0,
@@ -217,7 +221,7 @@ class APV_Morchenich_Checkerboard(Default):
 
 
 class APV_Morchenich_EastWest(Default):
-    module_form: Default.module_form = 'EW_fixed'
+    module_form: Default.module_form = 'roof_for_EW'
 
     moduleDict = Default.moduleDict.copy()
     moduleDict['x'] = 55*Default.moduleDict['x']+54*Default.moduleDict['xgap']

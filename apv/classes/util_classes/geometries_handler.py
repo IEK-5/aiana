@@ -87,7 +87,7 @@ class GeometriesHandler:
         #     simSettings.moduleDict['y'] *= 2
         c = self.settings.apv.cellLevelModuleParams
 
-        if mod_form == 'EW_fixed' or mod_form == 'cell_level_EW_fixed':
+        if mod_form == 'roof_for_EW' or mod_form == 'cell_level_roof_for_EW':
             self.scn['azimuth'] = 90  # TODO check again
             # since change leading to sky rotation
             self.mod['numpanels'] = 2
@@ -102,7 +102,7 @@ class GeometriesHandler:
         c['xcell'] = get_cellSize(self.mod['x'], c['numcellsx'], c['xcellgap'])
         c['ycell'] = get_cellSize(self.mod['y'], c['numcellsy'], c['ycellgap'])
 
-        if mod_form in ['cell_level', 'cell_level_EW_fixed',
+        if mod_form in ['cell_level', 'cell_level_roof_for_EW',
                         'cell_level_checker_board']:
             if mod_form == 'cell_level_checker_board':
                 factor = 2
@@ -388,7 +388,7 @@ class GeometriesHandler:
             + self._outer_frame(middle_post_start_y-post_dist_y, hh)
 
         # add straight thicker rail ("Regenrinne"!):
-        sb_x = self.l_x+sp_x
+        sb_x = self.singleRow_footprint_x
         sb_y = 0.16  # TODO how much?
         sb_z = 0.08
         z_start = self.scn["hub_height"] \
@@ -398,7 +398,7 @@ class GeometriesHandler:
 
         text += (
             f'\n!genbox {self.mount["material"]} post {sb_x} {sb_y} {sb_z}'
-            f' | xform -t {self.post_start_x-sp_x} {y_start2} {z_start} '
+            f' | xform -t {self.sw_modCorner_x} {y_start2} {z_start} '
             + self._row_array(nRowsReduc=1)
         )
 
@@ -463,8 +463,6 @@ class GeometriesHandler:
         sp_x = self.mount['post_thickness_x']
         sp_y = self.mount['post_thickness_y']
 
-        #y_start += s
-
         def _horizontal_beams_below_rails(sb_x, sb_z, z_shift):
             "sb = thickness bar, sp = thickness post"
             return (
@@ -480,25 +478,44 @@ class GeometriesHandler:
 
         # inclined thicker beams in parallel to y
         text += (
-            f'\n!genbox {self.mount["material"]} post {sp_x} {4.7+sp_y} {sp_y}'
+            f'\n!genbox {self.mount["material"]} post {sp_x} {4.71} {sp_y}'
             f' | xform -rx {tilt} -t {self.post_start_x} {y_start} {height} '
             f'-a {self.mount["n_post_x"]*2-1} -t 2 0 0 '
             + self._row_array(nRowsReduc=1)
         )
         # straight thinner rails in steps parallel to x
         sb_x = self.l_x+sp_x
-        sb_y = 0.04
+        sb_y = 0.041
         sb_z = 0.06
-        y_clone_dist = 0.6
+        clone_dist = 0.6
+        y_clone_dist = clone_dist*np.cos(tilt*np.pi/180)
         height += sp_y*(1+np.tan(tilt*np.pi/180))  # to lay on top of beams
         z_clone_dist = y_clone_dist*np.tan(tilt*np.pi/180)
 
         text += (
             f'\n!genbox {self.mount["material"]} post {sb_x} {sb_y} {sb_z}'
             f' | xform -rx {tilt} -t {self.post_start_x} {y_start+sp_y} {height} '
+
             f'-a {n_rails} -t 0 {y_clone_dist} {z_clone_dist} '
             + self._row_array(nRowsReduc=1)
         )
+
+        # diagonals below rails
+        alpha = np.arctan(0.6*7/4)*180/np.pi
+        length = ((0.6*7)**2+4**2)**0.5  # 5.8
+        for rz in [-alpha, alpha]:
+            if rz == -alpha:
+                y_shift = np.sin(alpha*np.pi/180)*length
+            else:
+                y_shift = 0
+            text += (
+                f'\n!genbox {self.mount["material"]} post {length} 0.07 0.01'
+                f' | xform -rz {rz} -t {sb_y/2} {y_shift} 0'
+                f' -rx {tilt} -t {self.post_start_x} {y_start+sp_y} {height} '
+                + self._row_array(nRowsReduc=1)
+                + self._clone_to_other_side_in_x(-4)
+            )
+
         return text
 
     #############################################
@@ -526,21 +543,25 @@ class GeometriesHandler:
         x = c['numcellsx']*c['xcell']+(c['numcellsx']-1)*c['xcellgap']
         y = c['numcellsy']*c['ycell']+(c['numcellsy']-1)*c['ycellgap']
 
+        if self.settings.apv.glass_modules:
+            z = 0.001  # module thickness
+        else:
+            z = 0.020
+
         # center cell -
-        if c['numcellsx'] % 2 == 0:
-            cc = c['xcell']/2.0
-            print(
-                "Module was shifted by {} in X to avoid sensors on air".format(
-                    cc))
+        # if c['numcellsx'] % 2 == 0:
+        #    cc = c['xcell']/2.0
+        #    print(
+        #        "Module was shifted by {} in X to avoid sensors on air".format(
+        #            cc))
 
         material = 'black'
         # first PV cell
-        text = '! genbox {} cellPVmodule {} {} {} | '.format(
-            material, c['xcell'], c['ycell'], 0.02  # module thickness
-        )
+        text = f"! genbox {material} cellPVmodule {c['xcell']} {c['ycell']} {z} | "
+
         # shift cell to lower corner
         text += 'xform -t {} {} {} '.format(
-            -x/2.0 + cc,
+            -x/2.0,  # + cc,
             (-y*mod['numpanels']/2.0)-(mod['ygap']*(mod['numpanels']-1) / 2.0),
             0  # offset from axis
         )
@@ -551,11 +572,11 @@ class GeometriesHandler:
         # checker board
         text += '-a {} -t {} 0 0 '.format(
             int(c['numcellsx']/2),
-            (2 * c['xcell'] + c['xcellgap']))
+            2 * (c['xcell'] + c['xcellgap']))
 
         text += '-a {} -t 0 {} 0 '.format(
             c['numcellsy']/2,
-            (2 * c['ycell'] + c['ycellgap']))
+            2 * (c['ycell'] + c['ycellgap']))
 
         text += '-a {} -t {} {} 0 '.format(
             2,
@@ -567,7 +588,7 @@ class GeometriesHandler:
 
         return text
 
-    def make_EW_module_text(self) -> str:
+    def make_roof_module_text_for_EW(self) -> str:
         """creates the needed text needed in makemodule() to create E-W.
         Azimuth angle must be 90! and number of panels must be 2!
 
@@ -588,8 +609,7 @@ class GeometriesHandler:
             name, mod['x'], mod['y'], z)
         text += '| xform -t {} {} {} '.format(
             -mod['x']/2.0, transition_y, offsetfromaxis)
-        text += '-a {} -t 0 {} 0 -rx {}'.format(
-            Ny, mod['y']+mod['ygap'], rotation_angle)
+        text += f"-a {Ny} -t 0 {mod['y']+mod['ygap']} 0 -rx {rotation_angle}"
 
         return text
 

@@ -28,7 +28,8 @@ class Plotter:
         plot_dpi: int = None,
         plot_title: str = None,
         north_arrow_xy_posi: tuple = (-0.14, 1.2),
-        set_col_bar_min_to_zero=False,
+        col_bar_min=None,
+        col_bar_max=None,
         df_col_limits: pd.DataFrame = None,
     ):
         """plots the ground insolation as a heat map and saves it into
@@ -63,10 +64,12 @@ class Plotter:
         if plot_title is None:
             plot_title = self.return_plot_title(cumulative)
 
-        if set_col_bar_min_to_zero:
-            if df_col_limits is None:
-                df_col_limits = df.agg([min, max])
-            df_col_limits.loc['min', cm_unit] = 0
+        if df_col_limits is None:
+            df_col_limits = df.agg([min, max])
+        if col_bar_min is not None:
+            df_col_limits.loc['min', cm_unit] = col_bar_min
+        if col_bar_max is not None:
+            df_col_limits.loc['max', cm_unit] = col_bar_max
 
         label_and_cm_input: dict = self.get_label_and_cm_input(
             cm_unit=cm_unit, cumulative=cumulative,

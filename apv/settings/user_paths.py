@@ -1,6 +1,5 @@
 """Paths for working folder, radiance folder
 """
-
 from pathlib import Path
 from apv.utils import files_interface as fi
 
@@ -9,6 +8,8 @@ class UserPaths:
 
     # root
     root: Path = Path().home().resolve() / 'Documents/agri-PV'
+    #root: Path = Path('T:/Public/user/l.raumann_network/agri-PV')
+
     # bifacial_radiance
     bifacial_radiance_files: Path = root / 'bifacial_radiance_files'
     # for weather data

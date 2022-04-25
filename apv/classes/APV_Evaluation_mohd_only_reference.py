@@ -87,8 +87,8 @@ class Evaluator:
         self.get_weather_data(SimSettings)
         # View energy generated on specific date-time
         if SimSettings.sky_gen_mode == 'gendaylit':
-            if self.settings.apv.module_form == 'EW_fixed' or \
-               self.settings.apv.module_form == 'cell_level_EW_fixed':
+            if self.settings.apv.module_form == 'roof_for_EW' or \
+               self.settings.apv.module_form == 'cell_level_roof_for_EW':
                 energy = self.estimate_energy(
                     SimSettings=SimSettings,
                     APV_SystSettings=self.settings.apv,
@@ -135,8 +135,8 @@ class Evaluator:
             self.df_energy_results = pd.DataFrame(columns=columns)
             for t in self.simDT.times:
                 timeindex = self.simDT.get_hour_of_tmy(t)
-                if self.settings.apv.module_form == 'cell_level_EW_fixed'\
-                        or self.settings.apv.module_form == 'EW_fixed':
+                if self.settings.apv.module_form == 'cell_level_roof_for_EW'\
+                        or self.settings.apv.module_form == 'roof_for_EW':
                     energy = self.estimate_energy(
                         SimSettings=SimSettings,
                         APV_SystSettings=self.settings.apv,

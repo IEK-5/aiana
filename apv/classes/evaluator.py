@@ -69,7 +69,7 @@ class Evaluator:
 
         df_merged['DLI'] = df_merged['Whm2']*0.0074034
         """0.0074034 = 4.57  [ref1]  * 0.45 [ref2] *3600/1000000
-        # mol quanta / m² = W*h/m² * µmol quanta/(sec*m²) * (3600s/h) / (µ*1E6)
+        # mol quanta / m² = W*h/m² * µmol quanta/(s*m²) * (3600s/h) / (µ*1E6)
         [ref1] Catsky1998 Plant growth chamber handbook, Chapt1., p.3, table2
         [ref2] Faust2018, HORTSCIENCE 53(9):1250–1257.
         https://doi.org/10.21273/HORTSCI13144-18"""

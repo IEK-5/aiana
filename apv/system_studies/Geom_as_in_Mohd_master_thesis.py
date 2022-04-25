@@ -4,17 +4,20 @@ from apv.classes.util_classes.settings_grouper import Settings
 
 if __name__ == '__main__':
     settings = Settings()
-    settings.sim.spatial_resolution = 0.2
+    settings.sim.study_name = f'std'
+    settings.sim.spatial_resolution = 0.25
+    settings.sim.time_step_in_minutes = 6
     # optional accelerad if installed:
     settings.sim.use_acceleradRT_view = True
     settings.sim.use_accelerad_GPU_processing = True
-    settings.apv.module_form = 'cell_level_checker_board'
-    settings.apv.module_form = 'roof_for_EW'
-    settings.apv.glass_modules = True
-    settings.apv.mountingStructureDict['n_apv_system_clones_in_x'] = 1
-    brObj = BR_Wrapper(settings)
 
-    brObj.create_and_view_octfile(add_groundScanArea=False)
+    settings.apv.sceneDict['nRows'] = 5
+    settings.apv.mountingStructureDict.update({
+        'n_apv_system_clones_in_x': 2,
+        'n_apv_system_clones_in_negative_x': 2}
+    )
+
+    brObj = BR_Wrapper(settings)
     # #
     brObj.create_and_view_octfile()
     # #

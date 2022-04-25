@@ -41,9 +41,9 @@ class OctFileHandler:
 
     """
 
-    sceneObj: br.SceneObj  # set in create_oct_file()
-    radianceObj: br.RadianceObj  # "
-    moduleObj: br.ModuleObj
+    sceneObj: br.SceneObj  # set in get_radtext_of_all_modules
+    moduleObj: br.ModuleObj  # "
+    radianceObj: br.RadianceObj  # set in create_oct_file()
 
     def __init__(
             self,
@@ -102,7 +102,7 @@ class OctFileHandler:
             customObjects['structure'] = self.ghObj.morschenich_fixed
         elif structure_type == 'framed_single_axes':
             customObjects['structure'] = self.ghObj.framed_single_axes_mount
-        # NOTE else: structure_type == 'none' --> add nothing
+        # else: structure_type == 'none' --> add nothing
 
         cloning_rad_text = self.ghObj.get_rad_txt_for_cloning_the_apv_system()
         extra_radtext_to_apply_on_a_radObject = {
@@ -223,50 +223,85 @@ class OctFileHandler:
             self.weatherData.sunalt, sunaz_modified)
 
     def get_radtext_of_all_modules(self):
-        # # create PV module
+        """
+        This method is realy difficult to understand...
+        but Bifacial_radiance is also complicated here and need to make it
+        even more complicate to enter new functionality (checker board,
+        set_cloning in x direction with gap between sets)
+
+        in first step, custom_single_module_text_dict is created
         # this is a bit nasty because we use self.radObj.makeModule()
         # to create std or cell_level module, whereby in this case
-        # the "text" argument has to be None. For the other module forms,
-        # which are not present in self.radObj.makeModule(), we use own methods
+        # the (custom) "text" argument has to be None. For the other module
+        # forms, which are not present in self.radObj.makeModule(),
+        # we use the own ghObj methods
 
-        single_module_text_dict = {
+        then we use BR to build the scene and extract partly rad texts out of
+        BR objects to puzzle these together to what we want.
+
+        Adding glass made it more complicated (see single_module_elements)
+        There is probably nicer way of doing it, but it also will take time
+        to figure it out.
+        """
+
+        custom_single_module_text_dict = {
             'std': None,  # rad text is created by self.radObj.makeModule()
+            'cell_level': None,  # ""
             'none': "",  # empty
             'cell_level_checker_board': self.ghObj.make_checked_module_text,
-            'EW_fixed': self.ghObj.make_EW_module_text,
-            'cell_level_EW_fixed': self.ghObj.make_cell_level_EW_module_text,
-        }
+            'roof_for_EW': self.ghObj.make_roof_module_text_for_EW,
+            'cell_level_roof_for_EW': self.ghObj.make_cell_level_EW_module_text,
+        }  # (only black part, no glass / omega etc.)
+
         module_form = self.settings.apv.module_form
-        if module_form in ['std', 'none']:
+        if module_form in ['std', 'cell_level', 'none']:
             # pass dict value without calling
-            single_module_text = single_module_text_dict[module_form]
+            single_module_text = custom_single_module_text_dict[module_form]
         else:
             # pass dict value being a ghObj-method with calling
-            single_module_text = single_module_text_dict[module_form]()
+            single_module_text = custom_single_module_text_dict[module_form]()
 
         self.moduleObj = br.ModuleObj(
             name=self.settings.apv.module_name,
             **self.settings.apv.moduleDict,
-            text=single_module_text,  # NOTE TODO inactive, opened issue
-            # but no response yet, downgrade again =(?
+            text=single_module_text,
             glass=self.settings.apv.glass_modules,
             # there are now also new frame and omega input options
         )
 
         if module_form == 'cell_level':
             self.moduleObj.addCellModule(
-                self.settings.apv.cellLevelModuleParams)
+                **self.settings.apv.cellLevelModuleParams)
 
-        self.sceneObj = self.radianceObj.makeScene(
+        self.sceneObj: br.SceneObj = self.radianceObj.makeScene(
             module=self.moduleObj, sceneDict=self.sceneDict
         )
 
-        modules_text = (
-            self.moduleObj.text  # text of module radiance description
-            # (only "numpanels" considered)
-            + self.sceneObj.text.replace(  # all modules in first set
-                '!xform', '|xform').replace(
-                f' objects\\{self.settings.apv.module_name}.rad', ''))
+        # # # get modules_text # # #
+        single_module_elements: list = self.moduleObj.text.split('\r\n')
+        # only "numpanels" considered (has PV, glass, omega... as elements)
+
+        xform_text_to_BR_scene_modules = self.sceneObj.text.replace(
+            '!xform', '|xform').replace(
+            f' objects\\{self.settings.apv.module_name}.rad', '')
+
+        # all modules in the original set (now cloneable in x):
+        modules_text = ""
+        for element in single_module_elements:
+            modules_text += element + xform_text_to_BR_scene_modules
+            if element != single_module_elements[-1]:
+                modules_text += '\r\n'
+        """
+        so wäre eigentlich einfacher:
+        modules_text = self.sceneObj.text
+
+        aber dann kommt
+        >> xform: cannot find file "objects/SUNFARMING.rad"
+
+        und
+        modules_text = self.sceneObj.text.replace(' objects\\', ' objects/')
+        hilft leider auch nicht.  #TODO Warum?
+        """
 
         return modules_text
 
@@ -276,6 +311,8 @@ class OctFileHandler:
         """
         customObjects: key: file-name, value: rad_text
         """
+
+        # self.radianceObj.radfiles = []  # TODO  get rid of doubled array origin modules...
         for key in customObjects:
             rad_file_path = f'objects/{key}.rad'
             with open(rad_file_path, 'wb') as f:
@@ -289,12 +326,17 @@ class OctFileHandler:
             else:
                 extra_radtext = "!xform "
 
+            # NOTE
+            # self.sceneObj.radfiles is a path
+            # while
+            # self.radianceObj.radfiles is a list ...
+
             with open(self.sceneObj.radfiles, 'a+') as f:
                 f.write(f'\n{extra_radtext}{rad_file_path}')
 
             self.radianceObj.radfiles.append(rad_file_path)
 
-        print("\nCreated custom object", rad_file_path)
+            print("\nCreated custom object", rad_file_path)
 
 
 # #

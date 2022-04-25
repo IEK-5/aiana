@@ -68,9 +68,30 @@ class Tester:
             self.settings.apv.gScan_area[key] = gScan_area[key]
             self._view_oct_then_resetSettings()
 
+    def test_module_forms(self, glass=False):
+        for module_form in ['cell_level',
+                            'cell_level_checker_board',
+                            'roof_for_EW',
+                            # 'cell_level_roof_for_EW'
+                            ]:
+            self.settings.apv.glass_modules = glass
+            self.settings.apv.module_form = module_form
+            self._view_oct_then_resetSettings()
+
 
 if __name__ == '__main__':
     testerObj = Tester()
+    ##
+    for glass in [  # False,
+            True]:
+        testerObj.test_module_forms(glass)
+
+    # #
+    # show Morschenich APV
+    testerObj.settings.sim.spatial_resolution = 0.1
+    testerObj.settings.apv = APV_Syst_InclinedTables_S_Morschenich()
+    BR_Wrapper(testerObj.settings).create_and_view_octfile()
+    testerObj.settings.apv = APV_ForTesting()  # reset
     # #
     testerObj.test_moduleDict({'x': 0.5,
                                'y': 1,
@@ -109,12 +130,6 @@ if __name__ == '__main__':
         })
     # #
     testerObj.view_in_rvu_then_in_acceleradRT()
-    # #
-    # show Morschenich APV
-    testerObj.settings.sim.spatial_resolution = 0.2
-    testerObj.settings.apv = APV_Syst_InclinedTables_S_Morschenich()
-    BR_Wrapper(testerObj.settings).create_and_view_octfile()
-    testerObj.settings.apv = APV_ForTesting()  # reset
     # #
     testerObj.test_panelAzimuth([90, 180, 270])
 # #
