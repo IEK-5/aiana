@@ -1,9 +1,34 @@
+always:
 - clean up and add documentation
+-----------------
+
+short term:
+für conference paper/poster:
+- box plot reproduzieren mit zusätzlich südwest std.
+
+paper / poster Aufbau:
+- tool beschreibung (input, output)
+- wetterdaten
+- acceleradRT bilder und beispiel heatmaps
+- box plot
+- ridge plots? wenn noch zeit
+
+
 ------------
 longterm:
-- GPU 28x faster rtrace https://nljones.github.io/Accelerad/index.html
-- allow certain year simulation (not only TMY)
-- implement 'module' scan_target ?
+
+- implement 'module' scan_target (auch gleichzeitig im gleichen oct file)
+
+
+- hochaufgelöst gendaylitmxt für kumulativen sky - damit zwar ermittlung von shadow duration
+nicht möglich, aber dafür sehr viele configs sehr schnell simulierbar.
+damit könnte ein wirklicher beitrag geleistet werden. 1. paper: vergleich
+kumulativ mit gendaylit, 2. paper: alle möglichen konfigurationen durchtesten
+und lichteintrag auf boden PLUS auf module miteinander vergleichen.
+Sowas wurde schon gemacht, aber wenn durch sehr schnelle simzeit wirklich
+umfassende anzahl an configs durchgespielt werden kann mit guten wetterinput daten
+dann denke ich schon ein mehrwert für community möglich.
+
 - implement era5 data (apv_evaluation: yield & weather_data: solar position)
 - add diffusive glass to be used optional in checker board empty slots.
 ref: Miskin2019 and
@@ -15,6 +40,3 @@ wedgeplot x-achse: y-position im field, y-achse: GHI, monat 1-12 untereinander)
 - estimate costs of double sized checker boards for same electrical yield with
  improved shadow values and compare to std
 - also compare normal sized with double sized checker board shadow maps"
-
-(- gendaylitmxt für kumulativen sky? Aber damit ermittlung von shadow duration
-eh nicht möglich...)

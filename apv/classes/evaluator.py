@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 import pandas as pd
 from apv.classes.weather_data import WeatherData
 from apv.classes.util_classes.sim_datetime import SimDT
@@ -103,44 +104,32 @@ class Evaluator:
 
         Returns:
             [type]: [description]
-
-        TODO cumulative GHI now calculated already in weatherData as
-        as it is also needed for ghi filter. Here start and end for cumulative
-        are calculated by ghi filter setted start and end time stamps
-        in weatherData this cannot be known, so complete day will be used...
-        what is better?
-
-        and also: should shadowdepth be compared to clearsky or not?
-        probably make a setting for it and offer both
-
         """
         # refresh time to allow for looping cumulative evaluation from outside
         simDT = SimDT(self.settings.sim)
         self.weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(simDT)
 
+        if self.settings.sim.for_shadowDepths_compare_GGI_to == 'clearsky_GHI':
+            ghi_ref = self.weatherData.ghi_clearsky
+            cum_ghi_ref = self.weatherData.cumulated_ghi_clearsky
+        elif self.settings.sim.for_shadowDepths_compare_GGI_to \
+                == 'GHI_as_TMY_aggfunc':
+            ghi_ref = self.weatherData.ghi
+            cum_ghi_ref = self.weatherData.cumulated_ghi
+        else:
+            sys.exit('settings.sim.for_shadowDepths_compare_GGI_to has to '
+                     'be set to "clearsky_GHI" or "GHI_as_TMY_aggfunc".')
+
+        # instantaneous shadow depth
         if self.settings.sim.sky_gen_mode == 'gendaylit' and not cumulative:
-            # instant shadow depth
-            df['ShadowDepth'] = 100 - (
-                (df['Wm2']/self.weatherData.ghi_clearsky)*100)
+            df['ShadowDepth'] = 100 * (1 - df['Wm2']/ghi_ref)
 
+        # cumulated shadow depth:
         elif self.settings.sim.sky_gen_mode == 'gencumsky' or cumulative:
-            # cumulated shadow depth
-            if self.settings.sim.use_typDay_perMonth_for_irradianceCalculation:
-                month = int(self.settings.sim.sim_date_time.split('-')[0])
-                cumulative_GHI = \
-                    self.weatherData.df_irradiance_typ_day_per_month.loc[
-                        (month), 'ghi_clearSky_Whm-2'].sum()
-            else:
-                cumulative_GHI = self.weatherData.df_irr.loc[
-                    simDT.startdt_utc:simDT.enddt_utc,
-                    # +1 is not needed for inclusive end with .loc,
-                    # only with .iloc
-                    'ghi_clearSky_Whm-2'].sum()
-
-            df['ShadowDepth_cum'] = 100 - ((df['Whm2']/cumulative_GHI)*100)
+            df['ShadowDepth_cum'] = 100 * (1 - df['Whm2']/cum_ghi_ref)
             print(self.settings.sim.TMY_irradiance_aggfunc,
-                  'cum clearSky ghi: ',
-                  cumulative_GHI)
+                  'cum clearSky ghi: ', cum_ghi_ref)
+
         return df
 
     def cumulate_gendaylit_results(self,

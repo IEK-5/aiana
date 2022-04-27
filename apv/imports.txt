@@ -44,7 +44,7 @@ classes/plotter.py:import sys
 classes/plotter.py:import pandas as pd
 classes/plotter.py:from apv.classes.util_classes.geometries_handler import GeometriesHandler
 classes/plotter.py:from apv.classes.util_classes.settings_grouper import Settings
-classes/plotter.py:from apv.utils import plotting
+classes/plotter.py:from apv.utils import plotting_utils as plotting
 classes/plotter.py:from apv.utils import files_interface as fi
 classes/simulator.py:import sys
 classes/simulator.py:import pandas as pd
@@ -139,7 +139,7 @@ system_studies/before_restructuring_feb22/functionality_testing.py:    from apv.
 utils/RMSE_MBE.py:import pandas as pd
 utils/RMSE_MBE.py:from collections import namedtuple
 utils/__init__.py:#from . import time
-utils/__init__.py:#from . import plotting
+utils/__init__.py:#from . import plotting_utils as plotting
 utils/__init__.py:#from . import evaluation
 utils/__init__.py:#from . import files_interface
 utils/__init__.py:#from . import settings_adjuster

@@ -28,9 +28,12 @@ class Names:
 
         self.csv_fn = SimSettings.sim_date_time.replace(':', 'h')+'.csv'
 
-        self.oct_fn = SimSettings.study_name + '_' \
-            + APV_SystSettings.module_form + '_' \
-            + self.csv_fn.replace('.csv', '.oct')
+        self.oct_fn = SimSettings.study_name \
+            + '_' + APV_SystSettings.module_form \
+            + '.oct'
+        # + '_' + self.csv_fn.replace('.csv', '.oct')#
+        # ^-- this was commented out because an oct file can be >80 mb
+        # and thus its waste of disc space to store e.g. each time step
 
 
 class Paths(UserPaths):

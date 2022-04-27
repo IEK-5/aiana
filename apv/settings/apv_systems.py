@@ -319,3 +319,4 @@ class APV_ForTesting(Default):
 
         self.mounting_structure_type = 'framed_single_axes'
         self.mountingStructureDict['module_to_post_distance_x'] = 0.5
+        self.mountingStructureDict['n_apv_system_clones_in_x'] = 1

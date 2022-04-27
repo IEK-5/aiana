@@ -12,6 +12,7 @@ from typing import Literal
 from pathlib import Path
 
 import bifacial_radiance as br
+from apv.classes.util_classes.print_hider import PrintHider
 # import apv.bifacial_radiance.main as br
 # import apv.bifacial_radiance.module as br_module
 from apv.utils import radiance_utils
@@ -261,13 +262,14 @@ class OctFileHandler:
             # pass dict value being a ghObj-method with calling
             single_module_text = custom_single_module_text_dict[module_form]()
 
-        self.moduleObj = br.ModuleObj(
-            name=self.settings.apv.module_name,
-            **self.settings.apv.moduleDict,
-            text=single_module_text,
-            glass=self.settings.apv.glass_modules,
-            # there are now also new frame and omega input options
-        )
+        with PrintHider():  # hide custom text usage warning
+            self.moduleObj = br.ModuleObj(
+                name=self.settings.apv.module_name,
+                **self.settings.apv.moduleDict,
+                text=single_module_text,
+                glass=self.settings.apv.glass_modules,
+                # there are now also new frame and omega input options
+            )
 
         if module_form == 'cell_level':
             self.moduleObj.addCellModule(
@@ -336,7 +338,7 @@ class OctFileHandler:
 
             self.radianceObj.radfiles.append(rad_file_path)
 
-            print("\nCreated custom object", rad_file_path)
+            print("Created custom object", rad_file_path)
 
 
 # #

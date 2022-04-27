@@ -45,9 +45,9 @@ class BR_Wrapper():
     def create_and_view_octfile(
             self, topDownParallel_view=False,
             add_groundScanArea=True,
-            add_NorthArrows=False):
+            add_NorthArrow=False):
 
-        self.octFileObj.create_octfile(add_groundScanArea, add_NorthArrows)
+        self.octFileObj.create_octfile(add_groundScanArea, add_NorthArrow)
 
         if topDownParallel_view:
             self.octFileObj.view_octfile(

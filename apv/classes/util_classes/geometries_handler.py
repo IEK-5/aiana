@@ -11,7 +11,6 @@
 
     """
 
-from tkinter import S
 import numpy as np
 from apv.classes.util_classes.settings_grouper import Settings
 
@@ -210,13 +209,15 @@ class GeometriesHandler:
 
     def _set_y_grid_and_sensors(self):
         self.ygrid: list[float] = np.arange(
-            self.scan_area_anchor_y,
+            self.scan_area_anchor_y,  # start
             (self.scan_area_anchor_y + self.scan_length_y
-             + self.settings.sim.spatial_resolution),
-            self.settings.sim.spatial_resolution)
+             + self.settings.sim.spatial_resolution*0.999),  # stop
+            self.settings.sim.spatial_resolution)  # step
 
-        self.sensors_x = int(
-            self.scan_length_x / self.settings.sim.spatial_resolution)+1
+        self.n_sensors_x = int(
+            self.scan_length_x / self.settings.sim.spatial_resolution) + 2
+        # + 2 because + 1 for the one at x = 0 and another + 1 to hit the post
+        # again or cover scan_length_x despite of rounding down with int
 
     def _set_groundscan_dicts(self):
         """
@@ -236,7 +237,7 @@ class GeometriesHandler:
             'sx_xinc': 0, 'sx_yinc': 0, 'sx_zinc': 0,
             # NOTE Sensor x-coordinate = xstart + iy*xinc + ix*sx_xinc,
             # whereby iy und ix are looped over range(Ny) and range(Nx)
-            'Nx': self.sensors_x, 'Ny': 1, 'Nz': 1,
+            'Nx': self.n_sensors_x, 'Ny': 1, 'Nz': 1,
             'orient': '0 0 -1'
         }
 
@@ -244,8 +245,8 @@ class GeometriesHandler:
         self.ground_areaScan['yinc'] = xy_inc
         self.ground_areaScan['Ny'] = len(self.ygrid)
 
-        print(f'\n sensor grid:\nx: {self.sensors_x}, y: {len(self.ygrid)}, '
-              f'total: {self.sensors_x * len(self.ygrid)}')
+        print(f'\n=== sensor grid: x: {self.n_sensors_x}, y: {len(self.ygrid)}, '
+              f'total: {self.n_sensors_x * len(self.ygrid)} ===')
 
     # =========================================================================
     # =============================== RAD TEXTS: ==============================

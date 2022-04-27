@@ -37,7 +37,7 @@ class Tester:
             self.settings.apv.sceneDict['azimuth'] = azimuth
             BR_Wrapper(self.settings).create_and_view_octfile(
                 topDownParallel_view=True,
-                add_NorthArrows=north_arrow)
+                add_NorthArrow=north_arrow)
 
     def test_sceneDict(self, test_sceneDict: dict):
         for key in test_sceneDict.keys():

@@ -101,7 +101,8 @@ def add_north_arrow(
     arrow_color="black",
     fontsize=12,
     ha="center",
-    va="center"
+    va="center",
+    panel_azimuth=180,
 ):
     """Add a north arrow to the map.
 
@@ -134,10 +135,16 @@ def add_north_arrow(
         fontsize=fontsize,
         xycoords=ax.transAxes
     )
+
     # Arrow
+    # arrow rotation = 90 --> pointing upwards
+    # (north upwards for panel_azimuth = 180)
+    # for panel south-west orientation, arrow has to point to upper left corner
+    arrow_rotation = panel_azimuth-180 + 90
+
     ax.text(
         xy[0],
-        xy[1] - 0.1, "    ", ha=ha, va=va, rotation=90, size=5,
+        xy[1] - 0.1, "    ", ha=ha, va=va, rotation=arrow_rotation, size=5,
         bbox=dict(boxstyle='rarrow, pad=0.4', fc='black',
                   ec=arrow_color, lw=0.5), transform=ax.transAxes)
 

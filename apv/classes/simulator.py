@@ -11,6 +11,7 @@ from subprocess import Popen, PIPE  # replacement for os.system()
 from apv.utils import files_interface as fi
 from apv.classes.util_classes.settings_grouper import Settings
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
+from apv.classes.util_classes.print_hider import PrintHider
 
 
 class Simulator:
@@ -81,10 +82,22 @@ class Simulator:
             f'{self.settings.sim.study_name}_{self.settings.sim.scan_target}_'
         )
         linepts = self._write_linepts(scanDict)
-        groundDict = self._irrPlot(self.settings.names.oct_fn, linepts)
 
-        self.analObj._saveResults(
-            groundDict, savefile=self.settings.paths.csv_file_path)
+        for _ in range(3):
+            try:
+                with PrintHider(): # otherwise accelerad prints a lot...
+                    groundDict = self._irrPlotMod_modified(
+                        self.settings.names.oct_fn, linepts)
+                self.analObj._saveResults(
+                    groundDict, savefile=self.settings.paths.csv_file_path)
+                break
+            except TypeError:  # 'NoneType' object is not subscriptable
+                # rarely there is a accelerad polygon problem, e.g.:
+                # accelerad_rtrace: fatal - (!xform...:
+                # bad arguments for polygon "a4.1.a1.SUNFARMING.6457"
+                # in this case data will be empty (NoneType).
+                print('result data empty, trying again...')
+
         return 'Area scan done.'
 
     def _run_line_scan(self, y_start):
@@ -98,7 +111,7 @@ class Simulator:
                      "but prepared in code...")
 
             self.frontscan, self.backscan = self.analObj.moduleAnalysis(
-                scene=self.scene, sensorsy=self.ghObj.sensors_x)
+                scene=self.scene, sensorsy=self.ghObj.n_sensors_x)
             # sensory = sensors along module-width (which is along x)
 
             self.frontscan['ystart'] = y_start
@@ -112,7 +125,8 @@ class Simulator:
         elif self.settings.sim.scan_target == 'ground':
             self.ghObj.ground_lineScan['ystart'] = y_start
             linepts = self._write_linepts(self.ghObj.ground_lineScan)
-            groundDict = self._irrPlot(self.settings.names.oct_fn, linepts)
+            groundDict = self._irrPlotMod_modified(
+                self.settings.names.oct_fn, linepts)
             self.analObj._saveResults(
                 groundDict, savefile=f'irr_{temp_name}.csv'
             )
@@ -143,7 +157,7 @@ class Simulator:
         print(f'merged line scans into {self.settings.paths.csv_file_path}\n')
         self.df_ground_results = df
 
-    def _irrPlot(self, octfile, linepts):
+    def _irrPlotMod_modified(self, octfile, linepts):
         """
         copied and modifiend from bifacial_radiance.main.py to be able
         to switch between CPU and GPU parallelization and to change radiance

@@ -22,11 +22,9 @@ class Simulation:
         self.sim_year: int or Literal['TMY'] = 'TMY'  # or e.g. 2020
         # TMY = typical meterological year; here: mean data from 2005 to 2021
 
-        self.use_typDay_perMonth_for_irradianceCalculation = True  # for dni, dhi, ghi
-
-        self.TMY_irradiance_aggfunc: Literal['min', 'mean', 'max'] = 'mean'
-        # also used as aggregation function for satelite watherdata pivoting to TMY
-        # min: extreme cloudy day, max: sunny day with distant high bright clouds
+        self.use_typDay_perMonth_for_irradianceCalculation = True
+        # for dni, dhi, ghi True to compare mean of month to mean of month
+        # and not to data of 15th
 
         self.use_CPU_multi_processing = True
         # if True, single lines of the scan area will be passed to a job pool
@@ -70,7 +68,14 @@ class Simulation:
             'radiation', 'PAR', 'shadow_depth', 'DLI'] = 'radiation'
         # !!! NOTE 'DLI' is only for daily cumulative data, no single timesteps
 
-        self.plot_dpi: int = 500  # dots per inch in the result heatmaps
+        self.for_shadowDepths_compare_GGI_to: Literal[  # GGI =Global ground ir.
+            'clearsky_GHI', 'GHI_as_TMY_aggfunc'] = 'as_TMY_aggfunc'
+
+        self.TMY_irradiance_aggfunc: Literal['min', 'mean', 'max'] = 'mean'
+        # also used as aggregation function for satelite watherdata pivoting to TMY
+        # min: extreme cloudy day, max: sunny day with distant high bright clouds
+
+        self.plot_dpi: int = 300  # dots per inch in the result heatmaps
 
         self.plot_title_components: list = ['weather', 'datetime']
         # all options: ['weather', 'module_form', 'resolution',

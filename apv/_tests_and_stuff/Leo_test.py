@@ -1,5 +1,11 @@
 # #
+import os, sys
 
+from apv.classes.util_classes.print_hider import PrintHider
+with PrintHider():
+    print("This will not be printed")
+
+print("This will be printed as before")
 
 # #
 from apv.classes.util_classes.sim_datetime import SimDT

@@ -37,6 +37,9 @@ class WeatherData:
         self.sunalt: float = None
         self.sunaz: float = None
 
+        self.cumulated_ghi: float = None
+        self.cumulated_ghi_clearsky: float = None
+
         self.set_self_variables()
 
         if self.settings.sim.sim_year == 'TMY':
@@ -47,14 +50,14 @@ class WeatherData:
             # make TMY typcal day per month data (W/m2)
             # #multi-index (month, hour...)
             self.df_irradiance_typ_day_per_month = \
-                self.typical_day_of_month(self.df_irr)
+                self.calc_typical_day_of_month(self.df_irr)
         else:
             self.df_irr = self.load_and_process_insolation_data()
 
         # set irradiance and sunpos
         self.set_dhi_dni_ghi_and_sunpos_to_simDT()
 
-        self.set_cumulative_ghi()
+        self.set_dayCumulative_ghi()
 
         # dfs:
         # as downloaded from ads,
@@ -107,8 +110,8 @@ class WeatherData:
             self.ghi_clearsky = s['ghi_clearSky_Wm-2']
         except KeyError:
             sys.exit('\n Please choose a simlation time and timestep, which '
-                     'can meet starting at 00:00. E.g. not 15:30 and 60 min\n')
-
+                     'can meet, starting at 00:00. E.g. not 15:30 and 60 min\n'
+                     )
         # taking sun position in between adjacent right labled irradiation data
         timedelta_sec = str(int(60*self.settings.sim.time_step_in_minutes/2))
         solpos: pd.DataFrame = \
@@ -119,18 +122,31 @@ class WeatherData:
         self.sunalt = float(solpos["elevation"])
         self.sunaz = float(solpos["azimuth"]-180.0)
 
-    def set_cumulative_ghi(self):
-        "for ghi filter and TODO shadow_depth calculation"
+    def set_dayCumulative_ghi(self):
+        "for ghi filter and shadow_depth calculation"
         if self.settings.sim.use_typDay_perMonth_for_irradianceCalculation:
             # df_irradiance_typ_day_per_month is already aggregated over all
             # days per month, therefore the following is the
             # GHI sum of a single typical day in current month
-            self.daycumulated_ghi = self.df_irradiance_typ_day_per_month.loc[
+            self.cumulated_ghi = self.df_irradiance_typ_day_per_month.loc[
                 (self.simDT.sim_dt_utc.month), 'ghi_Whm-2'].sum()
+            self.cumulated_ghi_clearsky = \
+                self.df_irradiance_typ_day_per_month.loc[
+                    (self.simDT.sim_dt_utc.month), 'ghi_clearSky_Whm-2'].sum()
         else:
             date = self.simDT.sim_dt_utc_pd.date()
-            self.daycumulated_ghi = self.df_irr.loc[
+            self.cumulated_ghi = self.df_irr.loc[
                 self.df_irr.index.date == date]['ghi_Whm-2'].sum()
+
+            self.cumulated_ghi_clearsky = self.df_irr.loc[
+                self.df_irr.index.date == date]['ghi_clearSky_Whm-2'].sum()
+
+        # TODO maybe not only interested in day cumulated? then...
+        """cumulative_GHI = self.df_irr.loc[
+                    simDT.startdt_utc:simDT.enddt_utc,
+                    # +1 is not needed for inclusive end with .loc,
+                    # only with .iloc
+                    'ghi_clearSky_Whm-2'].sum()"""
 
     # ## DOWNLOADS ##################
 
@@ -424,7 +440,7 @@ class WeatherData:
         df_tmy.Name = df_tmy_name
         return df_tmy
 
-    def typical_day_of_month(self, df: pd.DataFrame):
+    def calc_typical_day_of_month(self, df: pd.DataFrame):
         """
         df is meant for self.df_irradiance_tmy
 

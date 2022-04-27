@@ -1,11 +1,13 @@
 
 from pathlib import Path
 import sys
+from matplotlib import pyplot as plt
 import pandas as pd
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
 from apv.classes.util_classes.settings_grouper import Settings
-from apv.utils import plotting
+from apv.utils import plotting_utils as plotting
 from apv.utils import files_interface as fi
+import seaborn as sns
 
 
 class Plotter:
@@ -100,13 +102,28 @@ class Plotter:
         )
 
         fig.axes[0] = plotting.add_north_arrow(
-            fig.axes[0], xy=north_arrow_xy_posi)
+            fig.axes[0], xy=north_arrow_xy_posi,
+            panel_azimuth=self.settings.apv.sceneDict['azimuth']
+        )
 
         if destination_file_path is None:
             destination_file_path = self.settings.paths.results_folder / Path(
                 f'{self.settings.names.csv_fn[:-4]}_{cm_unit}.jpg'
             )
         fi.save_fig(fig, destination_file_path, dpi=plot_dpi)
+
+    def box_plot_month_comparing(self, dfs: list):
+        fig, axes = plt.subplots(1, len(dfs))
+        for i, df in enumerate(dfs):
+            # standard
+            sns.boxplot(x="Month", y="ShadowDepth_cum",
+                        data=df, palette="autumn", ax=axes[i])
+            axes[i].set_title(df.name)
+            axes[i].set_ylim(20, 90)
+
+            fig.tight_layout()
+            fig.set_facecolor("white")
+            plt.show()
 
     def return_weather_description(self):
         if self.settings.sim.TMY_irradiance_aggfunc == 'min':
@@ -167,16 +184,16 @@ class Plotter:
             input_dict = {'colormap': 'YlOrBr_r'}
             if cumulative:
                 dict_up = {'z': 'PARGround_cum', 'z_label': 'Cumulative PAR'
-                           + r' [μmol quanta.m$^{-2}\cdot s^{-1}$]'}
+                           + r' [μmol photons $\cdot$ m$^{-2}]'}
             else:
-                dict_up = {'z': 'PARGround', 'z_label':
-                           'PAR [μmol quanta.m$^{-2}$.s$^{-1}$]'}
+                dict_up = {'z': 'PARGround', 'z_label': 'PAR'
+                           + r' [μmol photons $\cdot$ m$^{-2}\cdot $s$^{-1}$]'}
         # #################################### #
         elif cm_unit == 'DLI':
             input_dict = {'colormap': 'YlOrBr_r'}
             if cumulative:
                 dict_up = {'z': 'DLI', 'z_label':
-                           r'DLI [mol quanta.m$^{-2}\cdot day^{-1}$]'}
+                           r'DLI [mol photons $\cdot$ m$^{-2}$]'}
             else:
                 sys.exit('cm_unit = DLI is only for cumulative')
         else:

@@ -432,16 +432,16 @@ class Evaluator:
             input_dict = {'colormap': 'YlOrBr_r'}
             if cumulative:
                 dict_up = {'z': 'PARGround_cum', 'z_label': 'Cumulative PAR'
-                           + r' [μmol quanta.m$^{-2}\cdot s^{-1}$]'}
+                           + r' [μmol photons $\cdot$ m$^{-2}]'}
             else:
-                dict_up = {'z': 'PARGround', 'z_label':
-                           'PAR [μmol quanta.m$^{-2}$.s$^{-1}$]'}
+                dict_up = {'z': 'PARGround', 'z_label': 'PAR'
+                           + r' [μmol photons $\cdot$ m$^{-2}\cdot $s$^{-1}$]'}
         # #################################### #
         elif cm_unit == 'DLI':
             input_dict = {'colormap': 'YlOrBr_r'}
             if cumulative:
                 dict_up = {'z': 'DLI', 'z_label':
-                           r'DLI [mol quanta.m$^{-2}\cdot day^{-1}$]'}
+                           r'DLI [mol photons $\cdot$ m$^{-2}$]'}
             else:
                 sys.exit('cm_unit = DLI is only for cumulative')
         else:
