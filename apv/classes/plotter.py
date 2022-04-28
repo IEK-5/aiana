@@ -138,6 +138,7 @@ class Plotter:
             title_comps = self.settings.sim.plot_title_components
         title = ''
         if 'weather' in title_comps:
+            
             title += f'Weather: {self.return_weather_description()}\n'
         if 'agg_func' in title_comps:  # redundant to weather
             title += (f'TMY aggregation function: '

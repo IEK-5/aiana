@@ -6,6 +6,7 @@ import seaborn as sns
 import joypy
 from scipy import stats
 import apv
+from apv.utils import RMSE_MBE
 
 
 def plot_heatmap(
@@ -209,7 +210,7 @@ def Ridge_plot(data, seperate_by='Month', column='ShadowDepth_cum',
 def comparing_plot_sns(
         df: pd.Series, x: str, y: str, unit=' [-]', hue=None,
         scatter_alpha=0.4, scatter_size=0.1,
-        xy_min='default', xy_max='default'):
+        xy_min='default', xy_max='default', title=''):
 
     df = df.dropna(subset=[x, y])
     if xy_max == 'default':
@@ -254,8 +255,7 @@ def comparing_plot_sns(
 
     # ####################################
     # RMSE and MBE
-    mbe, rel_mbe, rmse, rel_rmse = apv.utils.RMSE_MBE.calc_RMSE_MBE(
-        df[x], df[y])
+    mbe, rel_mbe, rmse, rel_rmse = RMSE_MBE.calc_RMSE_MBE(df[x], df[y])
 
     # add text annotation
     g.ax_joint.text(
@@ -265,7 +265,7 @@ def comparing_plot_sns(
          '(rel. to (max-min)/2)'
          ).format(mbe, unit, rmse, rel_mbe, rel_rmse),
         horizontalalignment='left', verticalalignment='top',
-        size='medium', color='black', backgroundcolor="w",
+        color='black', backgroundcolor="w",
         fontsize=11
         # weight='semibold'
     )
@@ -273,6 +273,17 @@ def comparing_plot_sns(
 
     # add histograms to top and right side of the plot
     g.plot_marginals(sns.histplot)
+
+    # title
+    # g.ax_joint.set_title(title) # --> is covered by upper hist plot
+
+    g.ax_joint.text(
+        xy_min+0.2*(xy_max-xy_min), xy_max-0.1*(xy_max-xy_min),
+        title,
+        color='black', backgroundcolor="w",
+        fontsize=12
+        # weight='semibold'
+    )
 
     # plot legend
     g.ax_joint.legend(loc='lower right')

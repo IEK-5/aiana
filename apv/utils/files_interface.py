@@ -123,7 +123,7 @@ def df_export(
     df.to_csv(
         csv_file_path, float_format=float_format,
         index=index, sep=sep, header=header)
-    print('exported df to ' + csv_file_path)
+    print('exported df to', csv_file_path)
     return
 
 

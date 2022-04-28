@@ -1,4 +1,5 @@
 # #
+import sys
 import seaborn as sns
 from typing import Literal
 from matplotlib import pyplot as plt
@@ -11,12 +12,14 @@ from apv.classes.util_classes.sim_datetime import SimDT
 from apv.classes.util_classes.settings_grouper import Settings
 from apv.settings.apv_systems import APV_Syst_InclinedTables_S_Morschenich
 from apv.classes.br_wrapper import BR_Wrapper
+from apv.utils import plotting_utils
 import apv.utils.files_interface as fi
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
 
 
 def set_settings(
-        subset: Literal['std', 'std_glass', 'roof', 'std_sw', 'checker_board', 'cell_gaps'],
+        subset: Literal['std', 'std_glass', 'std_sw',
+                        'checker_board', 'cell_gaps', 'roof_for_EW'],
         settings: Settings) -> Settings:
     # constant settings
     settings.sim.study_name = 'framed_APV_noBorderEffects'
@@ -24,52 +27,67 @@ def set_settings(
     settings.sim.time_step_in_minutes = 6
     settings.sim.use_acceleradRT_view = True
     settings.sim.use_accelerad_GPU_processing = True
-    settings.apv.sceneDict['nRows'] = 6
-    settings.apv.mountingStructureDict.update({
-        'n_apv_system_clones_in_x': 3,
-        'n_apv_system_clones_in_negative_x': 3}
-    )
+
+    ghObj = GeometriesHandler(settings)
     # name depending settings
     settings.apv.glass_modules = False
     settings.apv.module_form = 'std'
+    settings.apv.sceneDict['nRows'] = 6
     settings.apv.sceneDict['azimuth'] = 180
-
-    if subset == 'std_sw':
-        settings.apv.sceneDict['azimuth'] = 225
-
-    if subset == 'roof_for_EW':
-        settings.apv.module_form = 'roof_for_EW'
-
-    if subset == 'std_glass':
-        settings.apv.glass_modules = True
-
-    if subset == 'checker_board':
-        settings.apv.glass_modules = True
-        settings.apv.module_form = 'cell_level_checker_board'
-        settings.apv.cellLevelModuleParams.update({
-            'xcellgap': 0, 'ycellgap': 0
-        })
-
-    if subset == 'cell_gaps':
-        settings.apv.glass_modules = True
-        settings.apv.module_form = 'cell_level'
-        settings.apv.cellLevelModuleParams.update({
-            'xcellgap': 0.02, 'ycellgap': 0.02
-        })
-    return settings
-
-
-if __name__ == '__main__':
-    subset = 'std'
-    settings = Settings()
-    settings = set_settings(subset, settings)
-    ghObj = GeometriesHandler(settings)
+    settings.apv.mountingStructureDict.update({
+        'n_apv_system_clones_in_x': 3,
+        'n_apv_system_clones_in_negative_x': 3})
     settings.apv.gScan_area.update({
         'ground_scan_margin_y': -2*settings.apv.sceneDict['pitch']
         - ghObj.singleRow_footprint_y/2,
         'ground_scan_shift_y': settings.apv.sceneDict['pitch']
         + settings.apv.mountingStructureDict['post_thickness_y']/2,
     })
+
+    if subset == 'std_sw':
+        settings.apv.sceneDict['azimuth'] = 225
+
+    elif subset == 'roof_for_EW':
+        settings.apv.module_form = 'roof_for_EW'
+        settings.apv.sceneDict['azimuth'] = 90
+        settings.apv.sceneDict['nRows'] = 8
+        settings.apv.sceneDict['nRows'] = 8
+        # TODO x and y scale need to be swapped to be strict?
+        settings.apv.gScan_area.update({
+            'ground_scan_margin_y': -3*settings.apv.sceneDict['pitch']
+            - ghObj.singleRow_footprint_y/2,
+            'ground_scan_shift_x': ghObj.scan_length_x,
+            'ground_scan_shift_y': 0})
+        settings.apv.mountingStructureDict.update({
+            'n_apv_system_clones_in_x': 2,
+            'n_apv_system_clones_in_negative_x': 2})
+
+    elif subset == 'std_glass':
+        settings.apv.glass_modules = True
+
+    elif subset == 'checker_board':
+        settings.apv.glass_modules = True
+        settings.apv.module_form = 'cell_level_checker_board'
+        settings.apv.cellLevelModuleParams.update({
+            'xcellgap': 0, 'ycellgap': 0
+        })
+
+    elif subset == 'cell_gaps':
+        settings.apv.glass_modules = True
+        settings.apv.module_form = 'cell_level'
+        settings.apv.cellLevelModuleParams.update({
+            'xcellgap': 0.02, 'ycellgap': 0.02
+        })
+    elif subset is not 'std':
+        sys.exit('This subset does not exist.')
+    return settings
+
+
+if __name__ == '__main__':
+    subset = 'std_glass'
+    #subset = 'std'
+    settings = Settings()
+    settings = set_settings(subset, settings)
     brObj = BR_Wrapper(settings)
 
     def create_results_subfolderPath(month):
@@ -84,16 +102,17 @@ if __name__ == '__main__':
 # #
 # simulate
 if __name__ == '__main__':
+    # for subset in ['std_glass', 'roof_for_EW']
 
     months = [6, 8, 10, 12]
-    #months = [6]
+    months = [12]
     # months = range(1, 13)
     # hours = [19]
     hours = range(2, 24, 1)
-    #hours = range(17, 21, 1)
+    # hours = range(16, 21, 1)
     # minutes = [10]
     minutes = range(0, 60, settings.sim.time_step_in_minutes)
-    #minutes = range(35, 60, settings.sim.time_step_in_minutes)
+    # minutes = range(35, 60, settings.sim.time_step_in_minutes)
     # minute 60 is and has to be exclusive
 
     enough_light = False  # (init value for ghi filter)
@@ -141,13 +160,14 @@ if __name__ == '__main__':
                     # df_limits = fi.get_min_max_of_cols_in_several_csv_files(
                     #    [r"C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich_S_inclinedTables\std_res-0.1m_step-5min_TMY_aggfunc-mean\month-6_north-position_correctedSensorOrientation\data\ground_results_06-15_07h40.csv",
                     #     r"C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich_S_inclinedTables\std_res-0.1m_step-5min_TMY_aggfunc-mean\month-6_north-position\data\ground_results_06-15_07h40.csv"]).round(1)
-
+                    # """
                     for cm_unit in ['radiation']:
                         brObj.plotterObj.ground_heatmap(
                             plot_dpi=100,
                             cm_unit=cm_unit,
                             # df_col_limits=df_limits
                         )
+                    # """
 
 # #
 # ======================================================
@@ -192,7 +212,7 @@ if __name__ == '__main__':
             df_merged = get_df_merged(cum_csv_path)
             # brObj.plotterObj.ground_heatmap(cumulative=True) #TODO alow this way
 
-            """
+            #"""
             brObj.plotterObj.ground_heatmap(
                 df_merged,
                 destination_file_path=Path(str(cum_csv_path).replace('csv', 'jpg')),
@@ -203,9 +223,10 @@ if __name__ == '__main__':
                 north_arrow_xy_posi=(-0.14, 1.16),
                 col_bar_min=0,
                 # col_bar_max=32,
-            )"""
+            )
+            #"""
 
-        def concat_months_for_box_plot(months: list):
+        def concat_months_for_box_plot(months: list, compare_GGI_to):
             """input: months list: as ints
             """
             df_appended = pd.DataFrame()
@@ -218,23 +239,15 @@ if __name__ == '__main__':
                 df = df[df['ShadowDepth_cum'] < 98]
                 df_appended = pd.concat([df_appended, df])
                 df_appended.name = compare_GGI_to
+            fi.df_export(df_appended, results_folder_cum/f'appended_{compare_GGI_to}.csv')
             return df_appended
-        df = concat_months_for_box_plot([6, 8, 10, 12])
+        df = concat_months_for_box_plot([6, 8, 10, 12], compare_GGI_to)
         dfs += [df]
-    #fi.df_export(df, )
+    # fi.df_export(df, )
 
-    brObj.plotterObj.box_plot_month_comparing(dfs)
+    # brObj.plotterObj.box_plot_month_comparing(dfs)
+
 
 # #
-
-
-fig, axes = plt.subplots(1, len(dfs))
-for i, df in enumerate(dfs):
-    # standard
-    sns.boxplot(x="Month", y="ShadowDepth_cum",
-                data=df, palette="autumn", ax=axes[i])
-    axes[i].set_title(df.name)
-    axes[i].set_ylim(20, 90)
-
-    fig.tight_layout()
-    fig.set_facecolor("white")
+# shifeted to comparing_plots/...
+# box_plot('shadow_depths_ghi_ref_comparison.jpg', dfs)

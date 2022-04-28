@@ -86,11 +86,6 @@ class GeometriesHandler:
         #     simSettings.moduleDict['y'] *= 2
         c = self.settings.apv.cellLevelModuleParams
 
-        if mod_form == 'roof_for_EW' or mod_form == 'cell_level_roof_for_EW':
-            self.scn['azimuth'] = 90  # TODO check again
-            # since change leading to sky rotation
-            self.mod['numpanels'] = 2
-
         def get_cellSize(mod_size, num_cell, cell_gap):
             # formula derivation:
             # x = numcellsx * xcell + (numcellsx-1) * xcellgap

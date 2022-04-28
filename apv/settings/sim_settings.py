@@ -69,7 +69,7 @@ class Simulation:
         # !!! NOTE 'DLI' is only for daily cumulative data, no single timesteps
 
         self.for_shadowDepths_compare_GGI_to: Literal[  # GGI =Global ground ir.
-            'clearsky_GHI', 'GHI_as_TMY_aggfunc'] = 'as_TMY_aggfunc'
+            'clearsky_GHI', 'GHI_as_TMY_aggfunc'] = 'GHI_as_TMY_aggfunc'
 
         self.TMY_irradiance_aggfunc: Literal['min', 'mean', 'max'] = 'mean'
         # also used as aggregation function for satelite watherdata pivoting to TMY
