@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     # ### APV_SystSettings:  ####
     APV_SystSettings = apv.settings.apv_systems.APV_Morchenich_Checkerboard()
-    APV_SystSettings.module_form = 'cell_level'
+    APV_SystSettings.module_form = 'cell_gaps'
     # APV_SystSettings = apv.settings.apv_systems.APV_Morchenich_EastWest()
     # APV_SystSettings.module_form = 'none'
     APV_SystSettings.add_groundScanArea_as_object_to_scene = True
@@ -87,7 +87,7 @@ if __name__ == '__main__':
 
         for hour in hours:
             if APV_SystSettings.module_form in [
-                    'std', 'cell_level', 'cell_level_checker_board']:
+                    'std', 'cell_gaps', 'checker_board']:
                 APV_SystSettings = adjust_APVclone_count(
                     APV_SystSettings, hour
                 )

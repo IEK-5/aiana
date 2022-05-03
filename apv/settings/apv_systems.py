@@ -36,11 +36,11 @@ import pandas as pd
 
     module_form:
         std: standard (one flat solid tile per module) [from BR]
-        cell_level: (cells are created as tiles seperated by the gaps)[from BR]
+        cell_gaps: (cells are created as tiles seperated by the gaps)[from BR]
         [new]:
-        cell_level_checker_board: cells are left out in a checker board pattern
+        checker_board: cells are left out in a checker board pattern
         roof_for_EW: two std modules are facing to east-west in a roof top shape
-        cell_level_roof_for_EW: combination of cell_level and roof_for_EW
+        cell_gaps_roof_for_EW: combination of cell_gaps and roof_for_EW
         none: no modules (so e.g. only the mounting structure)
 
     mounting_structure_type [new]:
@@ -86,14 +86,14 @@ class Default:
         # ### new input
         self.module_form: Literal[
             'std',
-            'cell_level',
-            'cell_level_checker_board',
+            'cell_gaps',
+            'checker_board',
             'roof_for_EW',  # glass is still as std, not as EW roof at the moment
             # and at the moment second modul of roof is created in the
             # text input for br.radObj.make_module(),
             # and the tilt is happening later in br.radObj.make_scene()
             # the second module is facing upwards-down, might be a problem later
-            'cell_level_roof_for_EW',  # not in use atm
+            'cell_gaps_roof_for_EW',  # not in use atm
             'none'
         ] = 'std'
 
@@ -206,7 +206,7 @@ class APV_Morchenich_Checkerboard(Default):
         # periodic boundary conditions in this setup (geometry etc)
         self.ground_scan_shift_y = self.sceneDict['pitch']
 
-    module_form: Default.module_form = 'cell_level_checker_board'
+    module_form: Default.module_form = 'checker_board'
     # set gap in std module form = 1m
 
     #sceneDict = sceneDict.copy()
@@ -284,7 +284,7 @@ class APV_Syst_InclinedTables_Juelich(Default):
 class SimpleSingleCheckerBoard(Default):
     # as for Perna2019
 
-    module_form: Default.module_form = 'cell_level_checker_board'
+    module_form: Default.module_form = 'checker_board'
 
     sceneDict = {'tilt': 36.6,
                  'pitch': 7.0,  # "row width"

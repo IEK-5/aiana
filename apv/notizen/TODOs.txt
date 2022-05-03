@@ -1,5 +1,7 @@
 always:
 - clean up and add documentation
+
+- change sys.exit to raise
 -----------------
 
 short term:

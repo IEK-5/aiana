@@ -69,10 +69,10 @@ class Tester:
             self._view_oct_then_resetSettings()
 
     def test_module_forms(self, glass=False):
-        for module_form in ['cell_level',
-                            'cell_level_checker_board',
+        for module_form in ['cell_gaps',
+                            'checker_board',
                             'roof_for_EW',
-                            # 'cell_level_roof_for_EW'
+                            # 'cell_gaps_roof_for_EW'
                             ]:
             self.settings.apv.glass_modules = glass
             self.settings.apv.module_form = module_form

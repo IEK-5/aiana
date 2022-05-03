@@ -42,7 +42,7 @@ if __name__ == '__main__':
     APV_SystSettings.ground_scan_shift_x = 0  # -32
     APV_SystSettings.ground_scan_shift_y = 0  # -32
 
-    # APV_SystSettings.module_form = 'cell_level_checker_board'
+    # APV_SystSettings.module_form = 'checker_board'
     SimSettings.sim_name = (f'APV_Morschenich_{APV_SystSettings.module_form}'
                             f'res_{SimSettings.spatial_resolution}')
     weather_file = apv.settings.user_paths.bifacial_radiance_files_folder / \

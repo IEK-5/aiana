@@ -232,7 +232,7 @@ class OctFileHandler:
 
         in first step, custom_single_module_text_dict is created
         # this is a bit nasty because we use self.radObj.makeModule()
-        # to create std or cell_level module, whereby in this case
+        # to create std or cell_gaps module, whereby in this case
         # the (custom) "text" argument has to be None. For the other module
         # forms, which are not present in self.radObj.makeModule(),
         # we use the own ghObj methods
@@ -247,15 +247,15 @@ class OctFileHandler:
 
         custom_single_module_text_dict = {
             'std': None,  # rad text is created by self.radObj.makeModule()
-            'cell_level': None,  # ""
+            'cell_gaps': None,  # ""
             'none': "",  # empty
-            'cell_level_checker_board': self.ghObj.make_checked_module_text,
+            'checker_board': self.ghObj.make_checked_module_text,
             'roof_for_EW': self.ghObj.make_roof_module_text_for_EW,
-            'cell_level_roof_for_EW': self.ghObj.make_cell_level_EW_module_text,
+            'cell_gaps_roof_for_EW': self.ghObj.make_cell_gaps_EW_module_text,
         }  # (only black part, no glass / omega etc.)
 
         module_form = self.settings.apv.module_form
-        if module_form in ['std', 'cell_level', 'none']:
+        if module_form in ['std', 'cell_gaps', 'none']:
             # pass dict value without calling
             single_module_text = custom_single_module_text_dict[module_form]
         else:
@@ -271,7 +271,7 @@ class OctFileHandler:
                 # there are now also new frame and omega input options
             )
 
-        if module_form == 'cell_level':
+        if module_form == 'cell_gaps':
             self.moduleObj.addCellModule(
                 **self.settings.apv.cellLevelModuleParams)
 
@@ -338,7 +338,7 @@ class OctFileHandler:
 
             self.radianceObj.radfiles.append(rad_file_path)
 
-            print("Created custom object", rad_file_path)
+            print("Created custom ", rad_file_path)
 
 
 # #

@@ -89,6 +89,8 @@ def df_from_file_or_folder(
                 print(
                     "check path or filename\n" + str(
                         os.listdir(parent_folder_path)))
+            else:
+                raise FileNotFoundError(parent_folder_path)
     return df
 
 

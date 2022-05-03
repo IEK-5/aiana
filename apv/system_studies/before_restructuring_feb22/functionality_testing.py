@@ -14,9 +14,9 @@ if __name__ == '__main__':
 
     # #
     APV_SystSettings = apv_systems.SimpleSingleCheckerBoard()
-    for module_form in ['std', 'cell_level', 'cell_level_checker_board',
+    for module_form in ['std', 'cell_gaps', 'checker_board',
                         'roof_for_EW',
-                        'cell_level_roof_for_EW',
+                        'cell_gaps_roof_for_EW',
                         'none']:
         APV_SystSettings.module_form = module_form
 

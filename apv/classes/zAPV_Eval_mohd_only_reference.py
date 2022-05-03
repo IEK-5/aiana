@@ -88,7 +88,7 @@ class Evaluator:
         # View energy generated on specific date-time
         if SimSettings.sky_gen_mode == 'gendaylit':
             if self.settings.apv.module_form == 'roof_for_EW' or \
-               self.settings.apv.module_form == 'cell_level_roof_for_EW':
+               self.settings.apv.module_form == 'cell_gaps_roof_for_EW':
                 energy = self.estimate_energy(
                     SimSettings=SimSettings,
                     APV_SystSettings=self.settings.apv,
@@ -135,7 +135,7 @@ class Evaluator:
             self.df_energy_results = pd.DataFrame(columns=columns)
             for t in self.simDT.times:
                 timeindex = self.simDT.get_hour_of_tmy(t)
-                if self.settings.apv.module_form == 'cell_level_roof_for_EW'\
+                if self.settings.apv.module_form == 'cell_gaps_roof_for_EW'\
                         or self.settings.apv.module_form == 'roof_for_EW':
                     energy = self.estimate_energy(
                         SimSettings=SimSettings,
@@ -271,7 +271,7 @@ class Evaluator:
         # TODO define inverter
         # ac = pvlib.inverter.sandia(dc['v_mp'], dc['p_mp'], inverter)
 
-        if APV_SystSettings.module_form == 'cell_level_checker_board':
+        if APV_SystSettings.module_form == 'checker_board':
             total_energy = total_energy/2
 
         return total_energy

@@ -67,24 +67,24 @@ def set_settings(
 
     elif subset == 'checker_board':
         settings.apv.glass_modules = True
-        settings.apv.module_form = 'cell_level_checker_board'
+        settings.apv.module_form = 'checker_board'
         settings.apv.cellLevelModuleParams.update({
             'xcellgap': 0, 'ycellgap': 0
         })
 
     elif subset == 'cell_gaps':
         settings.apv.glass_modules = True
-        settings.apv.module_form = 'cell_level'
+        settings.apv.module_form = 'cell_gaps'
         settings.apv.cellLevelModuleParams.update({
-            'xcellgap': 0.02, 'ycellgap': 0.02
+            'xcellgap': 0.03, 'ycellgap': 0.03  # NOTE mohd hatte 0.02
         })
-    elif subset is not 'std':
+    elif subset != 'std':
         sys.exit('This subset does not exist.')
     return settings
 
 
 if __name__ == '__main__':
-    subset = 'std_glass'
+    subset = 'roof_for_EW'
     #subset = 'std'
     settings = Settings()
     settings = set_settings(subset, settings)
@@ -99,88 +99,103 @@ if __name__ == '__main__':
         )
     # #
     brObj.create_and_view_octfile(add_NorthArrow=True)
-# #
-# simulate
+    # #
+
 if __name__ == '__main__':
     # for subset in ['std_glass', 'roof_for_EW']
-
+    subsets = ['std', 'std_sw', 'checker_board', 'cell_gaps', 'roof_for_EW']
+    subsets = ['roof_for_EW']
     months = [6, 8, 10, 12]
-    months = [12]
+    months = [6]
     # months = range(1, 13)
     # hours = [19]
     hours = range(2, 24, 1)
-    # hours = range(16, 21, 1)
+    hours = range(16, 21, 1)
     # minutes = [10]
     minutes = range(0, 60, settings.sim.time_step_in_minutes)
     # minutes = range(35, 60, settings.sim.time_step_in_minutes)
     # minute 60 is and has to be exclusive
 
     enough_light = False  # (init value for ghi filter)
+    for subset in subsets:
+        settings = set_settings(subset, settings)
+        for month in months:
+            day = 15  # (int(df_all['day_nearest_to_mean'].loc[month]))
+            settings.sim.results_subfolder = create_results_subfolderPath(
+                month)
 
-    for month in months:
-        day = 15  # (int(df_all['day_nearest_to_mean'].loc[month]))
-        settings.sim.results_subfolder = create_results_subfolderPath(
-            month)
+            weatherData = WeatherData(settings)
 
-        weatherData = WeatherData(settings)
+            for hour in hours:
+                for minute in minutes:
+                    # set time with leading zeros for a correct file order
+                    settings.sim.sim_date_time = \
+                        f'{month:02}-{day}_{hour:02}:{minute:02}'
 
-        for hour in hours:
-            for minute in minutes:
-                # set time with leading zeros for a correct file order
-                settings.sim.sim_date_time = \
-                    f'{month:02}-{day}_{hour:02}:{minute:02}'
-
-                # ghi filter and setting start and end dt for plot title
-                weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(
-                    SimDT(settings.sim))
-                if (weatherData.sunalt < 0):
-                    print(f'Sun alitude < 0 ({weatherData.sunalt}).')
-                elif weatherData.ghi < min(
-                        weatherData.cumulated_ghi * 0.02, 50):
-                    print(f'GHI too low ({weatherData.ghi} Wh/m²).')
-                    if enough_light is True:
-                        settings.sim.enddt = settings.sim.sim_date_time
-                        enough_light = False
-                else:
-                    if enough_light is False:
-                        settings.sim.startdt = settings.sim.sim_date_time
-                        enough_light = True
-
-                    # to update time settings in all sub classes of BR_Wrapper:
-                    brObj = BR_Wrapper(settings)
-
-                    ########
-                    if not brObj.settings.paths.csv_file_path.exists():
-                        brObj.octFileObj.create_octfile()
-                        brObj.simulate_and_evaluate()
+                    # ghi filter and setting start and end dt for plot title
+                    weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(
+                        SimDT(settings.sim))
+                    if (weatherData.sunalt < 0):
+                        print(f'Sun alitude < 0 ({weatherData.sunalt}).')
+                    elif weatherData.ghi < min(
+                            weatherData.cumulated_ghi * 0.02, 50):
+                        print(f'GHI too low ({weatherData.ghi} Wh/m²).')
+                        if enough_light is True:
+                            settings.sim.enddt = settings.sim.sim_date_time
+                            enough_light = False
                     else:
-                        print('result exists, skipping')
-                    ########
+                        if enough_light is False:
+                            settings.sim.startdt = settings.sim.sim_date_time
+                            enough_light = True
 
-                    # df_limits = fi.get_min_max_of_cols_in_several_csv_files(
-                    #    [r"C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich_S_inclinedTables\std_res-0.1m_step-5min_TMY_aggfunc-mean\month-6_north-position_correctedSensorOrientation\data\ground_results_06-15_07h40.csv",
-                    #     r"C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich_S_inclinedTables\std_res-0.1m_step-5min_TMY_aggfunc-mean\month-6_north-position\data\ground_results_06-15_07h40.csv"]).round(1)
-                    # """
-                    for cm_unit in ['radiation']:
-                        brObj.plotterObj.ground_heatmap(
-                            plot_dpi=100,
-                            cm_unit=cm_unit,
-                            # df_col_limits=df_limits
-                        )
-                    # """
+                        # to update time settings in all sub classes of BR_Wrapper:
+                        brObj = BR_Wrapper(settings)
+
+                        ########
+                        if not brObj.settings.paths.csv_file_path.exists():
+                            brObj.octFileObj.create_octfile()
+                            brObj.simulate_and_evaluate()
+                        else:
+                            print('result exists, skipping')
+                            # check if evaluated to avoid 'Wm2' key error
+                            df_check: pd.DataFrame = fi.df_from_file_or_folder(
+                                brObj.settings.paths.csv_file_path
+                            )
+                            if 'Wm2' not in df_check.columns:
+                                brObj.evaluatorObj.rename_and_add_result_columns()
+                        ########
+
+                        # df_limits = fi.get_min_max_of_cols_in_several_csv_files(
+                        #    [r"C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich_S_inclinedTables\std_res-0.1m_step-5min_TMY_aggfunc-mean\month-6_north-position_correctedSensorOrientation\data\ground_results_06-15_07h40.csv",
+                        #     r"C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich_S_inclinedTables\std_res-0.1m_step-5min_TMY_aggfunc-mean\month-6_north-position\data\ground_results_06-15_07h40.csv"]).round(1)
+                        # """
+                        for cm_unit in ['radiation']:
+                            brObj.plotterObj.ground_heatmap(
+                                plot_dpi=100,
+                                cm_unit=cm_unit,
+                                # df_col_limits=df_limits
+                            )
+                        # """
 
 # #
 # ======================================================
-# cumulate
+# cumulate and plot cum.
 # ======================================================
 
 if __name__ == '__main__':
     dfs = []
-    for compare_GGI_to in ['GHI_as_TMY_aggfunc', 'clearsky_GHI']:
+    months = [4, 6, 8, 10, 12]
+    subsets = [#'std',
+               'std_sw',
+               'checker_board', 'cell_gaps', 'roof_for_EW'
+               ]
+    # for compare_GGI_to in ['GHI_as_TMY_aggfunc', 'clearsky_GHI']:
+    for subset in subsets:
+        settings = set_settings(subset, settings)  # for correct arrow rotation
+        compare_GGI_to = 'GHI_as_TMY_aggfunc'
         settings.sim.for_shadowDepths_compare_GGI_to = compare_GGI_to
 
-        for month in [6, 8, 10, 12]:
-            # for month in [12]:
+        for month in months:
             settings.sim.sim_date_time = f'{month:02}-15_12:00'
             # TODO pitfall allert: settings.sim.results_subfolder has to be set again
             settings.sim.results_subfolder = create_results_subfolderPath(month)
@@ -192,8 +207,8 @@ if __name__ == '__main__':
             fi.make_dirs_if_not_there(results_folder_cum)
 
             def get_title_and_cum_csv_path(month, compare_GGI_to):
-                title = 'cumulated day (15$^{th}$)' + f' in month {month:02} - {compare_GGI_to}'
-                cum_file_name = title.replace('(15$^{th}$)', '15th')
+                title = subset+'\ncumulated day (15$^{th}$)' + f' in month {month:02}'# - {compare_GGI_to}'
+                cum_file_name = title.replace('(15$^{th}$)', '15th').replace('\n','_')
                 cum_csv_path = results_folder_cum / f'{cum_file_name}.csv'
                 return title, cum_csv_path
 
@@ -212,7 +227,7 @@ if __name__ == '__main__':
             df_merged = get_df_merged(cum_csv_path)
             # brObj.plotterObj.ground_heatmap(cumulative=True) #TODO alow this way
 
-            #"""
+            # """
             brObj.plotterObj.ground_heatmap(
                 df_merged,
                 destination_file_path=Path(str(cum_csv_path).replace('csv', 'jpg')),
@@ -224,7 +239,7 @@ if __name__ == '__main__':
                 col_bar_min=0,
                 # col_bar_max=32,
             )
-            #"""
+            # """
 
         def concat_months_for_box_plot(months: list, compare_GGI_to):
             """input: months list: as ints
@@ -241,7 +256,7 @@ if __name__ == '__main__':
                 df_appended.name = compare_GGI_to
             fi.df_export(df_appended, results_folder_cum/f'appended_{compare_GGI_to}.csv')
             return df_appended
-        df = concat_months_for_box_plot([6, 8, 10, 12], compare_GGI_to)
+        df = concat_months_for_box_plot(months, compare_GGI_to)
         dfs += [df]
     # fi.df_export(df, )
 

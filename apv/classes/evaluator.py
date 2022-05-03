@@ -24,7 +24,7 @@ class Evaluator:
         self.debug_mode = debug_mode
         self.simDT = SimDT(self.settings.sim)
 
-    def add_time_stamps_PAR_shadowDepth_to_csv_file(self):
+    def rename_and_add_result_columns(self):
 
         df: pd.DataFrame = fi.df_from_file_or_folder(
             self.settings.paths.csv_file_path,
@@ -34,8 +34,8 @@ class Evaluator:
         df['time_local'] = self.simDT.sim_dt_local
         df['time_utc'] = self.simDT.sim_dt_utc_pd
 
-        if 'ground' in str(self.settings.paths.csv_file_path):
-            df.rename(columns={'Wm2Front': 'Wm2'}, inplace=True)
+        # if 'ground' in str(self.settings.paths.csv_file_path): # TODO needed?
+        df.rename(columns={'Wm2Front': 'Wm2'}, inplace=True)
 
         df = self._add_PAR(df=df)
         df = self._add_shadowdepth(df=df, cumulative=False)

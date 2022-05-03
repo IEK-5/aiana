@@ -43,6 +43,8 @@ class Simulator:
         """
         tictoc = pytictoc.TicToc()
         tictoc.tic()
+        mod_form = self.settings.apv.module_form
+        print('\n##### Starting simulation\nmodule_form:', mod_form, '#####')
 
         # eventually create results (parent) folder existence
         fi.make_dirs_if_not_there(self.settings.paths.csv_parent_folder)
@@ -85,7 +87,7 @@ class Simulator:
 
         for _ in range(3):
             try:
-                with PrintHider(): # otherwise accelerad prints a lot...
+                with PrintHider():  # otherwise accelerad prints a lot...
                     groundDict = self._irrPlotMod_modified(
                         self.settings.names.oct_fn, linepts)
                 self.analObj._saveResults(

@@ -76,15 +76,12 @@ class GeometriesHandler:
     def _adjust_settings(self):
         """adjust apv syst settings, e.g. add cell sizes"""
 
-        mod_form = self.settings.apv.module_form
-        print('\n##### ' + mod_form.replace('_', ' ')
-              + ' simulation mode #####\n')
-
-        # if simSettings.module_form == 'cell_level_checker_board':
+        # if simSettings.module_form == 'checker_board':
         #     # for checkerboard on cell level calculate only one module
         #     # and enlarge module in y direction to have the same PV output
         #     simSettings.moduleDict['y'] *= 2
         c = self.settings.apv.cellLevelModuleParams
+        mod_form = self.settings.apv.module_form
 
         def get_cellSize(mod_size, num_cell, cell_gap):
             # formula derivation:
@@ -96,9 +93,9 @@ class GeometriesHandler:
         c['xcell'] = get_cellSize(self.mod['x'], c['numcellsx'], c['xcellgap'])
         c['ycell'] = get_cellSize(self.mod['y'], c['numcellsy'], c['ycellgap'])
 
-        if mod_form in ['cell_level', 'cell_level_roof_for_EW',
-                        'cell_level_checker_board']:
-            if mod_form == 'cell_level_checker_board':
+        if mod_form in ['cell_gaps', 'cell_gaps_roof_for_EW',
+                        'checker_board']:
+            if mod_form == 'checker_board':
                 factor = 2
             else:
                 factor = 1
@@ -609,7 +606,7 @@ class GeometriesHandler:
 
         return text
 
-    def make_cell_level_EW_module_text(self) -> str:
+    def make_cell_gaps_EW_module_text(self) -> str:
         """creates needed text needed in makemodule() to create cell-level E-W.
         Azimuth angle must be 90! and number of panels must be 2!
 

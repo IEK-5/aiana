@@ -64,4 +64,4 @@ class BR_Wrapper():
             # result in darker lines in the edge of the irradiation heatmaps.
             self.octFileObj.create_octfile()
         self.simulatorObj.run_raytracing_simulation()
-        self.evaluatorObj.add_time_stamps_PAR_shadowDepth_to_csv_file()
+        self.evaluatorObj.rename_and_add_result_columns()
