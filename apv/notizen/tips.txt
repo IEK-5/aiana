@@ -15,3 +15,14 @@ poetry work flow:
 
     poetry run
     poetry build (erstellt wheel datei um package für pip publizieren zu können)
+
+
+
+
+-------
+
+bei df filtern und dem error:
+ValueError: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all()
+
+- schon mit "&" bzw. "|" statt "and" bzw. "or" probiert?
+- wenn das nicht hilft: df.loc[:,col] statt df[col]

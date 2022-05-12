@@ -130,7 +130,7 @@ if __name__ == '__main__':
                     brObj = BR_Wrapper(settings)
 
                     ########
-                    brObj.octFileObj.create_octfile()
+                    brObj.octFileObj.create_octfile_without_sky()
                     brObj.simulate_and_evaluate()
                     ########
 

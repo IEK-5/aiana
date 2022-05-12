@@ -44,7 +44,7 @@ class Simulator:
         tictoc = pytictoc.TicToc()
         tictoc.tic()
         mod_form = self.settings.apv.module_form
-        print('\n##### Starting simulation\nmodule_form:', mod_form, '#####')
+        print('\n##### Starting simulation - module_form:', mod_form, '#####')
 
         # eventually create results (parent) folder existence
         fi.make_dirs_if_not_there(self.settings.paths.csv_parent_folder)
@@ -57,8 +57,8 @@ class Simulator:
             print(f'\nSimulation result {csv_file_path} already there.\n')
             return
         # clear temporary line scan results from bifacial_results_folder
-        fi.clear_folder_content(self.temp_results_folder)
-
+        fi.clear_folder_content(
+            self.temp_results_folder, print_msg=False)
         if self.settings.sim.use_accelerad_GPU_processing:
             self._run_area_scan(self.ghObj.ground_areaScan)
 
@@ -193,9 +193,12 @@ class Simulator:
         else:
             prefix = ''
 
-        cmd = f"{prefix}rtrace -i -ab 2 -aa .1 -ar 256 -ad 1024 -as 256 -h -oovs {octfile}"
-        # settings guide:
-        # http://designbuilder.co.uk/helpv3.0/Content/Daylighting%20Calculation%20Options.htm#Ambient4)
+        s = self.settings.sim.rtraceAccuracyDict[
+            self.settings.sim.rtraceAccuracy]
+        for key in s:
+            s[key] = str(s[key])
+        cmd = f"{prefix}rtrace -i -ab {s['ab']} -aa {s['aa']} -ar {s['ar']}"\
+            + f" -ad {s['ad']} -as {s['as']} -h -oovs {octfile}"
 
         temp_out, err = _popen(cmd, linepts.encode())
         if err is not None:

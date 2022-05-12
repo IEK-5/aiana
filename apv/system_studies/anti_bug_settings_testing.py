@@ -69,11 +69,13 @@ class Tester:
             self._view_oct_then_resetSettings()
 
     def test_module_forms(self, glass=False):
-        for module_form in ['cell_gaps',
+        for module_form in ['std', 'cell_gaps',
                             'checker_board',
                             'roof_for_EW',
-                            # 'cell_gaps_roof_for_EW'
+                            'cell_gaps_roof_for_EW'
                             ]:
+
+            #self.settings.apv.framed_modules = True
             self.settings.apv.glass_modules = glass
             self.settings.apv.module_form = module_form
             self._view_oct_then_resetSettings()
@@ -81,17 +83,31 @@ class Tester:
 
 if __name__ == '__main__':
     testerObj = Tester()
-    ##
-    for glass in [  # False,
-            True]:
+    # #
+    BR_Wrapper(testerObj.settings).create_and_view_octfile()
+
+    # #
+    for glass in [
+        False,
+        True
+    ]:
         testerObj.test_module_forms(glass)
 
     # #
     # show Morschenich APV
-    testerObj.settings.sim.spatial_resolution = 0.1
-    testerObj.settings.apv = APV_Syst_InclinedTables_S_Morschenich()
-    BR_Wrapper(testerObj.settings).create_and_view_octfile()
-    testerObj.settings.apv = APV_ForTesting()  # reset
+
+    import pytictoc
+    tictoc = pytictoc.TicToc()
+
+    for bool_update in [True, False]:
+        tictoc.tic()
+        testerObj.settings.sim.spatial_resolution = 0.5
+        testerObj.settings.apv = APV_Syst_InclinedTables_S_Morschenich()
+        BR_Wrapper(testerObj.settings).create_and_view_octfile(
+            updateSkyOnly=bool_update
+        )
+        testerObj.settings.apv = APV_ForTesting()  # reset
+        tictoc.toc()
     # #
     testerObj.test_moduleDict({'x': 0.5,
                                'y': 1,

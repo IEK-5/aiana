@@ -2,9 +2,12 @@ always:
 - clean up and add documentation
 
 - change sys.exit to raise
+
 -----------------
 
 short term:
+- komprimierung pandas hdf5
+
 für conference paper/poster:
 - box plot reproduzieren mit zusätzlich südwest std.
 

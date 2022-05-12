@@ -140,9 +140,11 @@ class Default:
 
         # to optionally add a glass plate on the black modules:
         self.glass_modules: bool = False
-        # NOTE Adding glass (settings.apv.glass_modules = TRUE) creates it as
+        self.framed_modules: bool = False
+        # NOTE Adding glass and frames creates it as in BR
         # for module_form = 'std', which is nice for cell level
-        # and for checker board but not suitable for roof.
+        # and for checker board but not suitable for roof yet.
+        # TODO make roof out of BR module with nPanels = 1?
 
         self.moduleSpecs: pd.Series = pd.read_csv(
             Path(__file__).parent.parent.resolve()  # apv package location
@@ -311,7 +313,7 @@ class APV_ForTesting(Default):
         super().__init__()
 
         self.sceneDict = {'tilt': 30,
-                          'pitch': 5,  # "row width"
+                          'pitch': 10,  # "row width"
                           'hub_height': 5,
                           'azimuth': 180,
                           'nMods': 4,

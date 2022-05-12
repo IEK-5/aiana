@@ -5,7 +5,7 @@ import pandas as pd
 
 class ViewSettings:
 
-    accelerad_img_width: int = 1400  # [pixel]
+    accelerad_img_width: int = 1200  # [pixel]
     # NOTE img_height is calculated from the view angles to avoid distortion
 
     scene_camera_dicts: dict = {  # TODO besser auch norden hinten machen
@@ -27,6 +27,24 @@ class ViewSettings:
                      'horizontal_view_angle': 64,  # [degree]
                      'vertical_view_angle': 36,  # [degree]
                      },
+        'close_up': {'cam_pos_x': 11.7356,   # depth
+                     'cam_pos_y': 6.55262,   # left / right
+                     'cam_pos_z': 11.0956,     # height
+                     'view_direction_x': -0.6964,
+                     'view_direction_y': 0.4769,
+                     'view_direction_z': -0.5363,
+                     'horizontal_view_angle': 76.5895,  # [degree]
+                     'vertical_view_angle': 42.5897,  # [degree]
+                     },
+        'as_heatmap': {'cam_pos_x': 11.7356,   # depth
+                       'cam_pos_y': 6.55262,   # left / right
+                       'cam_pos_z': 11.0956,     # height
+                       'view_direction_x': -0.6964,
+                       'view_direction_y': 0.4769,
+                       'view_direction_z': -0.5363,
+                       'horizontal_view_angle': 46,  # [degree]
+                       'vertical_view_angle': 40,  # [degree]
+                       },
     }
 
     """

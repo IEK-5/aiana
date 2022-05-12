@@ -1,9 +1,11 @@
 # #
 import sys
+import numpy as np
 import seaborn as sns
 from typing import Literal
 from matplotlib import pyplot as plt
 import pandas as pd
+from apv import settings
 from apv.classes.weather_data import WeatherData
 import pytictoc
 from pathlib import Path
@@ -18,13 +20,13 @@ from apv.classes.util_classes.geometries_handler import GeometriesHandler
 
 
 root: Path = Path(
-    r"C:\Users\Leonard Raumann\Documents\agri-PV\results\framed_APV_noBorderEffects"
+    r"C:\Users\Leonard Raumann\Documents\agri-PV\results\framed_APV_noBorderEffects\res-0.05m_step-3min"
 )
 csv_files = []
 subsets = ['std', 'std_sw', 'checker_board', 'cell_gaps', 'roof_for_EW']
 for subset in subsets:
     csv_files += [root /
-                  (f'{subset}' + r"_res-0.25m_step-6min\cumulative\appended_GHI_as_TMY_aggfunc.csv")]
+                  (f'{subset}' + r"\cumulative\appended_GHI_as_TMY_aggfunc.csv")]
 
 
 def load_dfs(csv_files: list):
@@ -34,13 +36,21 @@ def load_dfs(csv_files: list):
         print(file)
         df['custom_index'] = df['xy']+'_M'+df['Month'].astype(str)
         df.set_index('custom_index', inplace=True)
-        df=df[df['Month']<12]
+        df = df[df['Month'] < 12]
+
+        # filter posts
+        s = 0.1
+
+        df = df[(df.loc[:,'x'] > df['x'].min()+s) | (df.loc[:,'y'] > df['y'].min()+s)]  # bot left
+        df = df[(df.loc[:,'x'] < df['x'].max()-s) | (df.loc[:,'y'] > df['y'].min()+s)]  # bot right
+        df = df[(df.loc[:,'x'] > df['x'].min()+s) | (df.loc[:,'y'] < df['y'].max()-s)]  # top left
+        df = df[(df.loc[:,'x'] < df['x'].max()-s) | (df.loc[:,'y'] < df['y'].max()-s)]  # top right
         dfs += [df]
+
     return dfs
 
-
 dfs = load_dfs(csv_files)
-dfs
+
 
 # #
 sns.set_theme(style="darkgrid", )
@@ -71,10 +81,10 @@ def box_plot(fn, dfs, titles, y="ShadowDepth_cum"):
             axes.set_ylim(20, 90)
         axes.grid(True)
 
-
     fig.tight_layout()
     fig.set_facecolor("white")
     fi.save_fig(fig, Path(root / f"{y}_{fn}"))
+
 
 titles = ['standard S', 'standard SW', 'checker board S', 'cell gaps S', 'roof (std) EW']
 filename_base = 'subset_boxplot.jpg'

@@ -1,5 +1,6 @@
 from apv.classes.util_classes.settings_grouper import Settings
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
+from apv.classes.util_classes.sim_datetime import SimDT
 from apv.classes.weather_data import WeatherData
 from apv.classes.oct_file_handler import OctFileHandler
 from apv.classes.simulator import Simulator
@@ -29,7 +30,7 @@ class BR_Wrapper():
     def __init__(self, settings: Settings):
         self.settings = settings
         self.settings.set_names_and_paths()
-        print('csv_file exists: ', self.settings.paths.csv_file_path.exists())
+        # print('csv_file exists: ', self.settings.paths.csv_file_path.exists())
 
         self.weatherData = WeatherData(self.settings)
         self.ghObj = GeometriesHandler(self.settings,  # self.debug_mode=True
@@ -38,23 +39,39 @@ class BR_Wrapper():
             self.settings, self.weatherData, self.ghObj,
             # self.debug_mode=True
         )
+        self._init_simulator_evaluator_plotter()
+
+    def _init_simulator_evaluator_plotter(self):
         self.simulatorObj = Simulator(self.settings, self.ghObj)
         self.evaluatorObj = Evaluator(self.settings, self.weatherData)
         self.plotterObj = Plotter(self.settings, self.ghObj)
 
-    def create_and_view_octfile(
-            self, topDownParallel_view=False,
-            add_groundScanArea=True,
-            add_NorthArrow=False):
+    def create_octfile(self, add_groundScanArea=False,
+                       add_NorthArrow=False, update_sky_only=False):
+        if not update_sky_only:
+            self.octFileObj.create_octfile_without_sky(
+                add_groundScanArea, add_NorthArrow)
+        self.octFileObj.add_sky_to_octfile()
 
-        self.octFileObj.create_octfile(add_groundScanArea, add_NorthArrow)
+    def create_and_view_octfile(self, add_groundScanArea=True,
+                                add_NorthArrow=False, view_name='total'):
+        self.create_octfile(add_groundScanArea, add_NorthArrow)
+        view_type = 'parallel' if view_name == 'top_down' else 'perspective'
+        self.octFileObj.view_octfile(view_name=view_name, view_type=view_type)
 
-        if topDownParallel_view:
-            self.octFileObj.view_octfile(
-                view_name='top_down', view_type='parallel'
-            )
-        else:
-            self.octFileObj.view_octfile()
+    def update_timeStep(self, settings: Settings):
+        """refresh names, paths, sim settings, sky dome, and other objects
+        allowing that APV geometry does not have to be build again.
+        """
+        self.settings = settings
+        self.settings.set_names_and_paths()
+        self.weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(
+            SimDT(self.settings.sim))
+        self.octFileObj = OctFileHandler(
+            self.settings, self.weatherData, self.ghObj
+        )
+        self.octFileObj.add_sky_to_octfile()
+        self._init_simulator_evaluator_plotter()
 
     def simulate_and_evaluate(self):
         if self.octFileObj.groundScanArea_added:
@@ -62,6 +79,7 @@ class BR_Wrapper():
                   'as this object would falsify the simulation results.')
             # NOTE falsify, as the edge of the groundScanArea object will
             # result in darker lines in the edge of the irradiation heatmaps.
-            self.octFileObj.create_octfile()
+            self.create_octfile()
+
         self.simulatorObj.run_raytracing_simulation()
         self.evaluatorObj.rename_and_add_result_columns()

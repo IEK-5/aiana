@@ -73,7 +73,7 @@ def plot_heatmap(
         yticklabels=ticklabels_skip_count_number,
         cmap=cm,
         cbar_kws={'label': z_label},
-        vmin=vmin, vmax=vmax
+        vmin=vmin, vmax=vmax,
     )
     # To resemble Radiance coordinates
     ax.invert_yaxis()

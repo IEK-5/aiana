@@ -12,11 +12,12 @@ import os as os
 from pathlib import Path
 
 
-def clear_folder_content(folder_path):
+def clear_folder_content(folder_path, print_msg=True):
     for filename in os.listdir(folder_path):
         file_path = os.path.join(folder_path, filename)
         os.unlink(file_path)
-    print(f'cleared {folder_path}')
+    if print_msg:
+        print(f'cleared {folder_path}')
     return
 
 
@@ -114,7 +115,8 @@ def df_export(
         float_format='%1.3e',
         sep='\t',
         index=True,
-        header=True
+        header=True,
+        h5_compression=False
 ) -> None:
     '''
     saves into .csv file with customized default settings.
@@ -122,6 +124,9 @@ def df_export(
     float_formats = '%1.2e' for scientific, '%1.2f for float with
     2 after comma digits'
     '''
+    if h5_compression:
+        df.to_hdf(mode='w')
+
     df.to_csv(
         csv_file_path, float_format=float_format,
         index=index, sep=sep, header=header)
@@ -143,6 +148,8 @@ def save_fig(
         dpi (int, optional): Resolution (dots per inch). Defaults to 300.
         transparent (bool, optional): Defaults to False.
     """
+    if type(file_path) != Path:
+        file_path = Path(file_path)
     make_dirs_if_not_there(file_path.parent)
     fig.savefig(file_path, bbox_inches='tight',
                 dpi=dpi, transparent=transparent)

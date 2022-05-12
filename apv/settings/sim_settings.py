@@ -30,6 +30,20 @@ class Simulation:
         # if True, single lines of the scan area will be passed to a job pool
         # worked off by the cpu cores in parallel
 
+        # ray tracing settings, from:
+        # http://designbuilder.co.uk/helpv3.0/Content/Daylighting%20Calculation%20Options.htm#Ambient4
+        self.rtraceAccuracyDict = {
+            'std': {'ab': 2, 'aa': .1, 'ar': 256, 'ad': 1024, 'as': 256},  # 4.3 sec
+            'good_no_interp': {'ab': 2, 'aa': 0, 'ar': 256, 'ad': 1024, 'as': 512},  # 4.6 sec
+            'accurate': {'ab': 2, 'aa': .2, 'ar': 512, 'ad': 2048, 'as': 1024},  # 4.8 sec
+            'acc_no_interp': {'ab': 2, 'aa': 0, 'ar': 512, 'ad': 2048, 'as': 1024},  # 8.4 sec
+            'hq':      {'ab': 3, 'aa': .1, 'ar': 1024, 'ad': 4096, 'as': 2048}  # 10 sec
+        }
+        # NOTE hq results in really dark artefacts around posts
+        # std in smaler dots
+        # without interpolation: no artefacts
+        self.rtraceAccuracy = 'good_no_interp'
+
         # Accelerad settings ####################
         # need to be installed first https://nljones.github.io/Accelerad/index.html
         self.use_acceleradRT_view = False  # real time scene navigation and viewing

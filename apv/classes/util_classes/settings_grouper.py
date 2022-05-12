@@ -37,10 +37,14 @@ class Names:
 
 
 class Paths(UserPaths):
-
     def __init__(self, SimSettings: Simulation, FileNames: Names):
+        # file paths of oct file without and with sky
+        self.oct_fp_noSky = self.bifacial_radiance_files / Path(
+            FileNames.oct_fn[:-4]+'_withoutSky.oct')
+        self.oct_fp = self.bifacial_radiance_files / Path(
+            f'{FileNames.oct_fn}')
 
-        # set file paths for saving results
+        # file paths for saving results
         self.results_folder: Path = self.results_parent_folder \
             / SimSettings.results_subfolder
         self.csv_parent_folder: Path = self.results_folder / 'data'

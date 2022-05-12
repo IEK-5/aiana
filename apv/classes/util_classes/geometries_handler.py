@@ -251,11 +251,11 @@ class GeometriesHandler:
             f'!genbox grass field {self.scan_length_x} {self.scan_length_y} 0.00001'
             f' | xform -t {g["xstart"]} {g["ystart"]} 0'
         )
-        # sensors
-        s = 0.02
+        # sensors rad text
+        size = min(0.05, self.settings.sim.spatial_resolution/3)
         text += (
-            f'\n!genbox red sensor {s} {s} {s} '
-            f'| xform -t {g["xstart"]-s/2} {g["ystart"]-s/2} 0 '
+            f'\n!genbox red sensor {size} {size} {size/3} '
+            f'| xform -t {g["xstart"]-size/2} {g["ystart"]-size/2} 0 '
             f'-a {g["Nx"]} -t {g["xinc"]} 0 0 '
             f'-a {g["Ny"]} -t 0 {g["yinc"]} 0'
         )
@@ -312,7 +312,7 @@ class GeometriesHandler:
         # create horizontal beams in x direction
         text += (
             f'\n!genbox {material} post {beamlength_x} {s_beam} {s_beam} \
-            | xform -t {self.post_start_x} {y_start} {h_post - s_beam - 0.2} \
+            | xform -t {self.post_start_x} {y_start} {h_post - s_beam - 0.25} \
             -a {self.scn["nRows"]} -t 0 {self.scn["pitch"]} 0 \
             -a 2 -t 0 0 {-d_beam} '
         )

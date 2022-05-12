@@ -7,9 +7,13 @@ oct file = ...
 # import needed packages
 
 import sys
-import subprocess
+import time
+import logging
+import warnings
+import subprocess as sp
 from typing import Literal
 from pathlib import Path
+
 
 import bifacial_radiance as br
 from apv.classes.util_classes.print_hider import PrintHider
@@ -21,6 +25,9 @@ from apv.classes.util_classes.settings_grouper import Settings
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
 # for testing
 from apv.settings.apv_systems import APV_Syst_InclinedTables_S_Morschenich
+
+
+from frads import util
 
 
 class OctFileHandler:
@@ -44,7 +51,7 @@ class OctFileHandler:
 
     sceneObj: br.SceneObj  # set in get_radtext_of_all_modules
     moduleObj: br.ModuleObj  # "
-    radianceObj: br.RadianceObj  # set in create_oct_file()
+    radianceObj: br.RadianceObj
 
     def __init__(
             self,
@@ -53,7 +60,6 @@ class OctFileHandler:
             ghObj: GeometriesHandler,
             debug_mode=False,
     ):
-
         self.settings = settings
         self.weatherData = weatherData
         # for custom radiance geometry descriptions:
@@ -61,17 +67,20 @@ class OctFileHandler:
         self.debug_mode = debug_mode
         self.groundScanArea_added = False
 
-    def create_octfile(self, add_groundScanArea=False, add_NorthArrow=False):
-        """creates pv modules and mounting structure (optional)"""
-
         # create a bifacial_radiance Radiance object
         self.radianceObj = br.RadianceObj(
             path=str(self.settings.paths.bifacial_radiance_files)
         )
-        # make scene
         self._create_materials()
         self.radianceObj.setGround(self.settings.sim.ground_albedo)
-        self._create_sky()
+        # ground only needed for sky, but needs to be set only once
+        # for all timesteps, so it is done here
+
+    def create_octfile_without_sky(
+            self, add_groundScanArea=False, add_NorthArrow=False):
+        """creates pv modules and mounting structure (optional)
+        so sky with ground can be added later
+        """
 
         # backup azimuth
         self.sceneDict = self.settings.apv.sceneDict.copy()
@@ -116,26 +125,61 @@ class OctFileHandler:
             customObjects, extra_radtext_to_apply_on_a_radObject
         )  # for mounting structure, ground, etc
 
-        self.radianceObj.makeOct(octname=self.settings.names.oct_fn[:-4])
+        # # # # create oct file without sky
+        # NOTE
+        # to avoid the error: "fatal - boundary does not encompass scene",
+        # when adding the larger sky to the scene, a boundary box with
+        # the -b option needs to be defined:
+        size = '400'
+        xyz_min = '-200'
+        cmd = ['oconv', '-b', xyz_min, xyz_min, xyz_min, size] \
+            + self.radianceObj.materialfiles \
+            + self.radianceObj.radfiles
+        with open(self.settings.paths.oct_fp_noSky, 'wb') as w:
+            # wb for writing binary
+            w.write(util.spcheckout(cmd))
+
+        # time.sleep(2)
+
+    def add_sky_to_octfile(self):
+
+        # sky file name and sky creation
+        sky_fn = self.create_sky()
+        # time.sleep(1)
+        sky_fp = self.settings.paths.bifacial_radiance_files / sky_fn
+        # NOTE the '-i' option is needed to add something to an existing oct
+        cmd = ['oconv', '-i', self.settings.paths.oct_fp_noSky, sky_fp]
+
+        oconv_result = util.spcheckout(cmd)
+        counter = 0
+        while oconv_result is None:
+            print(f'trying to build oct file again...#{counter}\n')
+            oconv_result = util.spcheckout(cmd)
+            counter += 1
+            if counter == 5:
+                break
+
+        with open(self.settings.paths.oct_fp, 'wb') as w:
+            w.write(oconv_result)
 
     def view_octfile(
         self,
         view_type: Literal['perspective', 'parallel'] = 'perspective',
-        view_name: Literal['total', 'module_zoom', 'top_down'] = 'total',
+        view_name: Literal['total', 'close_up', 'top_down'] = 'total',
         oct_file_name=None
     ):
         """views an .oct file via radiance/bin/rvu.exe
 
         Args:
-            view_type (str): 'perspective' or 'parallel'
+            view_type(str): 'perspective' or 'parallel'
 
-            view_name (str): select from ['total', ...]
+            view_name(str): select from ['total', ...]
                 as defined in settings.scene_camera_dicts
                 a .vp file containing the sttings will be stored with this name
                 in e.g. 'C:\\Users\\Username\\agri-PV\\views\\total.vp'
 
-            oct_file_name (str): file name of the .oct file without extension
-                being located in the view_fp parent directory (e.g. 'Demo1')
+            oct_file_name(str): file name of the .oct file without extension
+                being located in the view_fp parent directory(e.g. 'Demo1')
 
             """
 
@@ -143,7 +187,12 @@ class OctFileHandler:
 
         view_fp = self.settings.paths.bifacial_radiance_files / Path(
             f'views/{view_name}.{file_format}')
-        scd = self.settings.view.scene_camera_dicts[view_name]
+        try:
+            scd = self.settings.view.scene_camera_dicts[view_name]
+        except KeyError:
+            print('KeyError - available keys are: ',
+                  self.settings.view.scene_camera_dicts.keys())
+
         radiance_utils.write_viewfile_in_vp_format(scd, view_fp, view_type)
 
         if oct_file_name is None:
@@ -154,7 +203,8 @@ class OctFileHandler:
         x = self.settings.view.accelerad_img_width
         y = int(x * scd['vertical_view_angle'] / scd['horizontal_view_angle'])
         if self.settings.sim.use_acceleradRT_view:
-            subprocess.call(
+            sp.call(
+                # call results in python to wait until sp is finished
                 ['AcceleradRT', '-vf', view_fp, '-ab', '3', '-aa', '0',
                  '-ad', '1', '-x', str(x), '-y', str(y), '-s', '10000',
                  '-log', '0',  # turns off log scale of contrast
@@ -162,7 +212,7 @@ class OctFileHandler:
                  # https://nljones.github.io/Accelerad/rt.html#commandline
                  oct_file_name])
         else:
-            subprocess.call(
+            sp.call(
                 ['rvu', '-vf', view_fp, '-e', '.01', oct_file_name])
 
     def _create_materials(self):
@@ -187,10 +237,14 @@ class OctFileHandler:
             mat_name='red', mat_type='plastic',
             R=1, G=0, B=0)
 
-    def _create_sky(self, tracked=False):
+    def create_sky(self, tracked=False) -> str:
         """
         We z-rotate the sky instead of the panel for an easier easier setup of
         the mounting structure and the scan points.
+
+        Returns
+            skyname: string
+            Filename of sky in /skies / directory
         """
 
         if tracked:
@@ -219,7 +273,7 @@ class OctFileHandler:
                 possible without light. Please choose a different time.""")
 
         # gendaylit using Perez models for direct and diffuse components
-        self.radianceObj.gendaylit2manual(
+        return self.radianceObj.gendaylit2manual(
             self.weatherData.dni, self.weatherData.dhi,
             self.weatherData.sunalt, sunaz_modified)
 
@@ -227,7 +281,7 @@ class OctFileHandler:
         """
         This method is realy difficult to understand...
         but Bifacial_radiance is also complicated here and need to make it
-        even more complicate to enter new functionality (checker board,
+        even more complicate to enter new functionality(checker board,
         set_cloning in x direction with gap between sets)
 
         in first step, custom_single_module_text_dict is created
@@ -240,7 +294,7 @@ class OctFileHandler:
         then we use BR to build the scene and extract partly rad texts out of
         BR objects to puzzle these together to what we want.
 
-        Adding glass made it more complicated (see single_module_elements)
+        Adding glass made it more complicated(see single_module_elements)
         There is probably nicer way of doing it, but it also will take time
         to figure it out.
         """
@@ -275,6 +329,11 @@ class OctFileHandler:
             self.moduleObj.addCellModule(
                 **self.settings.apv.cellLevelModuleParams)
 
+        if self.settings.apv.framed_modules:
+            self.moduleObj.addFrame(
+                frame_material='Metal_Grey', frame_thickness=0.05,
+                frame_z=0.03, frame_width=0.05, recompile=True)
+
         self.sceneObj: br.SceneObj = self.radianceObj.makeScene(
             module=self.moduleObj, sceneDict=self.sceneDict
         )
@@ -302,7 +361,7 @@ class OctFileHandler:
 
         und
         modules_text = self.sceneObj.text.replace(' objects\\', ' objects/')
-        hilft leider auch nicht.  #TODO Warum?
+        hilft leider auch nicht.  # TODO Warum?
         """
 
         return modules_text
@@ -314,7 +373,8 @@ class OctFileHandler:
         customObjects: key: file-name, value: rad_text
         """
 
-        # self.radianceObj.radfiles = []  # TODO  get rid of doubled array origin modules...
+        # self.radianceObj.radfiles = []  # TODO  get rid of doubled array
+        # origin modules...
         for key in customObjects:
             rad_file_path = f'objects/{key}.rad'
             with open(rad_file_path, 'wb') as f:
@@ -350,7 +410,7 @@ if __name__ == '__main__':
     for azimuth in [180]:  # [90, 135, 180, 270]:
         # octFileCreator.settings.apv = APV_Syst_InclinedTables_S_Morschenich()
         octFileCreator.settings.apv.sceneDict['azimuth'] = azimuth
-        octFileCreator.create_octfile()
+        octFileCreator.create_octfile_without_sky()
         octFileCreator.view_octfile(
             # view_name='top_down', view_type='parallel'
         )
