@@ -16,34 +16,37 @@ from apv.classes.util_classes.geometries_handler import GeometriesHandler
 # #
 if __name__ == '__main__':
     settings = Settings()
-    settings.sim.sim_date_time ='10-15_11:00'
     # #
-    subsets = [ #'std',
-               # 'std_sw','cell_gaps',
-        'checker_board', #'roof_for_EW'
+    subsets = [  # 'std',
+        'cell_gaps',
+        # 'cell_gaps',
+        # 'checker_board',  # 'roof_for_EW'
     ]
 
     for subset in subsets:
         settings = su.adjust_settings(subset, settings)
+        settings.sim.sim_date_time = '4-15_09:00'
+        settings.sim.spatial_resolution = 0.5
         brObj = BR_Wrapper(settings)
         brObj.create_and_view_octfile(
             # add_NorthArrow=True,
             # add_groundScanArea=False,
-            view_name='as_heatmap'
+            # view_name='top_down'
         )
     # #
 
 if __name__ == '__main__':
     # for subset in ['std_glass', 'roof_for_EW']
-    subsets = ['std', 'std_sw', 'checker_board', 'cell_gaps',
+    subsets = ['std',
+               'std_sw', 'checker_board', 'cell_gaps',
                'roof_for_EW']
     subsets = ['cell_gaps']
     months = [4, 6, 8, 10]
-    months = [6]
+    months = [4]
     # months = range(1, 13)
     # hours = [19]
     hours = range(2, 24, 1)
-    # hours = range(9, 21, 1)
+    #hours = range(2, 12, 1)
     # minutes = [10]
     minutes = range(0, 60, settings.sim.time_step_in_minutes)
     # minutes = range(35, 60, settings.sim.time_step_in_minutes)
@@ -109,7 +112,7 @@ if __name__ == '__main__':
                         # df_limits = fi.get_min_max_of_cols_in_several_csv_files(
                         #    [r"C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich_S_inclinedTables\std_res-0.1m_step-5min_TMY_aggfunc-mean\month-6_north-position_correctedSensorOrientation\data\ground_results_06-15_07h40.csv",
                         #     r"C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich_S_inclinedTables\std_res-0.1m_step-5min_TMY_aggfunc-mean\month-6_north-position\data\ground_results_06-15_07h40.csv"]).round(1)
-                        if month == months[0]:
+                        if month in months:  # == months[0]:
                             for cm_unit in ['radiation']:
                                 fig_path = settings.paths.results_folder / Path(
                                     f'{settings.names.csv_fn[:-4]}_{cm_unit}.jpg')
@@ -135,17 +138,17 @@ from apv.classes.util_classes.settings_grouper import Settings
 
 if __name__ == '__main__':
     from apv.utils.plotting_utils import plotStyle
-    plotStyle(fig_width_in_mm=110)
+    plotStyle(fig_width_in_mm=80)
 
     settings = Settings()
     dfs = []
     months = [4, 6, 8, 10]
-    months = [6]
+    months = [4]
     subsets = ['std', 'cell_gaps',
                'checker_board',
                'std_sw', 'roof_for_EW'
                ]
-    #subsets = ['cell_gaps']
+    subsets = ['cell_gaps']
     # for compare_GGI_to in ['GHI_as_TMY_aggfunc', 'clearsky_GHI']:
     for i, subset in enumerate(subsets):
         settings = su.adjust_settings(subset, settings)  # for correct arrow rotation
@@ -159,18 +162,14 @@ if __name__ == '__main__':
                 month, settings, subset)
 
             brObj = BR_Wrapper(settings)
-            # def get_cum_csv_path():
+
             results_folder_cum \
                 = brObj.settings.paths.results_folder.parent / 'cumulative'
             fi.make_dirs_if_not_there(results_folder_cum)
 
-            def get_title_and_cum_csv_path(month, compare_GGI_to):
-                # - {compare_GGI_to}'
-                # +'\ncumulated day (15$^{th}$)' + f' in month {month:02}'
-                title = su.titles[subset]
-                cum_file_name = subset+'_cumulated day 15th' + f' in month {month:02}'
-                cum_csv_path = results_folder_cum / f'{cum_file_name}.csv'
-                return title, cum_csv_path
+            cum_csv_path = su.get_cum_csv_path(
+                month, subset, results_folder_cum,  # compare_GGI_to
+            )
 
             def get_df_merged(cum_csv_path: Path):
                 if cum_csv_path.exists():  # and not debug_mode...
@@ -182,21 +181,22 @@ if __name__ == '__main__':
                         brObj.settings.paths.csv_parent_folder,
                         cum_csv_path, add_DLI=True
                     )
-
-            title, cum_csv_path = get_title_and_cum_csv_path(month, compare_GGI_to)
             df_merged = get_df_merged(cum_csv_path)
             # brObj.plotterObj.ground_heatmap(cumulative=True) #TODO alow this way
 
             # """
-            path_part = brObj.settings.paths.results_folder.parent.parent/'cumulative_for_poster'
+            desti_fp = Path(str(cum_csv_path).replace('csv', 'jpg'))
+            desti_fp = Path(r'T:\Public\user\l.raumann_network\agri-PV\Poster'
+                            )/(f'{i}_{subset}.jpg')
             brObj.plotterObj.ground_heatmap(
                 df_merged,
-                destination_file_path=path_part/(f'{i}_{subset}.jpg'),
+                destination_file_path=desti_fp,
                 cumulative=True,
                 cm_unit='DLI',
                 # cm_unit='shadow_depth',
-                plot_title=title,
-                north_arrow_xy_posi=(0.05, 1.16),
+                # +'\ncumulated day (15$^{th}$)' + f' in month {month:02}'
+                plot_title=su.titles[subset],
+                north_arrow_xy_posi=(0.05, 1.18),
                 col_bar_min=0,
                 plot_dpi=400,
                 col_bar_max=32,
@@ -205,26 +205,6 @@ if __name__ == '__main__':
         # #
 
         # #
-        def concat_months_for_box_plot(months: list, compare_GGI_to):
-            """input: months list: as ints
-            """
-            df_appended = pd.DataFrame()
-
-            for month in months:
-                title, cum_csv_path = get_title_and_cum_csv_path(month, compare_GGI_to)
-                df = fi.df_from_file_or_folder(cum_csv_path)
-                df['Month'] = month
-
-                df = df[df['ShadowDepth_cum'] < 98]
-                df_appended = pd.concat([df_appended, df])
-                df_appended.name = compare_GGI_to
-            fi.df_export(df_appended, results_folder_cum/f'appended_{compare_GGI_to}.csv')
-            return df_appended
-        df = concat_months_for_box_plot(months, compare_GGI_to)
-        dfs += [df]
-    # fi.df_export(df, )
-
-    # brObj.plotterObj.box_plot_month_comparing(dfs)
 
 
 # #

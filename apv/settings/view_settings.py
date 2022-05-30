@@ -5,8 +5,8 @@ import pandas as pd
 
 class ViewSettings:
 
-    accelerad_img_width: int = 1200  # [pixel]
-    # NOTE img_height is calculated from the view angles to avoid distortion
+    accelerad_img_height: int = 780  # [pixel]
+    # NOTE img_width is calculated from the view angles to avoid distortion
 
     scene_camera_dicts: dict = {  # TODO besser auch norden hinten machen
         'total': {'cam_pos_x': 19.8,   # depth

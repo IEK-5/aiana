@@ -1,121 +1,98 @@
 # #
-import sys
-import numpy as np
-import seaborn as sns
-from typing import Literal
+from matplotlib.axes import Axes
 from matplotlib import pyplot as plt
 import pandas as pd
-from apv import settings
-from apv.classes.weather_data import WeatherData
-import pytictoc
+import seaborn as sns
+
 from pathlib import Path
-import os
-from apv.classes.util_classes.sim_datetime import SimDT
 from apv.classes.util_classes.settings_grouper import Settings
-from apv.settings.apv_systems import APV_Syst_InclinedTables_S_Morschenich
 from apv.classes.br_wrapper import BR_Wrapper
 from apv.utils import plotting_utils
-import apv.utils.files_interface as fi
-from apv.classes.util_classes.geometries_handler import GeometriesHandler
+from apv.utils import files_interface as fi
+from apv.utils import study_utils as su
 
 
 root: Path = Path(
     r"C:\Users\Leonard Raumann\Documents\agri-PV\results\framed_APV_noBorderEffects\res-0.05m_step-3min"
 )
+
+# concat (set to True if needed)
+if False:
+    for subset in list(su.titles.keys()):
+        months = [4, 6, 8, 10]
+        su.concat_months_for_box_plot(
+            months, subset, fileNameSuffix='GHI_as_TMY_aggfunc',
+            results_folder_cum=root / subset / 'cumulative')
+# #
+
 csv_files = []
-subsets = ['std', 'std_sw', 'checker_board', 'cell_gaps', 'roof_for_EW']
+subsets = list(su.titles.keys())
 for subset in subsets:
     csv_files += [root /
                   (f'{subset}' + r"\cumulative\appended_GHI_as_TMY_aggfunc.csv")]
 
 
-def load_dfs(csv_files: list):
-    dfs = []
-    for file in csv_files:
-        df = fi.df_from_file_or_folder(file)
-        print(file)
-        df['custom_index'] = df['xy']+'_M'+df['Month'].astype(str)
-        df.set_index('custom_index', inplace=True)
-        df = df[df['Month'] < 12]
-
-        # filter posts
-        s = 0.1
-
-        df = df[(df.loc[:,'x'] > df['x'].min()+s) | (df.loc[:,'y'] > df['y'].min()+s)]  # bot left
-        df = df[(df.loc[:,'x'] < df['x'].max()-s) | (df.loc[:,'y'] > df['y'].min()+s)]  # bot right
-        df = df[(df.loc[:,'x'] > df['x'].min()+s) | (df.loc[:,'y'] < df['y'].max()-s)]  # top left
-        df = df[(df.loc[:,'x'] < df['x'].max()-s) | (df.loc[:,'y'] < df['y'].max()-s)]  # top right
-        dfs += [df]
-
-    return dfs
-
-dfs = load_dfs(csv_files)
-
-
+dfs = su.load_dfs_for_subplots(csv_files, labels=subsets)
 # #
-sns.set_theme(style="darkgrid", )
-plotting_utils.plotStyle(fig_width_in_mm=180)
 
 
-def box_plot(fn, dfs, titles, y="ShadowDepth_cum"):
-    fig, axes = plt.subplots(1, len(dfs), sharey=True)
-    if len(dfs) != len(titles):
-        raise Exception("Title lengths does not fit to dfs length.")
+def box_plot(dfs, subsets, titles=None, y="DLI", orient='horizontal'):
 
-    if len(dfs) > 1:
-        for i, df in enumerate(dfs):
-            sns.boxplot(x="Month", y=y,
-                        data=df, palette="autumn", ax=axes[i],
-                        )
+    sns.set_theme(style="darkgrid")
 
-            axes[i].set_title(titles[i])
-            if y == "ShadowDepth_cum":
-                axes[i].set_ylim(20, 90)
-            if i > 0:
-                axes[i].set(ylabel=None)
-            axes[i].grid(True)
+    if orient=='horizontal':
+        plotting_utils.plotStyle(width_to_height_ratio=6, fig_width_in_mm=250)
+        fig, axes = plt.subplots(
+            1, len(subsets), sharex=True, sharey=True
+        )
     else:
-        sns.boxplot(x="Month", y=y, data=dfs[0], palette="autumn", ax=axes)
-        axes.set_title(titles[0])
+        plotting_utils.plotStyle(width_to_height_ratio=0.22, fig_width_in_mm=50)
+        fig, axes = plt.subplots(
+            len(subsets), 1, sharex=True, sharey=True
+        )
+
+
+    brObj = BR_Wrapper(Settings())
+    for i, subset in enumerate(subsets):
+        if titles is not None:
+            axes[i].set_title(titles[i])
+
+        df = dfs[dfs['label'] == subset]
+        brObj.plotterObj.box_plot_month_comparing(df, axes[i], y=y)
+
+        # axes limits
         if y == "ShadowDepth_cum":
-            axes.set_ylim(20, 90)
-        axes.grid(True)
+            axes[i].set_ylim(20, 90)
+        elif y == 'DLI':
+            axes[i].set_ylim(0, 33)
+        # axes labels
 
-    fig.tight_layout()
+
+    if orient=='horizontal':
+        # hide_unwanted_axes_labels
+        for i, ax in enumerate(axes):
+            if i != int(len(axes)/2):
+                ax.set(xlabel=None)
+            if i != 0:
+                ax.set(ylabel=None)
+    else:
+        # hide_unwanted_axes_labels
+        for i, ax in enumerate(axes):
+            if i != len(axes)-1:
+                ax.set(xlabel=None)
+            if i != int(len(axes)/2):
+                ax.set(ylabel=None)
+
+    #fig.tight_layout()
     fig.set_facecolor("white")
-    fi.save_fig(fig, Path(root / f"{y}_{fn}"))
+    fn = 'subset_boxplot.png'
+
+    fi.save_fig(
+        fig, Path(r'T:\Public\user\l.raumann_network\agri-PV\Poster') / f"{y}_{fn}",
+        dpi=400, transparent=True)
 
 
-titles = ['standard S', 'standard SW', 'checker board S', 'cell gaps S', 'roof (std) EW']
-filename_base = 'subset_boxplot.jpg'
-box_plot(filename_base, dfs, titles, y='DLI')
-# #
-box_plot(filename_base, dfs, titles)
-# #
+box_plot(dfs, subsets=subsets,  # titles=list(su.titles.values())
+         )
 
-# #
-df_dif = dfs[0]
-for y in ['DLI']:
-    df_dif.loc[:, y] = dfs[1].loc[:, y]-dfs[0].loc[:, y]
-
-# MBE, RMSE extra glass vs no extra glass
-
-# evt nur unten relevant? denke schon, würde beschleunigen falls doch nötig
-df_joined = dfs[0].join(dfs[1], rsuffix='_glass')
-df_joined
-# #
-plotting_utils.comparing_plot_sns(df_joined, x='ShadowDepth_cum', y='ShadowDepth_cum_glass')
-
-# #
-g = plotting_utils.comparing_plot_sns(df_joined, x='DLI', y='DLI_glass',
-                                      unit=' [mol / m²]')
-
-fi.save_fig(g, root/f'comparing_plot_sns-month-all.jpg')
-# #
-for month in [6, 8, 10, 12]:
-    df = df_joined[df_joined['Month'] == month]
-    g = plotting_utils.comparing_plot_sns(df, x='DLI', y='DLI_glass',
-                                          unit=' [mol / m²]',
-                                          title=f'Month: {month}')
-    fi.save_fig(g, root/f'comparing_plot_sns-month-{month}.jpg')
 # #

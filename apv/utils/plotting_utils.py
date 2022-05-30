@@ -1,11 +1,12 @@
+# #
+from matplotlib.axes import Axes
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
+# from matplotlib.figure import Figure
 import pandas as pd
 from pandas.core.frame import DataFrame
 import seaborn as sns
 import joypy
 from scipy import stats
-import apv
 from apv.utils import RMSE_MBE
 
 
@@ -17,12 +18,15 @@ def plot_heatmap(
         x_label=None,
         y_label=None,
         z_label=None,
+        tick_label_format='{:.1f}',
         plot_title='',
         cm='inferno',
         ticklabels_skip_count_number="auto",
         vmin=None,
         vmax=None,
-) -> Figure:
+        ax_blanc=None,
+        show_colbar=True
+) -> Axes:
     """Creates a Figure containing a seaborn heatmap
     (side note, relevant for adding drawings: its colored square patches
      are string-labeled and have always matplotlib coordinates-based
@@ -37,6 +41,11 @@ def plot_heatmap(
         cm (str, optional): color map style. Defaults to 'inferno'.
         vmin, vmax (float): color bar limits.
 
+
+        kwargs : other keyword arguments
+        All other keyword arguments are passed to matplotlib.axes.Axes.pcolormesh.
+
+
     Returns:
         Figure: matplotlib.figure.Figure object, which can be modified
         or saved later.
@@ -48,10 +57,13 @@ def plot_heatmap(
 
     print(data)
 
-    # create a figure object, which is a top level container for subplots
-    # and axes objects, which are the subplots (here only one)
-    fig, ax = plt.subplots(1, 1  # , figsize=(8, 4)
-                           )
+    if ax_blanc is None:
+        # create a figure object, which is a top level container for subplots
+        # and axes objects, which are the subplots (here only one)
+        fig, ax = plt.subplots(1, 1)
+    else:
+        ax = ax_blanc
+
     # plot title
     ax.set_title(plot_title)
 
@@ -67,13 +79,14 @@ def plot_heatmap(
         data,
         annot=False,
         linewidths=0,
-        ax=ax,  # only relevant for later if there are more than one ax
+        ax=ax,
         square=True,
         xticklabels=ticklabels_skip_count_number,
         yticklabels=ticklabels_skip_count_number,
         cmap=cm,
+        cbar=show_colbar,
         cbar_kws={'label': z_label},
-        vmin=vmin, vmax=vmax,
+        vmin=vmin, vmax=vmax
     )
     # To resemble Radiance coordinates
     ax.invert_yaxis()
@@ -83,15 +96,14 @@ def plot_heatmap(
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     # x,y tick labels format and rotation
-    xlabels = ['{:.1f}'.format(float(item.get_text()))
+    xlabels = [tick_label_format.format(float(item.get_text()))
                for item in ax.get_xticklabels()]
-    ylabels = ['{:.1f}'.format(float(item.get_text()))
+    ylabels = [tick_label_format.format(float(item.get_text()))
                for item in ax.get_yticklabels()]
     ax.set_xticklabels(xlabels, rotation=0)
     ax.set_yticklabels(ylabels, rotation=0)
 
-    # add_module_line(ax=ax)
-    return fig
+    return ax
 
 
 def add_north_arrow(
@@ -145,9 +157,9 @@ def add_north_arrow(
 
     ax.text(
         xy[0],
-        xy[1] - 0.1, "    ", ha=ha, va=va, rotation=arrow_rotation, size=5,
-        bbox=dict(boxstyle='rarrow, pad=0.4', fc='black',
-                  ec=arrow_color, lw=0.5), transform=ax.transAxes)
+        xy[1] - 0.14, "    ", ha=ha, va=va, rotation=arrow_rotation, size=5,
+        bbox=dict(boxstyle='rarrow, pad=0.3', fc='black',
+                  ec=arrow_color, lw=0.4), transform=ax.transAxes)
 
     return ax
 
@@ -323,3 +335,17 @@ def plotStyle(
 
 
 # plotStyle(fig_width_in_mm=220, width_to_height_ratio=1, marker_size_in_pt=1)
+
+
+# testing #TODO
+if __name__ == '__main__':
+    from apv.classes.br_wrapper import BR_Wrapper
+    from apv.classes.util_classes.settings_grouper import Settings
+
+    brObj = BR_Wrapper(Settings())
+    if not brObj.settings.paths.csv_file_path.exists():
+        brObj.create_octfile()
+        brObj.simulate_and_evaluate()
+    brObj.plotterObj.ground_heatmap()
+
+# #

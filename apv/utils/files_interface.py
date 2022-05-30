@@ -46,7 +46,7 @@ def df_from_file_or_folder(
         delimiter='\t|,|;',
         append_all_in_folder=False,
         names=None, header='infer', print_reading_messages=True,
-        add_source_file_name_to_df=False):
+        add_source_file_name_to_df=False) -> pd.DataFrame:
     '''
     rel_path: relative file path with file extension,
     in case of append_all_in_folder=True: rel_path = folder path

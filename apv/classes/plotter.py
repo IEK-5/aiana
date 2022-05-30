@@ -2,6 +2,7 @@
 from pathlib import Path
 import sys
 from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
 import pandas as pd
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
 from apv.classes.util_classes.settings_grouper import Settings
@@ -30,9 +31,10 @@ class Plotter:
         plot_dpi: int = None,
         plot_title: str = None,
         north_arrow_xy_posi: tuple = (-0.14, 1.2),
-        col_bar_min=None,
-        col_bar_max=None,
+        col_bar_min: float = None,
+        col_bar_max: float = None,
         df_col_limits: pd.DataFrame = None,
+        ticklabel_format='{:.1f}'
     ):
         """plots the ground insolation as a heat map and saves it into
             the results/plots folder.
@@ -46,6 +48,9 @@ class Plotter:
             and max row (as e.g. returned by df_concatenated.agg([min, max]))
             to be used as color bar limits.
             Defaults to None.
+            col_bar_min or max: overwrites df_col_limits
+
+            if an ax is passed, the plot is placed into the ax.
         """
         if df is None:
             fp = self.settings.paths.csv_file_path
@@ -89,20 +94,22 @@ class Plotter:
         # round to 10th of mm to avoid a bug that same coordinates are not
         # treated as one due to floating precicion behaviour:
         df = df.round({'x': 4, 'y': 4})
+        fig, ax = plt.subplots(1, 1)
 
-        fig = plotting.plot_heatmap(
+        ax = plotting.plot_heatmap(
             df=df, x='x', y='y', c=label_and_cm_input['z'],
             cm=label_and_cm_input['colormap'],
             x_label='x [m]', y_label='y [m]',
             z_label=label_and_cm_input['z_label'],
+            tick_label_format=ticklabel_format,
             plot_title=plot_title,
             ticklabels_skip_count_number=ticklabels_skip_count_number,
             vmin=label_and_cm_input['vmin'],
-            vmax=label_and_cm_input['vmax'],
+            vmax=label_and_cm_input['vmax']
         )
 
-        fig.axes[0] = plotting.add_north_arrow(
-            fig.axes[0], xy=north_arrow_xy_posi,
+        ax = plotting.add_north_arrow(
+            ax, xy=north_arrow_xy_posi,
             panel_azimuth=self.settings.apv.sceneDict['azimuth']
         )
 
@@ -112,18 +119,30 @@ class Plotter:
             )
         fi.save_fig(fig, destination_file_path, dpi=plot_dpi)
 
-    def box_plot_month_comparing(self, dfs: list):
-        fig, axes = plt.subplots(1, len(dfs))
-        for i, df in enumerate(dfs):
-            # standard
-            sns.boxplot(x="Month", y="ShadowDepth_cum",
-                        data=df, palette="autumn", ax=axes[i])
-            axes[i].set_title(df.name)
-            axes[i].set_ylim(20, 90)
+    def box_plot_month_comparing(self, df: pd.DataFrame, ax_blanc: Axes = None,
+                                 y='DLI'):
+        """for cumulative data
+        y type: literal as in settings.sim.cm_quantity
+        ['radiation', 'PAR', 'shadow_depth', 'DLI']
+        #TODO heatmap z becomes here y, rename?
+        """
+        sns.set_theme(style="darkgrid")
 
-            fig.tight_layout()
-            fig.set_facecolor("white")
-            plt.show()
+        label_and_cm_input: dict = self.get_label_and_cm_input(
+            cm_unit=y, cumulative=True)
+
+        if ax_blanc is not None:
+            ax = ax_blanc
+        else:
+            fig, ax = plt.subplots(1, 1)
+
+        ax = sns.boxplot(x="Month", y=label_and_cm_input['z'],
+                         data=df, palette="autumn", ax=ax)
+        # ax.set_title(df.name)
+        ax.set_ylabel(label_and_cm_input['z_label'])
+        ax.grid(True)
+
+        return ax
 
     def return_weather_description(self):
         if self.settings.sim.TMY_irradiance_aggfunc == 'min':
@@ -138,7 +157,7 @@ class Plotter:
             title_comps = self.settings.sim.plot_title_components
         title = ''
         if 'weather' in title_comps:
-            
+
             title += f'Weather: {self.return_weather_description()}\n'
         if 'agg_func' in title_comps:  # redundant to weather
             title += (f'TMY aggregation function: '
@@ -157,9 +176,9 @@ class Plotter:
                           f'To: [{self.settings.sim.enddt}]')
         return title
 
-    @staticmethod
+    @ staticmethod
     def get_label_and_cm_input(cm_unit, cumulative,
-                               df_col_limits: pd.DataFrame = None):
+                               df_col_limits: pd.DataFrame = None) -> dict:
         """for the heatmap"""
 
         # #################################### #
@@ -168,7 +187,8 @@ class Plotter:
             if cumulative:
                 # update dict
                 dict_up = {'z': 'Whm2', 'z_label':
-                           'Cumulative Irradiation on Ground [Wh m$^{-2}$]'}
+                           'Cumulative Global Ground Irradiation [Wh m$^{-2}$]'
+                           }
             else:
                 dict_up = {'z': 'Wm2', 'z_label':
                            'Irradiance on Ground [W m$^{-2}$]'}
@@ -191,7 +211,7 @@ class Plotter:
                            + r' [μmol photons $\cdot$ m$^{-2}\cdot $s$^{-1}$]'}
         # #################################### #
         elif cm_unit == 'DLI':
-            input_dict = {'colormap': 'YlOrBr_r'}
+            input_dict = {'colormap': 'inferno'}
             if cumulative:
                 dict_up = {'z': 'DLI', 'z_label':
                            r'DLI [mol photons $\cdot$ m$^{-2}$]'}

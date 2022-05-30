@@ -13,7 +13,7 @@ import warnings
 import subprocess as sp
 from typing import Literal
 from pathlib import Path
-
+from PIL import ImageGrab
 
 import bifacial_radiance as br
 from apv.classes.util_classes.print_hider import PrintHider
@@ -166,7 +166,9 @@ class OctFileHandler:
         self,
         view_type: Literal['perspective', 'parallel'] = 'perspective',
         view_name: Literal['total', 'close_up', 'top_down'] = 'total',
-        oct_file_name=None
+        oct_file_name=None,
+        # use_rpict=False,
+        screenshot_filepath=None
     ):
         """views an .oct file via radiance/bin/rvu.exe
 
@@ -198,22 +200,42 @@ class OctFileHandler:
         if oct_file_name is None:
             oct_file_name = self.settings.names.oct_fn
 
-        print(f'Viewing {oct_file_name}.')
+        pr_str = ''  # with rpict' if use_rpict else ''
+        print(f'Viewing {oct_file_name}{pr_str}.')
 
-        x = self.settings.view.accelerad_img_width
-        y = int(x * scd['vertical_view_angle'] / scd['horizontal_view_angle'])
+        y = self.settings.view.accelerad_img_height
+        x = int(y / scd['vertical_view_angle'] * scd['horizontal_view_angle'])
+        # if use_rpict:
+        #     pic_fn = oct_file_name.replace('.oct', '.hdr')
+        #     if self.settings.sim.use_accelerad_GPU_processing:
+        #         prefix = 'accelerad_'
+        #     else:
+        #         prefix = ''
+        #     cmd = [f'{prefix}rpict',  '-x', str(x), '-y', str(y),
+        #            '-vf', view_fp, oct_file_name,
+        #            '>', f'images/{pic_fn}']
+
+        # rpict - x 4800 - y 4800 - i - ps 1 - dp 530 - ar 964 - ds 0.016 - dj 1 - dt 0.03 - dc 0.9 - dr 5 - st 0.12 - ab 5 - aa 0.11 - ad 5800 - as 5800 - av 25 25 25 - lr 14 - lw 0.0002 - vf render.vf bifacial_example.oct > render.hdr
+
+        # os.system("rpict -dp 256 -ar 48 -ms 1 -ds .2 -dj .9 -dt .1 "+
+        #       "-dc .5 -dr 1 -ss 1 -st .1 -ab 3  -aa .1 "+
+        #       "-ad 1536 -as 392 -av 25 25 25 -lr 8 -lw 1e-4 -vf views/"
+        #       +viewfile+ " " + octfile +
+        #       " > images/"+name+viewfile[:-3] +".hdr")
+
+        # TODO try _popen (move it to utils from simulator) to see error message
+        # else:
         if self.settings.sim.use_acceleradRT_view:
-            sp.call(
-                # call results in python to wait until sp is finished
-                ['AcceleradRT', '-vf', view_fp, '-ab', '3', '-aa', '0',
-                 '-ad', '1', '-x', str(x), '-y', str(y), '-s', '10000',
-                 '-log', '0',  # turns off log scale of contrast
-                 '-f-',  # turn false color off, default: on (-f+)
-                 # https://nljones.github.io/Accelerad/rt.html#commandline
-                 oct_file_name])
+            cmd = ['AcceleradRT', '-vf', view_fp, '-ab', '3', '-aa', '0',
+                   '-ad', '1', '-x', str(x), '-y', str(y), '-s', '10000',
+                   '-log', '0',  # turns off log scale of contrast
+                   '-f-',  # turn false color off, default: on (-f+)
+                   # https://nljones.github.io/Accelerad/rt.html#commandline
+                   oct_file_name]
         else:
-            sp.call(
-                ['rvu', '-vf', view_fp, '-e', '.01', oct_file_name])
+            cmd = ['rvu', '-vf', view_fp, '-e', '.01', oct_file_name]
+        # call to wait until subprocess is finished
+        sp.call(cmd)
 
     def _create_materials(self):
         # self.makeCustomMaterial(mat_name='dark_glass', mat_type='glass',
