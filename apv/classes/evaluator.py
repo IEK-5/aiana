@@ -111,11 +111,11 @@ class Evaluator:
 
         if self.settings.sim.for_shadowDepths_compare_GGI_to == 'clearsky_GHI':
             ghi_ref = self.weatherData.ghi_clearsky
-            cum_ghi_ref = self.weatherData.cumulated_ghi_clearsky
+            cum_ghi_ref = self.weatherData.dailyCumulated_ghi_clearsky
         elif self.settings.sim.for_shadowDepths_compare_GGI_to \
                 == 'GHI_as_TMY_aggfunc':
             ghi_ref = self.weatherData.ghi
-            cum_ghi_ref = self.weatherData.cumulated_ghi
+            cum_ghi_ref = self.weatherData.dailyCumulated_ghi
         else:
             sys.exit('settings.sim.for_shadowDepths_compare_GGI_to has to '
                      'be set to "clearsky_GHI" or "GHI_as_TMY_aggfunc".')

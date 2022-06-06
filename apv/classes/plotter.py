@@ -6,7 +6,7 @@ from matplotlib.axes import Axes
 import pandas as pd
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
 from apv.classes.util_classes.settings_grouper import Settings
-from apv.utils import plotting_utils as plotting
+from apv.utils import plotting_utils as plotting, study_utils
 from apv.utils import files_interface as fi
 import seaborn as sns
 
@@ -138,6 +138,13 @@ class Plotter:
 
         ax = sns.boxplot(x="Month", y=label_and_cm_input['z'],
                          data=df, palette="autumn", ax=ax)
+
+        if y == 'DLI':
+            months = df['Month'].unique().tolist()
+            df_dailyCums = study_utils.gather_dailyCumulated_GHI_DLI(months)
+            df_dailyCums
+            ax = sns.scatterplot(data=df_dailyCums, y=y)
+
         # ax.set_title(df.name)
         ax.set_ylabel(label_and_cm_input['z_label'])
         ax.grid(True)

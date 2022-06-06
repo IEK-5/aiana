@@ -84,7 +84,7 @@ if __name__ == '__main__':
                     if (weatherData.sunalt < 0):
                         print(f'Sun alitude < 0 ({weatherData.sunalt}).')
                     elif weatherData.ghi < min(
-                            weatherData.cumulated_ghi * 0.02, 50):
+                            weatherData.dailyCumulated_ghi * 0.02, 50):
                         print(f'GHI too low ({weatherData.ghi} Wh/m²).')
                         if enough_light is True:
                             settings.sim.enddt = settings.sim.sim_date_time

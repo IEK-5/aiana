@@ -1,12 +1,14 @@
 # #
 from matplotlib.axes import Axes
 from matplotlib import pyplot as plt
+from numpy import True_
 import pandas as pd
 import seaborn as sns
 
 from pathlib import Path
 from apv.classes.util_classes.settings_grouper import Settings
 from apv.classes.br_wrapper import BR_Wrapper
+from apv.classes.weather_data import WeatherData
 from apv.utils import plotting_utils
 from apv.utils import files_interface as fi
 from apv.utils import study_utils as su
@@ -40,7 +42,7 @@ def box_plot(dfs, subsets, titles=None, y="DLI", orient='horizontal'):
 
     sns.set_theme(style="darkgrid")
 
-    if orient=='horizontal':
+    if orient == 'horizontal':
         plotting_utils.plotStyle(width_to_height_ratio=6, fig_width_in_mm=250)
         fig, axes = plt.subplots(
             1, len(subsets), sharex=True, sharey=True
@@ -50,7 +52,6 @@ def box_plot(dfs, subsets, titles=None, y="DLI", orient='horizontal'):
         fig, axes = plt.subplots(
             len(subsets), 1, sharex=True, sharey=True
         )
-
 
     brObj = BR_Wrapper(Settings())
     for i, subset in enumerate(subsets):
@@ -67,8 +68,7 @@ def box_plot(dfs, subsets, titles=None, y="DLI", orient='horizontal'):
             axes[i].set_ylim(0, 33)
         # axes labels
 
-
-    if orient=='horizontal':
+    if orient == 'horizontal':
         # hide_unwanted_axes_labels
         for i, ax in enumerate(axes):
             if i != int(len(axes)/2):
@@ -83,7 +83,7 @@ def box_plot(dfs, subsets, titles=None, y="DLI", orient='horizontal'):
             if i != int(len(axes)/2):
                 ax.set(ylabel=None)
 
-    #fig.tight_layout()
+    # fig.tight_layout()
     fig.set_facecolor("white")
     fn = 'subset_boxplot.png'
 
@@ -94,5 +94,7 @@ def box_plot(dfs, subsets, titles=None, y="DLI", orient='horizontal'):
 
 box_plot(dfs, subsets=subsets,  # titles=list(su.titles.values())
          )
+
+
 
 # #

@@ -5,18 +5,15 @@ from apv.settings.sim_settings import Simulation
 
 
 class SimDT:
+    sim_dt_local: datetime
+    sim_dt_utc: datetime
+    sim_dt_utc_pd: pd.Timestamp
+    startdt_utc: datetime
+    enddt_utc: datetime
 
     def __init__(self, SimSettings: Simulation):
 
         self.SimSettings = SimSettings
-        self.sim_dt_local: datetime = None
-        self.sim_dt_utc: datetime = None
-        self.sim_dt_utc_pd: pd.Timestamp = None
-
-        self.startdt_utc: datetime = None
-        self.enddt_utc: datetime = None
-        self.times: pd.Timestamp = None
-
         self.set_time_variables()
 
     def set_time_variables(self):
@@ -31,13 +28,7 @@ class SimDT:
         self.enddt_utc: datetime = self.convert_settings_localtime_to_UTC(
             self.SimSettings.enddt, tz
         )
-
         self.sim_dt_utc_pd: pd.Timestamp = pd.to_datetime(self.sim_dt_utc)
-
-        self.times = pd.date_range(
-            start=self.startdt_utc, end=self.enddt_utc,
-            freq=f'{self.SimSettings.time_step_in_minutes}min',
-            inclusive='right')
 
     def convert_settings_localtime_to_UTC(
             self, date_time_str: str, tz: str) -> datetime:

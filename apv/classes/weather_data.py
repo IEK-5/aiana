@@ -23,6 +23,14 @@ class WeatherData:
     """credentials (dict): output of .load_credentials()
     # TODO make class init fast
     """
+    ghi: float
+    ghi_clearsky: float
+    dhi: float
+    dni: float
+    sunalt: float
+    sunaz: float
+    dailyCumulated_ghi: float
+    dailyCumulated_ghi_clearsky: float
 
     def __init__(self, settings: Settings, debug_mode=False):
         self.settings = settings
@@ -30,15 +38,6 @@ class WeatherData:
         self.simDT = SimDT(self.settings.sim)
 
         self.credentials = self.load_API_credentials()
-        self.ghi: float = None
-        self.ghi_clearsky: float = None
-        self.dhi: float = None
-        self.dni: float = None
-        self.sunalt: float = None
-        self.sunaz: float = None
-
-        self.cumulated_ghi: float = None
-        self.cumulated_ghi_clearsky: float = None
 
         self.set_self_variables()
 
@@ -128,17 +127,17 @@ class WeatherData:
             # df_irradiance_typ_day_per_month is already aggregated over all
             # days per month, therefore the following is the
             # GHI sum of a single typical day in current month
-            self.cumulated_ghi = self.df_irradiance_typ_day_per_month.loc[
+            self.dailyCumulated_ghi = self.df_irradiance_typ_day_per_month.loc[
                 (self.simDT.sim_dt_utc.month), 'ghi_Whm-2'].sum()
-            self.cumulated_ghi_clearsky = \
+            self.dailyCumulated_ghi_clearsky = \
                 self.df_irradiance_typ_day_per_month.loc[
                     (self.simDT.sim_dt_utc.month), 'ghi_clearSky_Whm-2'].sum()
         else:
             date = self.simDT.sim_dt_utc_pd.date()
-            self.cumulated_ghi = self.df_irr.loc[
+            self.dailyCumulated_ghi = self.df_irr.loc[
                 self.df_irr.index.date == date]['ghi_Whm-2'].sum()
 
-            self.cumulated_ghi_clearsky = self.df_irr.loc[
+            self.dailyCumulated_ghi_clearsky = self.df_irr.loc[
                 self.df_irr.index.date == date]['ghi_clearSky_Whm-2'].sum()
 
         # TODO maybe not only interested in day cumulated? then...

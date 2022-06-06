@@ -1,3 +1,4 @@
+# #
 import sys
 import pytictoc
 import pandas as pd
@@ -172,3 +173,19 @@ def load_dfs_for_subplots(
 
         dfs = pd.concat([dfs, df])
     return dfs
+
+
+# #
+
+
+def gather_dailyCumulated_GHI_DLI(months: list) -> pd.DataFrame:
+    df = pd.DataFrame()
+    df.index.name = 'Month'
+    settings = Settings()
+    settings.sim.use_typDay_perMonth_for_irradianceCalculation = True
+    for month in months:
+        settings.sim.sim_date_time = f'{month:02}-15_12:00'
+        df.loc[month, 'dCum_ghi[Wh m^-2]'] = \
+            WeatherData(settings).dailyCumulated_ghi
+        df.loc[month, 'DLI'] = df.loc[month, 'dCum_ghi[Wh m^-2]']*0.0074034
+    return df
