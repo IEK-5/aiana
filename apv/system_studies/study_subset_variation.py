@@ -36,13 +36,17 @@ if __name__ == '__main__':
     # #
 
 if __name__ == '__main__':
+    limit_root=r"C:\Users\Leonard Raumann\Documents\agri-PV\results\framed_APV_noBorderEffects\res-0.05m_step-3min\checker_board\month-6\data"
+    df_limits = fi.get_min_max_of_cols_in_several_csv_files(
+        [limit_root+r"\ground_results_06-15_06h27.csv",
+        limit_root+r"\ground_results_06-15_13h15.csv"]).round(1)
     # for subset in ['std_glass', 'roof_for_EW']
     subsets = ['std',
                'std_sw', 'checker_board', 'cell_gaps',
                'roof_for_EW']
-    subsets = ['cell_gaps']
+    subsets = ['checker_board']
     months = [4, 6, 8, 10]
-    months = [4]
+    months = [6]
     # months = range(1, 13)
     # hours = [19]
     hours = range(2, 24, 1)
@@ -109,21 +113,20 @@ if __name__ == '__main__':
                                 brObj.evaluatorObj.rename_and_add_result_columns()
                         ########
 
-                        # df_limits = fi.get_min_max_of_cols_in_several_csv_files(
-                        #    [r"C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich_S_inclinedTables\std_res-0.1m_step-5min_TMY_aggfunc-mean\month-6_north-position_correctedSensorOrientation\data\ground_results_06-15_07h40.csv",
-                        #     r"C:\Users\l.raumann\Documents\agri-PV\results\APV_Morschenich_S_inclinedTables\std_res-0.1m_step-5min_TMY_aggfunc-mean\month-6_north-position\data\ground_results_06-15_07h40.csv"]).round(1)
+
                         if month in months:  # == months[0]:
                             for cm_unit in ['radiation']:
                                 fig_path = settings.paths.results_folder / Path(
                                     f'{settings.names.csv_fn[:-4]}_{cm_unit}.jpg')
                                 if not fig_path.exists():
                                     brObj.plotterObj.ground_heatmap(
-                                        plot_dpi=150,
+                                        plot_dpi=250,
                                         cm_unit=cm_unit,
-                                        # df_col_limits=df_limits
+                                        df_col_limits=df_limits
                                     )
 
-
+# #
+settings.sim.time_step_in_minutes
 # #
 # ======================================================
 # cumulate and plot cum.

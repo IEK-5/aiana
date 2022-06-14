@@ -1,4 +1,5 @@
 
+import copy
 from pathlib import Path
 import sys
 from matplotlib import pyplot as plt
@@ -105,7 +106,8 @@ class Plotter:
             plot_title=plot_title,
             ticklabels_skip_count_number=ticklabels_skip_count_number,
             vmin=label_and_cm_input['vmin'],
-            vmax=label_and_cm_input['vmax']
+            vmax=label_and_cm_input['vmax'],
+            ax_blanc=ax
         )
 
         ax = plotting.add_north_arrow(
@@ -120,7 +122,7 @@ class Plotter:
         fi.save_fig(fig, destination_file_path, dpi=plot_dpi)
 
     def box_plot_month_comparing(self, df: pd.DataFrame, ax_blanc: Axes = None,
-                                 y='DLI'):
+                                 y='DLI', ref_y: pd.DataFrame = None):
         """for cumulative data
         y type: literal as in settings.sim.cm_quantity
         ['radiation', 'PAR', 'shadow_depth', 'DLI']
@@ -139,11 +141,10 @@ class Plotter:
         ax = sns.boxplot(x="Month", y=label_and_cm_input['z'],
                          data=df, palette="autumn", ax=ax)
 
-        if y == 'DLI':
-            months = df['Month'].unique().tolist()
-            df_dailyCums = study_utils.gather_dailyCumulated_GHI_DLI(months)
-            df_dailyCums
-            ax = sns.scatterplot(data=df_dailyCums, y=y)
+        if y == 'DLI' and ref_y is not None:  # TODO add GHI, unify col label
+            ax = sns.stripplot(x='Month', y='refDLI', dodge=False,
+                               marker='*', size=10,
+                               data=ref_y, color='black', ax=ax)
 
         # ax.set_title(df.name)
         ax.set_ylabel(label_and_cm_input['z_label'])
@@ -194,11 +195,11 @@ class Plotter:
             if cumulative:
                 # update dict
                 dict_up = {'z': 'Whm2', 'z_label':
-                           'Cumulative Global Ground Irradiation [Wh m$^{-2}$]'
+                           'Cum. Global Ground Irradiation [Wh m$^{-2}$]'
                            }
             else:
                 dict_up = {'z': 'Wm2', 'z_label':
-                           'Irradiance on Ground [W m$^{-2}$]'}
+                           'Global Ground Irradiance [W m$^{-2}$]'}
         # #################################### #
         elif cm_unit == 'shadow_depth':
             input_dict = {'colormap': 'viridis_r'}

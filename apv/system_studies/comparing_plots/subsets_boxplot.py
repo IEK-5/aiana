@@ -1,7 +1,6 @@
 # #
 from matplotlib.axes import Axes
 from matplotlib import pyplot as plt
-from numpy import True_
 import pandas as pd
 import seaborn as sns
 
@@ -25,7 +24,7 @@ if False:
         su.concat_months_for_box_plot(
             months, subset, fileNameSuffix='GHI_as_TMY_aggfunc',
             results_folder_cum=root / subset / 'cumulative')
-# #
+##
 
 csv_files = []
 subsets = list(su.titles.keys())
@@ -35,15 +34,35 @@ for subset in subsets:
 
 
 dfs = su.load_dfs_for_subplots(csv_files, labels=subsets)
+##
+# reference DLI (unshaded, from cumulative GHI):
+
+
+def gather_dailyCumulated_GHI_refDLI(months: list) -> pd.DataFrame:
+    # TODO store to file and read
+    df = pd.DataFrame()
+    #df.index.name = 'Month'
+    settings = Settings()
+    settings.sim.use_typDay_perMonth_for_irradianceCalculation = True
+    for month in months:
+        settings.sim.sim_date_time = f'{month:02}-15_12:00'
+        df.loc[month, 'dCum_ghi[Wh m^-2]'] = \
+            WeatherData(settings).dailyCumulated_ghi
+        df.loc[month, 'refDLI'] = df.loc[month, 'dCum_ghi[Wh m^-2]']*0.0074034
+    df['Month'] = df.index  # TODO why does df['Month']=month work only sometimes?
+    return df
+
 # #
 
 
-def box_plot(dfs, subsets, titles=None, y="DLI", orient='horizontal'):
+def box_plot(dfs, subsets, titles=None, y="DLI", orient='horizontal',
+             ref_y: pd.DataFrame = None):
+    # TODO check out sns.catplot for subplots
 
     sns.set_theme(style="darkgrid")
 
     if orient == 'horizontal':
-        plotting_utils.plotStyle(width_to_height_ratio=6, fig_width_in_mm=250)
+        plotting_utils.plotStyle(width_to_height_ratio=5.5, fig_width_in_mm=285)
         fig, axes = plt.subplots(
             1, len(subsets), sharex=True, sharey=True
         )
@@ -59,13 +78,14 @@ def box_plot(dfs, subsets, titles=None, y="DLI", orient='horizontal'):
             axes[i].set_title(titles[i])
 
         df = dfs[dfs['label'] == subset]
-        brObj.plotterObj.box_plot_month_comparing(df, axes[i], y=y)
+        brObj.plotterObj.box_plot_month_comparing(
+            df, axes[i], y=y, ref_y=ref_y)
 
         # axes limits
         if y == "ShadowDepth_cum":
             axes[i].set_ylim(20, 90)
         elif y == 'DLI':
-            axes[i].set_ylim(0, 33)
+            axes[i].set_ylim(0, 43)
         # axes labels
 
     if orient == 'horizontal':
@@ -91,10 +111,9 @@ def box_plot(dfs, subsets, titles=None, y="DLI", orient='horizontal'):
         fig, Path(r'T:\Public\user\l.raumann_network\agri-PV\Poster') / f"{y}_{fn}",
         dpi=400, transparent=True)
 
-
+ref_y = gather_dailyCumulated_GHI_refDLI([4, 6, 8, 10])
 box_plot(dfs, subsets=subsets,  # titles=list(su.titles.values())
-         )
-
+         ref_y=ref_y)
 
 
 # #

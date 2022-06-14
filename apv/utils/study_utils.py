@@ -6,9 +6,6 @@ from pathlib import Path
 from typing import Literal
 
 import apv.utils.files_interface as fi
-from apv.classes.br_wrapper import BR_Wrapper
-from apv.classes.weather_data import WeatherData
-from apv.classes.util_classes.sim_datetime import SimDT
 from apv.classes.util_classes.settings_grouper import Settings
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
 
@@ -176,16 +173,3 @@ def load_dfs_for_subplots(
 
 
 # #
-
-
-def gather_dailyCumulated_GHI_DLI(months: list) -> pd.DataFrame:
-    df = pd.DataFrame()
-    df.index.name = 'Month'
-    settings = Settings()
-    settings.sim.use_typDay_perMonth_for_irradianceCalculation = True
-    for month in months:
-        settings.sim.sim_date_time = f'{month:02}-15_12:00'
-        df.loc[month, 'dCum_ghi[Wh m^-2]'] = \
-            WeatherData(settings).dailyCumulated_ghi
-        df.loc[month, 'DLI'] = df.loc[month, 'dCum_ghi[Wh m^-2]']*0.0074034
-    return df
