@@ -94,13 +94,18 @@ class Simulation:
         self.plot_title_components: list = ['weather', 'datetime']
         # all options: ['weather', 'module_form', 'resolution',
         #                'position', 'agg_func', 'datetime']
+
+        scan_z_params: dict = {'zstart' = 0.001,
+                               'z_inc' = 0,  # not yet implemented in evaluation
+                               'Nz' = 1}  # not yet implemented in evaluation
+        ##################
+        # less important / not fully implemented or obsolete at the moment
+
         self.scan_position: Literal['north', 'center', 'south', 'east'] = 'south'
         # to be used in scan field shifting, to shift scanned area within a system
         self.plots_shifts_xy = {'north': [0, 1], 'center': [0, 0],
                                 'south': [0, -1], 'east': [3, 0]}
 
-        ##################
-        # less important / not fully implemented at the moment
         self.scan_target: Literal['ground', 'module'] = 'ground'
         # TODO for module east west see br tutorial 19
 

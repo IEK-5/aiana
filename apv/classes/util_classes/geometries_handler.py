@@ -224,14 +224,13 @@ class GeometriesHandler:
             'xstart':  self.scan_area_anchor_x,  # bottom left for azimuth 180
             'ystart': self.scan_area_anchor_y,
             # ystart will be set by looping ygrid for multiprocessing
-            'zstart': 0.001,  # 0.05,
-            'xinc': xy_inc, 'yinc': 0, 'zinc': 0,
-            'sx_xinc': 0, 'sx_yinc': 0, 'sx_zinc': 0,
-            # NOTE Sensor x-coordinate = xstart + iy*xinc + ix*sx_xinc,
-            # whereby iy und ix are looped over range(Ny) and range(Nx)
-            'Nx': self.n_sensors_x, 'Ny': 1, 'Nz': 1,
+            #'zstart': 0.001,  # z shifted to sim settings scan_z_params
+            'xinc': xy_inc, 'yinc': 0, #'zinc': 0,
+            #'sx_xinc': 0, 'sx_yinc': 0, 'sx_zinc': 0,
+            'Nx': self.n_sensors_x, 'Ny': 1, #'Nz': 1,
             'orient': '0 0 -1'
         }
+        self.ground_lineScan.update(self.settings.sim.scan_z_params)
 
         self.ground_areaScan = self.ground_lineScan.copy()
         self.ground_areaScan['yinc'] = xy_inc
