@@ -1,19 +1,9 @@
 # #
-'''
-oct file = ...
-
-
-'''
-# import needed packages
-
 import sys
-import time
-import logging
-import warnings
+from frads import util
 import subprocess as sp
 from typing import Literal
 from pathlib import Path
-from PIL import ImageGrab
 
 import bifacial_radiance as br
 from apv.classes.util_classes.print_hider import PrintHider
@@ -25,9 +15,6 @@ from apv.classes.util_classes.settings_grouper import Settings
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
 # for testing
 from apv.settings.apv_systems import APV_Syst_InclinedTables_S_Morschenich
-
-
-from frads import util
 
 
 class OctFileHandler:
@@ -65,7 +52,7 @@ class OctFileHandler:
         # for custom radiance geometry descriptions:
         self.ghObj = ghObj
         self.debug_mode = debug_mode
-        self.groundScanArea_added = False
+        self.ResultsFalsifyingVisualisationsAdded = False
 
         # create a bifacial_radiance Radiance object
         self.radianceObj = br.RadianceObj(
@@ -100,9 +87,11 @@ class OctFileHandler:
         # scan area
         if add_groundScanArea:
             customObjects['scan_area'] = self.ghObj.groundscan_area_and_sensors
-            self.groundScanArea_added = True
+
+        if add_NorthArrow or add_groundScanArea:
+            self.ResultsFalsifyingVisualisationsAdded = True
         else:
-            self.groundScanArea_added = False
+            self.ResultsFalsifyingVisualisationsAdded = False
 
         # mounting structure
         structure_type = self.settings.apv.mounting_structure_type

@@ -78,7 +78,7 @@ if __name__ == '__main__':
     # #
     backup = settings.sim.spatial_resolution
     settings.sim.spatial_resolution = 1
-    BR_Wrapper(settings).create_and_view_octfile(  # topDownParallel_view=True
+    BR_Wrapper(settings).create_and_view_octfile_for_SceneInspection(  # topDownParallel_view=True
     )
     settings.sim.spatial_resolution = backup
 

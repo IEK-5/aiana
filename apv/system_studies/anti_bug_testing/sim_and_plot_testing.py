@@ -17,4 +17,5 @@ if __name__ == '__main__':
         settings.sim.sim_date_time = f'06-15_{hour:02}:00'
         brObj.update_timeStep_and_sky(settings)
         brObj.simulate_and_evaluate()
-        brObj.plotterObj.ground_heatmap(north_arrow_xy_posi=(-0.44, 1.2))
+        brObj.plotterObj.ground_heatmap(cm_unit='shadow_depth',
+                                        north_arrow_xy_posi=(-0.44, 1.2))

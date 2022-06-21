@@ -19,23 +19,23 @@ class Tester:
         self.settings.sim = SimSettings_ForTesting()
 
     def _view_oct_then_resetSettings(self):
-        BR_Wrapper(self.settings).create_and_view_octfile()
+        BR_Wrapper(self.settings).create_and_view_octfile_for_SceneInspection()
         self._set_defaultTestSettings()
 
     def view_in_rvu_then_in_acceleradRT(self):
         # without acceleradRT
         self.settings.sim.use_acceleradRT_view = False
-        BR_Wrapper(self.settings).create_and_view_octfile()
+        BR_Wrapper(self.settings).create_and_view_octfile_for_SceneInspection()
         # with acceleradRT
         self.settings.sim.use_acceleradRT_view = True
-        BR_Wrapper(self.settings).create_and_view_octfile()
+        BR_Wrapper(self.settings).create_and_view_octfile_for_SceneInspection()
 
     def test_panelAzimuth(self, azimuths: list, north_arrow=True):
         self.settings.sim.sim_date_time = '06-15_14:00'
         print('sim_date_time set to 06-15_14:00')
         for azimuth in azimuths:
             self.settings.apv.sceneDict['azimuth'] = azimuth
-            BR_Wrapper(self.settings).create_and_view_octfile(
+            BR_Wrapper(self.settings).create_and_view_octfile_for_SceneInspection(
                 topDownParallel_view=True,
                 add_NorthArrow=north_arrow)
 
@@ -84,7 +84,7 @@ class Tester:
 if __name__ == '__main__':
     testerObj = Tester()
     ##
-    BR_Wrapper(testerObj.settings).create_and_view_octfile()
+    BR_Wrapper(testerObj.settings).create_and_view_octfile_for_SceneInspection()
 
     # #
     for glass in [
@@ -103,7 +103,7 @@ if __name__ == '__main__':
         tictoc.tic()
         testerObj.settings.sim.spatial_resolution = 0.5
         testerObj.settings.apv = APV_Syst_InclinedTables_S_Morschenich()
-        BR_Wrapper(testerObj.settings).create_and_view_octfile(
+        BR_Wrapper(testerObj.settings).create_and_view_octfile_for_SceneInspection(
             updateSkyOnly=bool_update
         )
         testerObj.settings.apv = APV_ForTesting()  # reset

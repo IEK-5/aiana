@@ -28,7 +28,7 @@ if __name__ == '__main__':
         settings.sim.sim_date_time = '4-15_09:00'
         settings.sim.spatial_resolution = 0.5
         brObj = BR_Wrapper(settings)
-        brObj.create_and_view_octfile(
+        brObj.create_and_view_octfile_for_SceneInspection(
             # add_NorthArrow=True,
             # add_groundScanArea=False,
             # view_name='top_down'
@@ -36,10 +36,10 @@ if __name__ == '__main__':
     # #
 
 if __name__ == '__main__':
-    limit_root=r"C:\Users\Leonard Raumann\Documents\agri-PV\results\framed_APV_noBorderEffects\res-0.05m_step-3min\checker_board\month-6\data"
+    limit_root = r"C:\Users\Leonard Raumann\Documents\agri-PV\results\framed_APV_noBorderEffects\res-0.05m_step-3min\checker_board\month-6\data"
     df_limits = fi.get_min_max_of_cols_in_several_csv_files(
         [limit_root+r"\ground_results_06-15_06h27.csv",
-        limit_root+r"\ground_results_06-15_13h15.csv"]).round(1)
+         limit_root+r"\ground_results_06-15_13h15.csv"]).round(1)
     # for subset in ['std_glass', 'roof_for_EW']
     subsets = ['std',
                'std_sw', 'checker_board', 'cell_gaps',
@@ -101,7 +101,7 @@ if __name__ == '__main__':
                         ########
                         brObj.settings.set_names_and_paths()
                         if not brObj.settings.paths.csv_file_path.exists():
-                            brObj.update_timeStep(settings)
+                            brObj.update_timeStep_and_sky(settings)
                             brObj.simulate_and_evaluate()
                         else:
                             print('result exists, skipping')
@@ -112,7 +112,6 @@ if __name__ == '__main__':
                             if 'Wm2' not in df_check.columns:
                                 brObj.evaluatorObj.rename_and_add_result_columns()
                         ########
-
 
                         if month in months:  # == months[0]:
                             for cm_unit in ['radiation']:
@@ -131,13 +130,7 @@ settings.sim.time_step_in_minutes
 # ======================================================
 # cumulate and plot cum.
 # ======================================================
-import pandas as pd
-from pathlib import Path
 
-import apv.utils.study_utils as su
-import apv.utils.files_interface as fi
-from apv.classes.br_wrapper import BR_Wrapper
-from apv.classes.util_classes.settings_grouper import Settings
 
 if __name__ == '__main__':
     from apv.utils.plotting_utils import plotStyle

@@ -95,9 +95,9 @@ class Simulation:
         # all options: ['weather', 'module_form', 'resolution',
         #                'position', 'agg_func', 'datetime']
 
-        scan_z_params: dict = {'zstart' = 0.001,
-                               'z_inc' = 0,  # not yet implemented in evaluation
-                               'Nz' = 1}  # not yet implemented in evaluation
+        self.scan_z_params: dict = {'zstart': 0.001,
+                                    'zinc': 0,  # not yet implemented in evaluation
+                                    'Nz': 1}  # not yet implemented in evaluation
         ##################
         # less important / not fully implemented or obsolete at the moment
 

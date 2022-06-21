@@ -10,7 +10,8 @@ from apv.utils import files_interface as fi
 class Evaluator:
 
     # TODO Wm2 rename to W/m^2 possible?
-    # TODO header now sometimes = quantity name, sometimes = unit... unify!
+    # TODO column header now sometimes = quantity name, sometimes = unit...
+    # unify!
     # TODO ADD Bifacial factor
 
     def __init__(
@@ -60,23 +61,6 @@ class Evaluator:
         df['PARGround'] = df['Wm2'] * 4.57
         return df
 
-    @staticmethod
-    def _add_DLI(df_merged: pd.DataFrame) -> pd.DataFrame:
-        """Add Daily Light Integral (DLI)
-
-        Args:
-            df (pd.DataFrame): daily cumulated irradiation with a Wh/m^2 column
-        """
-
-        df_merged['DLI'] = df_merged['Whm2']*0.0074034
-        """0.0074034 = 4.57  [ref1]  * 0.45 [ref2] *3600/1000000
-        # mol quanta / m² = W*h/m² * µmol quanta/(s*m²) * (3600s/h) / (µ*1E6)
-        [ref1] Catsky1998 Plant growth chamber handbook, Chapt1., p.3, table2
-        [ref2] Faust2018, HORTSCIENCE 53(9):1250–1257.
-        https://doi.org/10.21273/HORTSCI13144-18"""
-
-        return df_merged
-
     def _add_shadowdepth(self, df, cumulative=False):
         """Shadow Depth is loss of incident solar energy in comparison
         with a non intersected irradiation; if 90% of irradiation available
@@ -105,7 +89,7 @@ class Evaluator:
         Returns:
             [type]: [description]
         """
-        # refresh time to allow for looping cumulative evaluation from outside
+        # refresh time, to allow for looping cumulative evaluation from outside
         simDT = SimDT(self.settings.sim)
         self.weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(simDT)
 
@@ -131,6 +115,23 @@ class Evaluator:
                   'cum clearSky ghi: ', cum_ghi_ref)
 
         return df
+
+    @staticmethod
+    def _add_DLI(df_merged: pd.DataFrame) -> pd.DataFrame:
+        """Add Daily Light Integral (DLI)
+
+        Args:
+            df (pd.DataFrame): daily cumulated irradiation with a Wh/m^2 column
+        """
+
+        df_merged['DLI'] = df_merged['Whm2']*0.0074034
+        """0.0074034 = 4.57  [ref1]  * 0.45 [ref2] *3600/1000000
+        # mol quanta / m² = W*h/m² * µmol quanta/(s*m²) * (3600s/h) / (µ*1E6)
+        [ref1] Catsky1998 Plant growth chamber handbook, Chapt1., p.3, table2
+        [ref2] Faust2018, HORTSCIENCE 53(9):1250–1257.
+        https://doi.org/10.21273/HORTSCI13144-18"""
+
+        return df_merged
 
     def cumulate_gendaylit_results(self,
                                    file_folder_to_merge: Path,

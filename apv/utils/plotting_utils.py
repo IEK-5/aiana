@@ -344,7 +344,7 @@ if __name__ == '__main__':
 
     brObj = BR_Wrapper(Settings())
     if not brObj.settings.paths.csv_file_path.exists():
-        brObj.create_octfile()
+        brObj.create_octfile_for_Simulation()
         brObj.simulate_and_evaluate()
     brObj.plotterObj.ground_heatmap()
 
