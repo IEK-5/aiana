@@ -52,10 +52,10 @@ def plot_heatmap(
     """
 
     # prepare and print heatmap-input data for inspection
-    print(df.nunique())
+    # print(df.nunique())
     data = df.pivot(y, x, c)
 
-    print(data)
+    # print(data)
 
     if ax_blanc is None:
         # create a figure object, which is a top level container for subplots

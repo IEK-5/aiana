@@ -11,6 +11,7 @@
 
     """
 
+from tkinter import W
 import numpy as np
 from apv.classes.util_classes.settings_grouper import Settings
 
@@ -224,13 +225,15 @@ class GeometriesHandler:
             'xstart':  self.scan_area_anchor_x,  # bottom left for azimuth 180
             'ystart': self.scan_area_anchor_y,
             # ystart will be set by looping ygrid for multiprocessing
-            #'zstart': 0.001,  # z shifted to sim settings scan_z_params
-            'xinc': xy_inc, 'yinc': 0, #'zinc': 0,
-            #'sx_xinc': 0, 'sx_yinc': 0, 'sx_zinc': 0,
-            'Nx': self.n_sensors_x, 'Ny': 1, #'Nz': 1,
-            'orient': '0 0 -1'
+            # 'zstart': 0.001,  # z shifted to sim settings scan_z_params
+            'xinc': xy_inc, 'yinc': 0,  # 'zinc': 0,
+            # 'sx_xinc': 0, 'sx_yinc': 0, 'sx_zinc': 0,
+            'Nx': self.n_sensors_x, 'Ny': 1,  # 'Nz': 1,
+            'orient': '0 0 -1'  # -1 to look downwards to the ground
+            # NOTE radiance will return irradiation (?) on the surface beeing
+            # hit by the vectors (rays) defined in linepts --> surface properties influence?
         }
-        self.ground_lineScan.update(self.settings.sim.scan_z_params)
+        self.ground_lineScan.update(self.settings.sim.RadSensors_z_params)
 
         self.ground_areaScan = self.ground_lineScan.copy()
         self.ground_areaScan['yinc'] = xy_inc
@@ -242,19 +245,29 @@ class GeometriesHandler:
     # =========================================================================
     # =============================== RAD TEXTS: ==============================
     # =========================================================================
-
-    def groundscan_area_and_sensors(self) -> str:
+    def groundscan_area(self) -> str:
         g = self.ground_areaScan
-        # ground scan area
+        m = self.settings.sim.spatial_resolution  # margin, otherwise
+        # the edge will falsify the results
+        l_x = self.scan_length_x+3/2*m
+        l_y = self.scan_length_y+3/2*m
+        l_z = 0.0001  # thickness
+        z_shift = g["zstart"] -\
+            self.settings.sim.RadSensors_to_scan_area_distance_z
         text = (
-            f'!genbox grass field {self.scan_length_x} {self.scan_length_y} 0.00001'
-            f' | xform -t {g["xstart"]} {g["ystart"]} 0'
+            f'!genbox grass field {l_x} {l_y} {l_z} '
+            f'| xform -t {g["xstart"]-m/2} {g["ystart"]-m/2} {z_shift}'
         )
+        return text
+
+    def sensor_visualization(self) -> str:
+        g = self.ground_areaScan
+
         # sensors rad text
         size = min(0.05, self.settings.sim.spatial_resolution/3)
-        text += (
-            f'\n!genbox red sensor {size} {size} {size/3} '
-            f'| xform -t {g["xstart"]-size/2} {g["ystart"]-size/2} 0 '
+        text = (
+            f'\n!genbox red sensor {size} {size} {size} '
+            f'| xform -t {g["xstart"]-size/2} {g["ystart"]-size/2} {g["zstart"]} '
             f'-a {g["Nx"]} -t {g["xinc"]} 0 0 '
             f'-a {g["Ny"]} -t 0 {g["yinc"]} 0'
         )

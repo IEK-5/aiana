@@ -44,15 +44,16 @@ if __name__ == '__main__':
     subsets = ['std',
                'std_sw', 'checker_board', 'cell_gaps',
                'roof_for_EW']
-    subsets = ['checker_board']
+    subsets = ['std']
     months = [4, 6, 8, 10]
-    months = [6]
+    months = [4]
     # months = range(1, 13)
     # hours = [19]
     hours = range(2, 24, 1)
     #hours = range(2, 12, 1)
     # minutes = [10]
     minutes = range(0, 60, settings.sim.time_step_in_minutes)
+    minutes = [0]
     # minutes = range(35, 60, settings.sim.time_step_in_minutes)
     # minute 60 is and has to be exclusive
 
@@ -60,13 +61,14 @@ if __name__ == '__main__':
     for subset in subsets:
         settings = su.adjust_settings(subset, settings)
         settings = su.adjust_APVclone_count(settings, hours[0])
+        settings.sim.rtraceAccuracy = 'accurate'
         # to update time settings in all sub classes of BR_Wrapper:
         brObj = BR_Wrapper(settings)
         brObj.octFileObj.create_octfile_without_sky()
         for month in months:
             day = 15  # (int(df_all['day_nearest_to_mean'].loc[month]))
-            settings.sim.results_subfolder = su.create_results_subfolderPath(
-                month, settings, subset)
+            settings.sim.results_subfolder: Path = su.create_results_subfolderPath(
+                month, settings, subset) / settings.sim.rtraceAccuracy
 
             weatherData = WeatherData(settings)
 

@@ -14,7 +14,7 @@ class Simulation:
 
         self.results_subfolder: Path = Path('test')
 
-        self.ground_albedo = 0.25  # grass
+        self.ground_albedo = 0.24  # grass
 
         self.spatial_resolution = 0.1  # [m]
         # distance between virtual radiation sensors
@@ -42,7 +42,9 @@ class Simulation:
         # NOTE hq results in really dark artefacts around posts
         # std in smaler dots
         # without interpolation: no artefacts
-        self.rtraceAccuracy = 'good_no_interp'
+        self.rtraceAccuracy: Literal[
+            'std', 'good_no_interp', 'accurate', 'acc_no_interp', 'hq'] \
+            = 'good_no_interp'
 
         # Accelerad settings ####################
         # need to be installed first https://nljones.github.io/Accelerad/index.html
@@ -95,9 +97,19 @@ class Simulation:
         # all options: ['weather', 'module_form', 'resolution',
         #                'position', 'agg_func', 'datetime']
 
-        self.scan_z_params: dict = {'zstart': 0.001,
-                                    'zinc': 0,  # not yet implemented in evaluation
-                                    'Nz': 1}  # not yet implemented in evaluation
+        # for the radiance sensors, zstart is where a radiance sensor vector starts
+        # it is looking downwards with orientation 0 0 -1 and will read the
+        # irradiance (?) of the surface the ray will hit first. To measure
+        # something being heigher than the ground with z = 0, we need to add an
+        # object with a surface (a scan_area or a plant...)
+
+        self.RadSensors_z_params: dict = {'zstart': 0.1,
+                                          'zinc': 0,  # not yet implemented,
+                                          'Nz': 1}  # not yet implemented
+        # multiple z,x,y doesnt make sense anyways as object is needed
+        # to recieve the light
+        self.RadSensors_to_scan_area_distance_z = 0.1
+
         ##################
         # less important / not fully implemented or obsolete at the moment
 

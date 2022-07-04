@@ -64,7 +64,8 @@ class OctFileHandler:
         # for all timesteps, so it is done here
 
     def create_octfile_without_sky(
-            self, add_groundScanArea=False, add_NorthArrow=False):
+            self, add_groundScanArea=False, add_NorthArrow=False,
+            add_sensor_vis=False):
         """creates pv modules and mounting structure (optional)
         so sky with ground can be added later
         """
@@ -77,18 +78,22 @@ class OctFileHandler:
         # to handle azimuth, the sky was already rotated instead
 
         customObjects = {}
-        # north arrow
         if self.settings.apv.module_form != 'none':
             customObjects['modules'] = self.get_radtext_of_all_modules
 
+        # scan area
+        if add_groundScanArea:
+            customObjects['scan_area'] = self.ghObj.groundscan_area
+
+        # north arrow
         if add_NorthArrow:
             customObjects['north_arrow'] = self.ghObj.north_arrow
 
-        # scan area
-        if add_groundScanArea:
-            customObjects['scan_area'] = self.ghObj.groundscan_area_and_sensors
+        # sensors
+        if add_sensor_vis:
+            customObjects['sensors'] = self.ghObj.sensor_visualization
 
-        if add_NorthArrow or add_groundScanArea:
+        if add_NorthArrow or add_sensor_vis:
             self.ResultsFalsifyingVisualisationsAdded = True
         else:
             self.ResultsFalsifyingVisualisationsAdded = False
@@ -273,10 +278,10 @@ class OctFileHandler:
             - self.settings.apv.sceneDict["azimuth"]
 
         if self.weatherData.dni == 0 and self.weatherData.dhi == 0:
-            sys.exit("""DNI and DHI are 0 within the last hour until the \
-                time given in settings/simulation/sim_date_time.\
-                \n--> Creating radiance files and view_scene() is not \
-                possible without light. Please choose a different time.""")
+            sys.exit("""DNI and DHI are 0!
+                \n--> Creating radiance files and view_scene() is not
+                possible without light. Maybe choose a different time
+                or start over again with fresh interactive window?""")
 
         if self.weatherData.sunalt < 0:
             sys.exit("""Cannot handle negative sun alitudes.\

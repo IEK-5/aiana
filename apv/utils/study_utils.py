@@ -46,7 +46,6 @@ def adjust_settings(
         settings.apv.module_form = 'roof_for_EW'
         settings.apv.sceneDict['azimuth'] = 90
         settings.apv.sceneDict['nRows'] = 8
-        settings.apv.sceneDict['nRows'] = 8
         # TODO x and y scale need to be swapped to be strict?
         settings.apv.gScan_area.update({
             'ground_scan_shift_x': ghObj.scan_length_x,

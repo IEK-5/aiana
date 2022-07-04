@@ -98,7 +98,7 @@ class Simulator:
                 # accelerad_rtrace: fatal - (!xform...:
                 # bad arguments for polygon "a4.1.a1.SUNFARMING.6457"
                 # in this case data will be empty (NoneType).
-                print('result data empty, trying again...')
+                print('TypeError: result data empty, trying again...')
 
         return 'Area scan done.'
 

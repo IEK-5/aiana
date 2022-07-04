@@ -1,4 +1,3 @@
-from apv.settings.apv_systems import Default as APV_System
 from pathlib import Path
 from apv.settings.apv_systems import Default as SystSettings
 from apv.settings.view_settings import ViewSettings
@@ -24,7 +23,7 @@ class Names:
     csv_fn: str  # fn = file name
 
     def __init__(self, SimSettings: Simulation,
-                 APV_SystSettings: APV_System):
+                 APV_SystSettings: SystSettings):
 
         self.csv_fn = SimSettings.sim_date_time.replace(':', 'h')+'.csv'
 

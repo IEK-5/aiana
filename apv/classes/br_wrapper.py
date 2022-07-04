@@ -59,27 +59,33 @@ class BR_Wrapper():
         self.evaluatorObj = Evaluator(self.settings, self.weatherData)
         self.plotterObj = Plotter(self.settings, self.ghObj)
 
-    def create_octfile_for_Simulation(self, add_groundScanArea=False,
-                                      add_NorthArrow=False, update_sky_only=False):
+    def create_octfile_for_Simulation(
+            self, add_groundScanArea=False, add_sensor_vis=False,
+            add_NorthArrow=False, update_sky_only=False):
         """for simulation preperation in two steps:
             #1 optional create scene without sky,
             #2 add sky
         (passing #1 by setting update_sky_only=True
-        reduced large scene creation from 40 to 20 seconds.)
+        reduced large scene creation from 40 to 20 seconds.
+
+        WARNING: add_groundScanArea is needed for differenzt scan startz
+        but the ground albedo wount be used this way. #TODO)
         """
         if update_sky_only:
             pass
         else:
             self.octFileObj.create_octfile_without_sky(
-                add_groundScanArea, add_NorthArrow)
+                add_groundScanArea, add_sensor_vis, add_NorthArrow)
         self.octFileObj.add_sky_to_octfile()
 
-    def create_and_view_octfile_for_SceneInspection(self, add_groundScanArea=True,
-                                                    add_NorthArrow=True, view_name='total'):
+    def create_and_view_octfile_for_SceneInspection(
+            self, add_groundScanArea=True, add_sensor_vis=True,
+            add_NorthArrow=True, view_name='total'):
         """for scene inspection: add ground scan area and north arrow
         visualiation, switch to parallel view for top down, which allows for
         more easy checking of a post-to-post scan area unit cell placement"""
-        self.create_octfile_for_Simulation(add_groundScanArea, add_NorthArrow)
+        self.create_octfile_for_Simulation(
+            add_groundScanArea, add_sensor_vis, add_NorthArrow)
         view_type = 'parallel' if view_name == 'top_down' else 'perspective'
         self.octFileObj.view_octfile(view_name=view_name, view_type=view_type)
 
