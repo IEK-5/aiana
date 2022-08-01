@@ -108,9 +108,9 @@ class WeatherData:
             self.dni = s['dni_Wm-2']
             self.ghi_clearsky = s['ghi_clearSky_Wm-2']
         except KeyError:
-            sys.exit('\n Please choose a simlation time and timestep, which '
-                     'can meet, starting at 00:00. E.g. not 15:30 and 60 min\n'
-                     )
+            raise Exception('\n Please choose a simlation time and timestep, which '
+                            'can meet, starting at 00:00. E.g. not 15:30 and 60 min\n'
+                            )
         # taking sun position in between adjacent right labled irradiation data
         timedelta_sec = str(int(60*self.settings.sim.time_step_in_minutes/2))
         solpos: pd.DataFrame = \

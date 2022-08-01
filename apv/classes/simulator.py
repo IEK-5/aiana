@@ -109,8 +109,8 @@ class Simulator:
             f'scan_{y_start:.3f}'
         )
         if self.settings.sim.scan_target == 'module':
-            sys.exit("scan_target = 'module' is not yet supported"
-                     "but prepared in code...")
+            raise Exception("scan_target = 'module' is not yet supported"
+                            "but prepared in code...")
 
             self.frontscan, self.backscan = self.analObj.moduleAnalysis(
                 scene=self.scene, sensorsy=self.ghObj.n_sensors_x)

@@ -37,44 +37,45 @@ def adjust_settings(
         'ground_scan_margin_y': -2*settings.apv.sceneDict['pitch']
         - ghObj.singleRow_footprint_y/2,
     })
+    match subset:
+        case 'std':
+            return settings
+        case 'std_sw':
+            settings.apv.sceneDict['azimuth'] = 225
+            settings.apv.gScan_area.update({'ground_scan_shift_y': 0})
+        case 'roof_for_EW':
+            settings.apv.module_form = 'roof_for_EW'
+            settings.apv.sceneDict['azimuth'] = 90
+            settings.apv.sceneDict['nRows'] = 8
+            # TODO x and y scale need to be swapped to be strict?
+            settings.apv.gScan_area.update({
+                'ground_scan_shift_x': ghObj.scan_length_x,
+                'ground_scan_shift_y': 0,
+                'ground_scan_margin_y': -3*settings.apv.sceneDict['pitch']
+                - ghObj.singleRow_footprint_y/2})
+            settings.apv.mountingStructureDict.update({
+                'n_apv_system_clones_in_x': 2,
+                'n_apv_system_clones_in_negative_x': 2})
 
-    if subset == 'std_sw':
-        settings.apv.sceneDict['azimuth'] = 225
-        settings.apv.gScan_area.update({'ground_scan_shift_y': 0})
+        case 'std_glass':
+            settings.apv.glass_modules = True
 
-    elif subset == 'roof_for_EW':
-        settings.apv.module_form = 'roof_for_EW'
-        settings.apv.sceneDict['azimuth'] = 90
-        settings.apv.sceneDict['nRows'] = 8
-        # TODO x and y scale need to be swapped to be strict?
-        settings.apv.gScan_area.update({
-            'ground_scan_shift_x': ghObj.scan_length_x,
-            'ground_scan_shift_y': 0,
-            'ground_scan_margin_y': -3*settings.apv.sceneDict['pitch']
-            - ghObj.singleRow_footprint_y/2})
-        settings.apv.mountingStructureDict.update({
-            'n_apv_system_clones_in_x': 2,
-            'n_apv_system_clones_in_negative_x': 2})
+        case 'checker_board':
+            # settings.apv.framed_modules = True
+            settings.apv.glass_modules = True
+            settings.apv.module_form = 'checker_board'
+            settings.apv.cellLevelModuleParams.update({
+                'xcellgap': 0, 'ycellgap': 0
+            })
 
-    elif subset == 'std_glass':
-        settings.apv.glass_modules = True
-
-    elif subset == 'checker_board':
-        # settings.apv.framed_modules = True
-        settings.apv.glass_modules = True
-        settings.apv.module_form = 'checker_board'
-        settings.apv.cellLevelModuleParams.update({
-            'xcellgap': 0, 'ycellgap': 0
-        })
-
-    elif subset == 'cell_gaps':
-        settings.apv.glass_modules = True
-        settings.apv.module_form = 'cell_gaps'
-        settings.apv.cellLevelModuleParams.update({
-            'xcellgap': 0.03, 'ycellgap': 0.03  # NOTE mohd hatte 0.02
-        })
-    elif subset != 'std':
-        sys.exit('This subset does not exist.')
+        case 'cell_gaps':
+            settings.apv.glass_modules = True
+            settings.apv.module_form = 'cell_gaps'
+            settings.apv.cellLevelModuleParams.update({
+                'xcellgap': 0.03, 'ycellgap': 0.03  # NOTE mohd hatte 0.02
+            })
+        case _:
+            sys.exit('This subset does not exist.')
     return settings
 
 

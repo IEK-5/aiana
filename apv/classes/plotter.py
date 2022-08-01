@@ -56,8 +56,8 @@ class Plotter:
         if df is None:
             fp = self.settings.paths.csv_file_path
             if fp.exists() is False:
-                sys.exit("Can't plot, "
-                         f"{self.settings.paths.csv_file_path} not found.")
+                raise Exception("Can't plot, "
+                                f"{self.settings.paths.csv_file_path} not found.")
             else:
                 df = fi.df_from_file_or_folder(
                     str(self.settings.paths.csv_file_path))
@@ -224,9 +224,9 @@ class Plotter:
                 dict_up = {'z': 'DLI', 'z_label':
                            r'DLI [mol photons $\cdot$ m$^{-2}$]'}
             else:
-                sys.exit('cm_unit = DLI is only for cumulative')
+                raise Exception('cm_unit = DLI is only for cumulative')
         else:
-            sys.exit('cm_unit has to be radiation, shadow_depth, PAR or DLI')
+            raise Exception('cm_unit has to be radiation, shadow_depth, PAR or DLI')
 
         input_dict.update(dict_up)
 

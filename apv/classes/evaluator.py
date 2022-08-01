@@ -101,8 +101,8 @@ class Evaluator:
             ghi_ref = self.weatherData.ghi
             cum_ghi_ref = self.weatherData.dailyCumulated_ghi
         else:
-            sys.exit('settings.sim.for_shadowDepths_compare_GGI_to has to '
-                     'be set to "clearsky_GHI" or "GHI_as_TMY_aggfunc".')
+            raise Exception('settings.sim.for_shadowDepths_compare_GGI_to has to '
+                            'be set to "clearsky_GHI" or "GHI_as_TMY_aggfunc".')
 
         # instantaneous shadow depth
         if self.settings.sim.sky_gen_mode == 'gendaylit' and not cumulative:

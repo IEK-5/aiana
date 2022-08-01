@@ -443,9 +443,9 @@ class Evaluator:
                 dict_up = {'z': 'DLI', 'z_label':
                            r'DLI [mol photons $\cdot$ m$^{-2}$]'}
             else:
-                sys.exit('cm_unit = DLI is only for cumulative')
+                raise Exception('cm_unit = DLI is only for cumulative')
         else:
-            sys.exit('cm_unit has to be radiation, shadow_depth, PAR or DLI')
+            raise Exception('cm_unit has to be radiation, shadow_depth, PAR or DLI')
 
         input_dict.update(dict_up)
 

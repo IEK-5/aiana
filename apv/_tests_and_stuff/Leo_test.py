@@ -1,4 +1,6 @@
 # #
+raise ValueError('test')
+# #
 import os, sys
 
 from apv.classes.util_classes.print_hider import PrintHider

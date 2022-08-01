@@ -278,13 +278,13 @@ class OctFileHandler:
             - self.settings.apv.sceneDict["azimuth"]
 
         if self.weatherData.dni == 0 and self.weatherData.dhi == 0:
-            sys.exit("""DNI and DHI are 0!
+            raise ValueError("""DNI and DHI are 0!
                 \n--> Creating radiance files and view_scene() is not
                 possible without light. Maybe choose a different time
                 or start over again with fresh interactive window?""")
 
         if self.weatherData.sunalt < 0:
-            sys.exit("""Cannot handle negative sun alitudes.\
+            raise ValueError("""Cannot handle negative sun alitudes.\
                 \n--> Creating radiance files and view_scene() is not \
                 possible without light. Please choose a different time.""")
 
