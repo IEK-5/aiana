@@ -43,7 +43,7 @@ import pandas as pd
         cell_gaps_roof_for_EW: combination of cell_gaps and roof_for_EW
         none: no modules (so e.g. only the mounting structure)
 
-    mounting_structure_type [new]:
+    mountingStructureType [new]:
         none: no structure
         inclined_tables: 'n_post_x' posts per row are near the module row edges
             with different heights to compensate the module tilt
@@ -51,7 +51,24 @@ import pandas as pd
             axis the posts within the rows and between different rows are
             each connected by two horzontal structural beams.
 
-    others are commented inline
+    mountingStructureDict [new]:
+            'material': 'Metal_Aluminum_Anodized',
+                or other rad material, e.g.'black'
+            'post_thickness_x': mounting structure post thickness in x [m]
+            'post_thickness_y': mounting structure post thickness in y [m]
+            'n_post_x': 2,  # number of posts along x (along row) [-]
+            'module_to_post_distance_x': in top down view, distance from
+                the module edge to post edge (only at one side, or symmetrical,
+                if 'post_distance_x' is set to "auto")
+            'post_distance_x': float, or "auto" for symmetric adaption
+            'inner_table_post_distance_y': only used, if mountingStructureType
+                == 'inclined_tables'
+            'n_apv_system_clones_in_x': number of apv system clones in x-
+                direction (for azimuth = 180: cloned towards east). This allows
+                to have a larger gap between the modules only every x modules
+            'n_apv_system_clones_in_negative_x': as above but to the other side
+
+    other settings are commented inline
     """
 
 
@@ -72,7 +89,7 @@ class Default:
                            'y': 1.980,
                            'xgap': 0.05,
                            'ygap': 0.05,
-                           'zgap': 0,
+                           'zgap': 0,  # no effect, not yet implemented
                            'numpanels': 2
                            }
 
@@ -99,17 +116,17 @@ class Default:
 
         self.mountingStructureDict = {
             'material': 'Metal_Aluminum_Anodized',
-            'post_thickness_x': 0.2,  # mounting structure post thickness [m]
-            'post_thickness_y': 0.2,  # in y
-            'n_post_x': 2,  # number of posts along x (along row) [-]
+            'post_thickness_x': 0.2,
+            'post_thickness_y': 0.2,
+            'n_post_x': 2,
             'module_to_post_distance_x': 0.5,
-            'inner_table_post_distance_y': 1.35,  # only used by 'inclined_tables'
-            'n_apv_system_clones_in_x': 0,  # number of apv system clones in x-
-            # direction (for azimuth = 180: cloned towards east)
+            'post_distance_x': "auto",
+            'inner_table_post_distance_y': 1.35,
+            'n_apv_system_clones_in_x': 0,
             'n_apv_system_clones_in_negative_x': 0,
         }
         # not in above dict to allow for literals (other options):
-        self.mounting_structure_type: Literal[
+        self.mountingStructureType: Literal[
             'none',
             'framed_single_axes',
             'inclined_tables',
@@ -118,12 +135,12 @@ class Default:
         ] = 'framed_single_axes'
 
         # ### ground scan area settings
-        self.gScan_area: dict = {
+        self.gScanAreaDict: dict = {
             'ground_scan_margin_x': 0,  # [m]
             'ground_scan_margin_y': 0,  # [m]
             'ground_scan_shift_x': 0,  # [m] positiv: towards east
             'ground_scan_shift_y': 0,  # [m] positiv: towards north
-            'round_up_scan_area_edgeLengths': False  # round up to full meters
+            'round_up_scan_edgeLengths': False  # round up to full meters
         }  # NOTE the gScan area is placed below the foot print of the modules,
         # so that the modules projected to groud (foot print) are just inside
         # of it (all rows, but not the system clones). The visualized object
@@ -175,137 +192,17 @@ class APV_Syst_InclinedTables_S_Morschenich(Default):
                            'numpanels': 1
                            }
 
+        self.mountingStructureType = 'morschenich_fixed'
+
         self.mountingStructureDict.update({
             'material': 'Metal_Aluminum_Anodized',
-            'post_thickness_x': 0.041,  # mounting structure post thickness [m]
-            'post_thickness_y': 0.12,  # in y
-            'n_post_x': 11,  # number of posts along x (along row) [-]
-            'module_to_post_distance_x': 0,
-            'post_distance_x': 4,  # leave key out for adaption to modules
-            # e.g. via negative 'module_to_post_distance_x'
+            'post_thickness_x': 0.041,
+            'post_thickness_y': 0.12,
+            'n_post_x': 11,
+            'post_distance_x': 4,
             'inner_table_post_distance_y': 1.35,
             # at outer frame for 3 posts: (2.82-0.12)/2 = 1.35
         })
-
-        self.mounting_structure_type = 'morschenich_fixed'
-
-
-"""
-class APV_Morchenich_Checkerboard(Default):
-
-    def __init__(self):
-        super().__init__()
-        self.sceneDict['nRows'] = 5
-
-        # To reduce sim time and get periodic boundary conditions
-        self.ground_scan_margin_x = 0
-        # y reduction (negative margin)
-        self.ground_scan_margin_y = (
-            -self.sceneDict['pitch'] * (
-                self.sceneDict['nRows']/2-1)-Default.moduleDict['y'])
-
-        # north shift is needed for winter to get
-        # periodic boundary conditions in this setup (geometry etc)
-        self.ground_scan_shift_y = self.sceneDict['pitch']
-
-    module_form: Default.module_form = 'checker_board'
-    # set gap in std module form = 1m
-
-    #sceneDict = sceneDict.copy()
-    #sceneDict['nRows'] = 5
-
-    # 3 clones are needed towards sun for periodic boundary conditions
-    # make this depending on sim time to save computation duration
-    n_apv_system_clones_in_x: int = 1  # for azimuth = 180: cloned towards east
-    n_apv_system_clones_in_negative_x: int = 1  # towards west
-
-    enlarge_beams_for_periodic_shadows: bool = True
-
-
-class APV_Morchenich_EastWest(Default):
-    module_form: Default.module_form = 'roof_for_EW'
-
-    moduleDict = Default.moduleDict.copy()
-    moduleDict['x'] = 55*Default.moduleDict['x']+54*Default.moduleDict['xgap']
-
-    # set gap in std module form = 1m
-    sceneDict = {'tilt': 20,
-                 'pitch': 10,
-                 'hub_height': 4.5,
-                 'azimuth': 90,
-                 'nMods': 1,  # (10+1)*5,
-                 'nRows': 7,
-                 }
-
-    mountingStructureDict = Default.mountingStructureDict.copy()
-    mountingStructureDict['n_post_x'] = 6
-    mountingStructureDict['module_to_post_distance_x'] = 0
-
-    # y reduction (negative margin)
-    x_pitch = moduleDict['x']*11/55
-    # 11*(Default.moduleDict['x']+Default.moduleDict['xgap'])
-    ground_scan_margin_x = -2*x_pitch
-    ground_scan_margin_y = (
-        -sceneDict['pitch'] * (sceneDict['nRows']/2-1)-Default.moduleDict['y'])
-    ground_scan_shift_y = -Default.moduleDict['x']/2 + x_pitch
-
-    enlarge_beams_for_periodic_shadows: bool = True
-
-
-class APV_Syst_InclinedTables_Juelich(Default):
-
-    sceneDict = {'tilt': 15,
-                 'pitch': 10,
-                 'hub_height': 2.25,
-                 'azimuth': 225,
-                 'nMods': 10,
-                 'nRows': 2,
-                 }
-
-    moduleDict = {'x': 1.980,
-                  'y': 0.998,
-                  'xgap': 0.1,
-                  'ygap': 0.1,
-                  'zgap': 0,
-                  'numpanels': 5
-                  }
-
-    mountingStructureDict = {
-        'material': 'Metal_Aluminum_Anodized',
-        'post_thickness_y': 0.15,  # mounting structure post thickness [m]
-        'n_post_x': 3,  # number of posts along x (along row) [-]
-        'module_to_post_distance_x': 0
-    }
-
-    mounting_structure_type: Default.mounting_structure_type = \
-        'inclined_tables'
-    # add_glass_box = True # for greenhouse, not in use atm
-    glass_box_to_APV_distance = 2  # [m]
-
-
-class SimpleSingleCheckerBoard(Default):
-    # as for Perna2019
-
-    module_form: Default.module_form = 'checker_board'
-
-    sceneDict = {'tilt': 36.6,
-                 'pitch': 7.0,  # "row width"
-                 'hub_height': 5,
-                 'azimuth': 180,
-                 'nMods': 1,
-                 'nRows': 1,
-                 }
-
-    moduleDict = {'x': 6.0,
-                  'y': 3.0,
-                  'xgap': 0.001,
-                  'ygap': 0.001,
-                  'zgap': 0,
-                  'numpanels': 1
-                  }
-
-    mounting_structure_type: Default.mounting_structure_type = 'none'
-"""
 
 
 class APV_ForTesting(Default):
@@ -319,6 +216,6 @@ class APV_ForTesting(Default):
                           'nMods': 4,
                           'nRows': 2}
 
-        self.mounting_structure_type = 'framed_single_axes'
+        self.mountingStructureType = 'framed_single_axes'
         self.mountingStructureDict['module_to_post_distance_x'] = 0.5
         self.mountingStructureDict['n_apv_system_clones_in_x'] = 1

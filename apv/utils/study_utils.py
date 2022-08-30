@@ -30,7 +30,7 @@ def adjust_settings(
     settings.apv.mountingStructureDict.update({
         'n_apv_system_clones_in_x': 3,
         'n_apv_system_clones_in_negative_x': 3})
-    settings.apv.gScan_area.update({
+    settings.apv.gScanAreaDict.update({
         'ground_scan_shift_x': 0,  # forgetting this at first messed me up
         'ground_scan_shift_y': settings.apv.sceneDict['pitch']
         + settings.apv.mountingStructureDict['post_thickness_y']/2,
@@ -42,13 +42,13 @@ def adjust_settings(
             return settings
         case 'std_sw':
             settings.apv.sceneDict['azimuth'] = 225
-            settings.apv.gScan_area.update({'ground_scan_shift_y': 0})
+            settings.apv.gScanAreaDict.update({'ground_scan_shift_y': 0})
         case 'roof_for_EW':
             settings.apv.module_form = 'roof_for_EW'
             settings.apv.sceneDict['azimuth'] = 90
             settings.apv.sceneDict['nRows'] = 8
             # TODO x and y scale need to be swapped to be strict?
-            settings.apv.gScan_area.update({
+            settings.apv.gScanAreaDict.update({
                 'ground_scan_shift_x': ghObj.scan_length_x,
                 'ground_scan_shift_y': 0,
                 'ground_scan_margin_y': -3*settings.apv.sceneDict['pitch']

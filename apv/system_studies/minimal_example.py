@@ -9,7 +9,7 @@ if __name__ == '__main__':
     # optional accelerad if installed:
     settings.sim.use_acceleradRT_view = True
     settings.sim.use_accelerad_GPU_processing = True
-    #settings.apv = APV_Syst_InclinedTables_S_Morschenich()
+    settings.apv = APV_Syst_InclinedTables_S_Morschenich()
     # settings.apv.sceneDict['nRows']=6
 
     brObj = BR_Wrapper(settings)

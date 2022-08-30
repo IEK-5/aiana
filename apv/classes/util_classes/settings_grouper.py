@@ -20,12 +20,12 @@ class Settings:
 class Names:
     # Radiance scene file name (.oct) and the output files
     oct_fn: str
-    csv_fn: str  # fn = file name
+    csv_fn_ext: str  # fn_ext = file name extension added behind ground_results
 
     def __init__(self, SimSettings: Simulation,
                  APV_SystSettings: SystSettings):
 
-        self.csv_fn = SimSettings.sim_date_time.replace(':', 'h')+'.csv'
+        self.csv_fn_ext = SimSettings.sim_date_time.replace(':', 'h')+'.csv'
 
         self.oct_fn = SimSettings.study_name \
             + '_' + APV_SystSettings.module_form \
@@ -48,7 +48,7 @@ class Paths(UserPaths):
             / SimSettings.results_subfolder
         self.csv_parent_folder: Path = self.results_folder / 'data'
         self.csv_file_path: Path = self.csv_parent_folder /\
-            f'ground_results_{FileNames.csv_fn}'
+            f'ground_results_{FileNames.csv_fn_ext}'
 
         # NOTE check folder existence is done right before saving sim results
         # to avoid creating empty folders upon init

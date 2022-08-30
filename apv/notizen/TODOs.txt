@@ -4,18 +4,7 @@ always:
 -----------------
 
 short term:
-
 - komprimierung pandas hdf5
-
-für conference paper/poster:
-- box plot reproduzieren mit zusätzlich südwest std.
-
-paper / poster Aufbau:
-- tool beschreibung (input, output)
-- wetterdaten
-- acceleradRT bilder und beispiel heatmaps
-- box plot
-- ridge plots? wenn noch zeit
 
 
 ------------

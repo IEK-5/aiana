@@ -17,17 +17,17 @@ if __name__ == '__main__':
     settings.apv = APV_ForTesting()
     settings.apv.module_form = 'cell_gaps'
     # TODO setting ground_scan_margin_x to -3 still draws green area, but not red sensors
-    settings.apv.gScan_area['ground_scan_margin_x'] = -2
-    settings.apv.gScan_area['ground_scan_margin_y'] = -6
-    settings.apv.gScan_area['ground_scan_shift_x'] = -2
-    settings.apv.gScan_area['ground_scan_shift_y'] = -4
+    settings.apv.gScanAreaDict['ground_scan_margin_x'] = -2
+    settings.apv.gScanAreaDict['ground_scan_margin_y'] = -6
+    settings.apv.gScanAreaDict['ground_scan_shift_x'] = -2
+    settings.apv.gScanAreaDict['ground_scan_shift_y'] = -4
     # #
 if __name__ == '__main__':
-    for z in [0,5]:
+    for z in [0, 5]:
         settings.sim.RadSensors_z_params['zstart'] = z
         settings.sim.results_subfolder = f'z_test/z {z}'
         brObj = BR_Wrapper(settings)
-        #brObj.create_and_view_octfile_for_SceneInspection()
+        # brObj.create_and_view_octfile_for_SceneInspection()
 ##
         brObj.create_octfile_for_Simulation(add_groundScanArea=True
                                             )

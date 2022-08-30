@@ -137,23 +137,23 @@ class GeometriesHandler:
         self.post_start_x = self.sw_modCorner_x - modToPostDist_x \
             - self.mount['post_thickness_y']/2
 
-        if 'post_distance_x' in self.mount:
-            self.post_distance_x = self.mount['post_distance_x']
-        else:
+        if self.mount['post_distance_x'] == "auto":
             self.post_distance_x = self.clone_distance_x/(
                 self.mount['n_post_x']-1)
+        else:
+            self.post_distance_x = self.mount['post_distance_x']
 
     def _set_scan_lengths_x_y(self):
         """ground scan dimensions (old name: x_field, y_field)"""
         self.scan_length_x = self.allRows_footprint_x \
-            + 2*self.settings.apv.gScan_area['ground_scan_margin_x'] \
+            + 2*self.settings.apv.gScanAreaDict['ground_scan_margin_x'] \
             + 2*self.mount['module_to_post_distance_x'] \
 
         self.scan_length_y = self.allRows_footprint_y \
-            + 2*self.settings.apv.gScan_area['ground_scan_margin_y']
+            + 2*self.settings.apv.gScanAreaDict['ground_scan_margin_y']
 
         # round up (ceiling)
-        if self.settings.apv.gScan_area['round_up_scan_area_edgeLengths']:
+        if self.settings.apv.gScanAreaDict['round_up_scan_edgeLengths']:
             self.scan_length_x = np.ceil(self.scan_length_x)
             self.scan_length_y = np.ceil(self.scan_length_y)
 
@@ -175,9 +175,9 @@ class GeometriesHandler:
 
         # south west corners of the ground scan area
         self.scan_area_anchor_x = -self.scan_length_x/2 + self.center_offset_x \
-            + self.settings.apv.gScan_area['ground_scan_shift_x']
+            + self.settings.apv.gScanAreaDict['ground_scan_shift_x']
         self.scan_area_anchor_y = -self.scan_length_y/2 + self.center_offset_y \
-            + self.settings.apv.gScan_area['ground_scan_shift_y']
+            + self.settings.apv.gScanAreaDict['ground_scan_shift_y']
 
     def get_rad_txt_for_cloning_the_apv_system(self) -> str:
         """Usefull for periodic boundary conditions.

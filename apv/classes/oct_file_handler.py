@@ -99,7 +99,7 @@ class OctFileHandler:
             self.ResultsFalsifyingVisualisationsAdded = False
 
         # mounting structure
-        structure_type = self.settings.apv.mounting_structure_type
+        structure_type = self.settings.apv.mountingStructureType
         if structure_type == 'inclined_tables':
             customObjects['structure'] = self.ghObj.inclined_tables
         elif structure_type == 'morschenich_fixed':

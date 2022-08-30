@@ -118,11 +118,11 @@ if __name__ == '__main__':
                         if month in months:  # == months[0]:
                             for cm_unit in ['radiation']:
                                 fig_path = settings.paths.results_folder / Path(
-                                    f'{settings.names.csv_fn[:-4]}_{cm_unit}.jpg')
+                                    f'{settings.names.csv_fn_ext[:-4]}_{cm_unit}.jpg')
                                 if not fig_path.exists():
                                     brObj.plotterObj.ground_heatmap(
                                         plot_dpi=250,
-                                        cm_unit=cm_unit,
+                                        cm_quantity=cm_unit,
                                         df_col_limits=df_limits
                                     )
 
@@ -190,7 +190,7 @@ if __name__ == '__main__':
                 df_merged,
                 destination_file_path=desti_fp,
                 cumulative=True,
-                cm_unit='DLI',
+                cm_quantity='DLI',
                 # cm_unit='shadow_depth',
                 # +'\ncumulated day (15$^{th}$)' + f' in month {month:02}'
                 plot_title=su.titles[subset],

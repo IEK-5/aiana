@@ -26,7 +26,7 @@ class Plotter:
     def ground_heatmap(
         self,
         df: pd.DataFrame = None,
-        cm_unit: str = None,
+        cm_quantity: str = None,
         cumulative: bool = None,
         destination_file_path: Path = None,
         plot_dpi: int = None,
@@ -45,6 +45,9 @@ class Plotter:
             from the csv file name stored in an instance of this class.
             Defaults to None.
 
+            cm_quantity: Literal['radiation', 'PAR', 'shadow_depth', 'DLI']
+            if None, value of sim_settings.cm_quantity is used.
+
             df_col_limits (pd.DataFrame): with same columns as in df with a min
             and max row (as e.g. returned by df_concatenated.agg([min, max]))
             to be used as color bar limits.
@@ -61,8 +64,8 @@ class Plotter:
             else:
                 df = fi.df_from_file_or_folder(
                     str(self.settings.paths.csv_file_path))
-        if cm_unit is None:
-            cm_unit = self.settings.sim.cm_quantity
+        if cm_quantity is None:
+            cm_quantity = self.settings.sim.cm_quantity
 
         if plot_dpi is None:
             plot_dpi = self.settings.sim.plot_dpi
@@ -75,12 +78,12 @@ class Plotter:
         if df_col_limits is None:
             df_col_limits = df.agg([min, max])
         if col_bar_min is not None:
-            df_col_limits.loc['min', cm_unit] = col_bar_min
+            df_col_limits.loc['min', cm_quantity] = col_bar_min
         if col_bar_max is not None:
-            df_col_limits.loc['max', cm_unit] = col_bar_max
+            df_col_limits.loc['max', cm_quantity] = col_bar_max
 
         label_and_cm_input: dict = self.get_label_and_cm_input(
-            cm_unit=cm_unit, cumulative=cumulative,
+            cm_unit=cm_quantity, cumulative=cumulative,
             df_col_limits=df_col_limits)
 
         ticklabels_skip_count_number = int(
@@ -117,7 +120,7 @@ class Plotter:
 
         if destination_file_path is None:
             destination_file_path = self.settings.paths.results_folder / Path(
-                f'{self.settings.names.csv_fn[:-4]}_{cm_unit}.jpg'
+                f'{self.settings.names.csv_fn_ext[:-4]}_{cm_quantity}.jpg'
             )
         fi.save_fig(fig, destination_file_path, dpi=plot_dpi)
 

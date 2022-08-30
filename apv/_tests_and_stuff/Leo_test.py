@@ -1,6 +1,4 @@
 # #
-raise ValueError('test')
-# #
 import os, sys
 
 from apv.classes.util_classes.print_hider import PrintHider
@@ -39,6 +37,16 @@ import pandas
 import pytz
 from pandas.tseries.offsets import Minute
 
+
+def foo(a=1):
+    print(2*a)
+
+def bar(b=2, **kwargs):
+    foo(**kwargs)
+
+bar(a=3)
+
+# #
 
 class test:
     a = 1
@@ -87,17 +95,43 @@ test.temperature
 
 # #
 
+import copy
 
-class test:
-    test =
+class NestedTest:
+    def __init__(self) -> None:
+        self.a = 2
 
+class Test:
+    def __init__(self) -> None:
+        self.n_obj = NestedTest()
 
-foo = test()
+foo = Test()
+foo2 = copy.deepcopy(foo)
 
-setattr(foo, 'a', 2)
-foo.a
+foo2.n_obj.a = 3
+foo.n_obj.a
 
 # #
+import pickle
+
+class NestedTest:
+    def __init__(self) -> None:
+        self.a = 2
+
+class Test:
+    def __init__(self) -> None:
+        self.n_obj = NestedTest()
+
+foo = Test()
+pickled = pickle.dumps(foo)
+
+foo.n_obj.a = 3
+foo2 = pickle.loads(pickled)
+foo2.n_obj.a
+
+# #
+
+
 leo.temperature = 0
 
 
@@ -106,8 +140,11 @@ leo.temperature = 0
 # #
 
 # #
+csv_files=[]
 apv.utils.files_interface.df_from_file_or_folder(
                     csv_files[0]).columns
+
+
 # #
 if __name__ == '__main__':
     cum_csv_path

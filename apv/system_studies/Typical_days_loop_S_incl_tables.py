@@ -57,8 +57,8 @@ if __name__ == '__main__':
         * settings.sim.plots_shifts_xy[settings.sim.scan_position][1]\
         + settings.apv.mountingStructureDict['inner_table_post_distance_y']
     """
-    settings.apv.gScan_area['ground_scan_margin_x'] = -10.5
-    settings.apv.gScan_area['ground_scan_shift_x'] = 10.5
+    settings.apv.gScanAreaDict['ground_scan_margin_x'] = -10.5
+    settings.apv.gScanAreaDict['ground_scan_shift_x'] = 10.5
 
     def create_results_subfolderPath(month, posi):
         return Path(
@@ -140,7 +140,7 @@ if __name__ == '__main__':
 
                     for cm_unit in ['radiation']:
                         brObj.plotterObj.ground_heatmap(
-                            cm_unit=cm_unit,
+                            cm_quantity=cm_unit,
                             # df_col_limits=df_limits
                         )
 
@@ -192,7 +192,7 @@ if __name__ == '__main__':
         df_merged,
         destination_file_path=Path(str(cum_csv_path).replace('csv', 'jpg')),
         cumulative=True,
-        cm_unit='DLI',
+        cm_quantity='DLI',
         plot_title=title,
         north_arrow_xy_posi=(-0.14, 1.16),
         col_bar_min=0,
@@ -274,7 +274,7 @@ if __name__ == '__main__':
                         df_merged,
                         destination_file_path=file_path,
                         cumulative=True,
-                        cm_unit=cm_unit,
+                        cm_quantity=cm_unit,
                         df_col_limits=df_limits
                     )
 
