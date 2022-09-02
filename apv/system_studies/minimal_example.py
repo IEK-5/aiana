@@ -1,16 +1,20 @@
 # #
 from apv.classes.br_wrapper import BR_Wrapper
-from apv.classes.util_classes.settings_grouper import Settings
-from apv.settings.apv_systems import APV_Syst_InclinedTables_S_Morschenich
+from apv.classes.util_classes.settings_handler import Settings
+from apv.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morschenich
 
 if __name__ == '__main__':
     settings = Settings()
-    settings.sim.spatial_resolution = 0.2
+    settings.sim.spatial_resolution = 0.4
     # optional accelerad if installed:
-    settings.sim.use_acceleradRT_view = True
+    settings.view.use_acceleradRT_view = True
     settings.sim.use_accelerad_GPU_processing = True
-    settings.apv = APV_Syst_InclinedTables_S_Morschenich()
+    # settings.apv = APV_Syst_InclinedTables_S_Morschenich()
     # settings.apv.sceneDict['nRows']=6
+    settings.apv.glass_modules = True
+    settings.apv.mountingStructureDict['n_apv_system_clones_in_x'] = 2
+    #settings.apv.mountingStructureType = 'framed_single_axes_ridgeRoofMods'
+    #settings.apv.moduleDict['numpanels'] = 5
 
     brObj = BR_Wrapper(settings)
     brObj.create_and_view_octfile_for_SceneInspection()

@@ -7,7 +7,7 @@ if __name__ == '__main__':
     from apv.classes.weather_data import WeatherData
     from apv.classes.util_classes.sim_datetime import SimDT
     from apv.classes.geometries_handler import GeometriesHandler
-    from apv.settings.apv_systems import Default as SystSettings
+    from apv.settings.apv_system_settings import Default as SystSettings
     from apv.settings import user_paths
 
     imp.reload(apv.classes.geometries_handler)

@@ -5,7 +5,7 @@ import pandas as pd
 import seaborn as sns
 
 from pathlib import Path
-from apv.classes.util_classes.settings_grouper import Settings
+from apv.classes.util_classes.settings_handler import Settings
 from apv.classes.br_wrapper import BR_Wrapper
 from apv.classes.weather_data import WeatherData
 from apv.utils import plotting_utils

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Literal
 
 import apv.utils.files_interface as fi
-from apv.classes.util_classes.settings_grouper import Settings
+from apv.classes.util_classes.settings_handler import Settings
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
 
 
@@ -18,8 +18,6 @@ def adjust_settings(
     settings.sim.study_name = 'framed_APV_noBorderEffects'
     settings.sim.spatial_resolution = 0.05
     settings.sim.time_step_in_minutes = 3
-    settings.sim.use_acceleradRT_view = True
-    settings.sim.use_accelerad_GPU_processing = True
 
     ghObj = GeometriesHandler(settings)
     # name depending settings

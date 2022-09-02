@@ -8,8 +8,8 @@ import pytictoc
 from pathlib import Path
 import os
 from apv.classes.util_classes.sim_datetime import SimDT
-from apv.classes.util_classes.settings_grouper import Settings
-from apv.settings.apv_systems import APV_Syst_InclinedTables_S_Morschenich
+from apv.classes.util_classes.settings_handler import Settings
+from apv.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morschenich
 from apv.classes.br_wrapper import BR_Wrapper
 import apv.utils.files_interface as fi
 
@@ -27,7 +27,6 @@ if __name__ == '__main__':
     settings.sim.time_step_in_minutes = 2
     settings.sim.TMY_irradiance_aggfunc = 'mean'
 
-    settings.sim.use_acceleradRT_view = True
     settings.sim.use_accelerad_GPU_processing = True
 
     #########################################

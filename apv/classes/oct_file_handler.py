@@ -11,10 +11,10 @@ from apv.classes.util_classes.print_hider import PrintHider
 # import apv.bifacial_radiance.module as br_module
 from apv.utils import radiance_utils
 from apv.classes.weather_data import WeatherData
-from apv.classes.util_classes.settings_grouper import Settings
+from apv.classes.util_classes.settings_handler import Settings
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
 # for testing
-from apv.settings.apv_systems import APV_Syst_InclinedTables_S_Morschenich
+from apv.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morschenich
 
 
 class OctFileHandler:
@@ -77,9 +77,13 @@ class OctFileHandler:
         self.sceneDict['azimuth'] = 180  # always to bottom in rvu,
         # to handle azimuth, the sky was already rotated instead
 
+        # modules and scene
+        self.create_module_radtext_and_modify_it()
+        self.sceneObj: br.SceneObj = self.radianceObj.makeScene(
+            module=self.moduleObj, sceneDict=self.sceneDict
+        )
+
         customObjects = {}
-        if self.settings.apv.module_form != 'none':
-            customObjects['modules'] = self.get_radtext_of_all_modules
 
         # scan area
         if add_groundScanArea:
@@ -104,15 +108,19 @@ class OctFileHandler:
             customObjects['structure'] = self.ghObj.inclined_tables
         elif structure_type == 'morschenich_fixed':
             customObjects['structure'] = self.ghObj.morschenich_fixed
-        elif structure_type == 'framed_single_axes':
+        elif structure_type in [
+                'framed_single_axes', 'framed_single_axes_ridgeRoofMods']:
             customObjects['structure'] = self.ghObj.framed_single_axes_mount
         # else: structure_type == 'none' --> add nothing
 
         cloning_rad_text = self.ghObj.get_rad_txt_for_cloning_the_apv_system()
         extra_radtext_to_apply_on_a_radObject = {
             'north_arrow': f'!xform -rz {azimuth-180} -t 10 10 0 ',
-            'structure': cloning_rad_text,
-            'modules': cloning_rad_text,
+            'structure': cloning_rad_text,  # modules are cloned during
+            # modification before scene transformation...
+            # a bit nasty, but BR will make the scene transformation and
+            # add this in first line of grouping rad file anyways
+            # 'modules': cloning_rad_text,
         }
 
         self._appendtoScene_condensedVersion(
@@ -130,7 +138,7 @@ class OctFileHandler:
             + self.radianceObj.materialfiles \
             + self.radianceObj.radfiles
         with open(self.settings.paths.oct_fp_noSky, 'wb') as w:
-            # wb for writing binary
+            # mode 'w+b' opens and truncates the file to 0 bytes
             w.write(util.spcheckout(cmd))
 
         # time.sleep(2)
@@ -179,7 +187,7 @@ class OctFileHandler:
 
             """
 
-        file_format = 'vf' if self.settings.sim.use_acceleradRT_view else 'vp'
+        file_format = 'vf' if self.settings.view.use_acceleradRT_view else 'vp'
 
         view_fp = self.settings.paths.bifacial_radiance_files / Path(
             f'views/{view_name}.{file_format}')
@@ -219,7 +227,7 @@ class OctFileHandler:
 
         # TODO try _popen (move it to utils from simulator) to see error message
         # else:
-        if self.settings.sim.use_acceleradRT_view:
+        if self.settings.view.use_acceleradRT_view:
             cmd = ['AcceleradRT', '-vf', view_fp, '-ab', '3', '-aa', '0',
                    '-ad', '1', '-x', str(x), '-y', str(y), '-s', '10000',
                    '-log', '0',  # turns off log scale of contrast
@@ -293,7 +301,7 @@ class OctFileHandler:
             self.weatherData.dni, self.weatherData.dhi,
             self.weatherData.sunalt, sunaz_modified)
 
-    def get_radtext_of_all_modules(self):
+    def create_module_radtext_and_modify_it(self):
         """
         This method is realy difficult to understand...
         but Bifacial_radiance is also complicated here and need to make it
@@ -309,19 +317,23 @@ class OctFileHandler:
 
         then we use BR to build the scene and extract partly rad texts out of
         BR objects to puzzle these together to what we want.
-
-        Adding glass made it more complicated(see single_module_elements)
-        There is probably nicer way of doing it, but it also will take time
-        to figure it out.
         """
+
+        # APV system-set cloned with optional ridgeRoof_modified module_text
+        # (not yet BR scene modification applied (tilt, nRow etc.)):
+
+        # 1. copy sunfarming file and rename it, apply modifications using the
+        # copy as input, save the result to original name so BR finds it
+        # for scene transformation
+        # !!!!! funktioniert nur, wenn doppelte datei weiterleitung von rad
+        # files doch funktioniert !!! --> als erstes testen
+        # module_text_modified
 
         custom_single_module_text_dict = {
             'std': None,  # rad text is created by self.radObj.makeModule()
             'cell_gaps': None,  # ""
-            'none': "",  # empty
             'checker_board': self.ghObj.make_checked_module_text,
-            'roof_for_EW': self.ghObj.make_roof_module_text_for_EW,
-            'cell_gaps_roof_for_EW': self.ghObj.make_cell_gaps_EW_module_text,
+            'none': "",  # empty
         }  # (only black part, no glass / omega etc.)
 
         module_form = self.settings.apv.module_form
@@ -330,6 +342,7 @@ class OctFileHandler:
             single_module_text = custom_single_module_text_dict[module_form]
         else:
             # pass dict value being a ghObj-method with calling
+            # (usefull if more custom modules will be added again)
             single_module_text = custom_single_module_text_dict[module_form]()
 
         with PrintHider():  # hide custom text usage warning
@@ -350,48 +363,48 @@ class OctFileHandler:
                 frame_material='Metal_Grey', frame_thickness=0.05,
                 frame_z=0.03, frame_width=0.05, recompile=True)
 
-        self.sceneObj: br.SceneObj = self.radianceObj.makeScene(
-            module=self.moduleObj, sceneDict=self.sceneDict
-        )
+        single_module_text = self.moduleObj.text
+        # backup BRs original single module rad text as file with a "0" suffix:
+        module_name0_relPath = f'objects/{self.settings.apv.module_name}0.rad'
+        with open(module_name0_relPath, 'wb') as f:
+            f.write(single_module_text.encode('ascii'))
 
-        # # # get modules_text # # #
-        single_module_elements: list = self.moduleObj.text.split('\r\n')
-        # only "numpanels" considered (has PV, glass, omega... as elements)
-
-        xform_text_to_BR_scene_modules = self.sceneObj.text.replace(
-            '!xform', '|xform').replace(
-            f' objects\\{self.settings.apv.module_name}.rad', '')
-
-        # all modules in the original set (now cloneable in x):
-        modules_text = ""
-        for element in single_module_elements:
-            modules_text += element + xform_text_to_BR_scene_modules
-            if element != single_module_elements[-1]:
-                modules_text += '\r\n'
-        """
-        so wäre eigentlich einfacher:
-        modules_text = self.sceneObj.text
-
-        aber dann kommt
-        >> xform: cannot find file "objects/SUNFARMING.rad"
-
-        und
-        modules_text = self.sceneObj.text.replace(' objects\\', ' objects/')
-        hilft leider auch nicht.  # TODO Warum?
-        """
-
-        return modules_text
+        # modify module text and save to original name...
+        if self.settings.apv.module_form == 'none':
+            single_module_text_modified = ''
+        else:
+            single_module_text_modified = \
+                self.ghObj.get_rad_txt_for_cloning_the_apv_system()\
+                + self.ghObj.get_rad_txt_for_ridgeRoofMods_xform() \
+                + f' {self.settings.apv.module_name}0.rad'
+        module_name_relPath = f'objects/{self.settings.apv.module_name}.rad'
+        with open(module_name_relPath, 'wb') as f:
+            f.write(single_module_text_modified.encode('ascii'))
 
     def _appendtoScene_condensedVersion(
             self, customObjects: dict,
             extra_radtext_dict: dict):
         """
         customObjects: key: file-name, value: rad_text
-        """
 
-        # self.radianceObj.radfiles = []  # TODO  get rid of doubled array
-        # origin modules...
+        this method creates first object/*.rad files for each custom object
+        (structure, scan area etc.) and then append these to the grouping
+        rad file (self.sceneObj.radfiles) used as input for the OCT file,
+        where also the modules and its scene xform was written already
+        in the first line by BR.
+        """
+        # NOTE
+        # self.sceneObj.radfiles is a path
+        # while
+        # self.radianceObj.radfiles is a list ...
+
+        # TODO  get rid of doubled array
+        #  --> no, new idea: apply cloning AND ridgeRoof to Sunfarming
+        # file, then BR can do the rest
+
         for key in customObjects:
+            # 1. create custom object rad file
+
             rad_file_path = f'objects/{key}.rad'
             with open(rad_file_path, 'wb') as f:
                 f.write(customObjects[key]().encode('ascii'))
@@ -404,10 +417,7 @@ class OctFileHandler:
             else:
                 extra_radtext = "!xform "
 
-            # NOTE
-            # self.sceneObj.radfiles is a path
-            # while
-            # self.radianceObj.radfiles is a list ...
+            # 2. add custom object rad file path to grouping rad file
 
             with open(self.sceneObj.radfiles, 'a+') as f:
                 f.write(f'\n{extra_radtext}{rad_file_path}')

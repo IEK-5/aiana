@@ -9,7 +9,7 @@ import bifacial_radiance as br
 from subprocess import Popen, PIPE  # replacement for os.system()
 
 from apv.utils import files_interface as fi
-from apv.classes.util_classes.settings_grouper import Settings
+from apv.classes.util_classes.settings_handler import Settings
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
 from apv.classes.util_classes.print_hider import PrintHider
 

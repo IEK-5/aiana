@@ -101,16 +101,19 @@ class Default:
         }
 
         # ### new input
-        self.module_form: Literal[
+        self.module_form: Literal[  # Literal for auto-completition in vs-code
             'std',
             'cell_gaps',
             'checker_board',
-            'roof_for_EW',  # glass is still as std, not as EW roof at the moment
-            # and at the moment second modul of roof is created in the
-            # text input for br.radObj.make_module(),
+            'roof_for_EW',  # TODO glass part will not result in
+            # roof shape at the moment, since br.radObj.make_module() is used
+            # resulting in standard shape (straight)
+
             # and the tilt is happening later in br.radObj.make_scene()
-            # the second module is facing upwards-down, might be a problem later
-            'cell_gaps_roof_for_EW',  # not in use atm
+            # so the second module is facing upwards-down, might be a problem
+            # later
+
+            # # 'cell_gaps_roof_for_EW',  # not implemented atm
             'none'
         ] = 'std'
 
@@ -125,10 +128,11 @@ class Default:
             'n_apv_system_clones_in_x': 0,
             'n_apv_system_clones_in_negative_x': 0,
         }
-        # not in above dict to allow for literals (other options):
+        # not in above dict to allow for Literal definition (other options):
         self.mountingStructureType: Literal[
             'none',
             'framed_single_axes',
+            'framed_single_axes_ridgeRoofMods'
             'inclined_tables',
             'morschenich_fixed',  # NOTE this one should only be used in the
             # APV_Syst_InclinedTables_S_Morschenich Child

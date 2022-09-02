@@ -10,16 +10,17 @@ class Simulation:
     See system_studies/apv_main.py for a simple example"""
 
     def __init__(self):
-        self.study_name: str = 'APV_Floating'
 
         self.results_subfolder: Path = Path('test')
+
+        self.study_name: str = 'APV_Floating'
 
         self.ground_albedo = 0.24  # grass
 
         self.spatial_resolution = 0.1  # [m]
         # distance between virtual radiation sensors
 
-        self.sim_year: int or Literal['TMY'] = 'TMY'  # or e.g. 2020
+        self.sim_year: Literal['TMY'] = 'TMY'  # or e.g. 2020
         # TMY = typical meterological year; here: mean data from 2005 to 2021
 
         self.use_typDay_perMonth_for_irradianceCalculation = True
@@ -48,7 +49,6 @@ class Simulation:
 
         # Accelerad settings ####################
         # need to be installed first https://nljones.github.io/Accelerad/index.html
-        self.use_acceleradRT_view = False  # real time scene navigation and viewing
         self.use_accelerad_GPU_processing = False  # GPU paralellization, all line scans
         # at once. GPU multiprocessing is not compatible with CPU multiprocessing
         # and will thus ignore use_CPU_multi_processing setting, if True
@@ -142,9 +142,10 @@ class Simulation:
 class SimSettings_ForTesting(Simulation):
     def __init__(self):
         super().__init__()
-        self.sim_date_time = '06-15_12:00'
+        self.sim_date_time = '06-15_14:00'  # 14:00 -> sunposition 13:30
+        # --> for hourly time_step sun at noon, which makes it easier to
+        # check the azimuth of the panels
         self.spatial_resolution = 1
         self.use_typDay_perMonth_for_irradianceCalculation = False
         self.use_CPU_multi_processing = False
         self.use_accelerad_GPU_processing = True
-        self.use_acceleradRT_view = True

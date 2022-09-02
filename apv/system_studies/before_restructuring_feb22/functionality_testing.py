@@ -3,7 +3,7 @@
 if __name__ == '__main__':
     import importlib as imp
     import apv
-    from apv.settings import apv_systems
+    from apv.settings import apv_system_settings
 
     imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.settings.apv_systems)
@@ -13,7 +13,7 @@ if __name__ == '__main__':
     SimSettings.sim_name = 'functionality'
 
     # #
-    APV_SystSettings = apv_systems.SimpleSingleCheckerBoard()
+    APV_SystSettings = apv_system_settings.SimpleSingleCheckerBoard()
     for module_form in ['std', 'cell_gaps', 'checker_board',
                         'roof_for_EW',
                         'cell_gaps_roof_for_EW',
@@ -35,7 +35,7 @@ if __name__ == '__main__':
 if __name__ == '__main__':
     import importlib as imp
     import apv
-    from apv.settings import apv_systems
+    from apv.settings import apv_system_settings
 
     imp.reload(apv.classes.geometries_handler)
     imp.reload(apv.settings.apv_systems)
@@ -45,11 +45,11 @@ if __name__ == '__main__':
     SimSettings.sim_name = 'c'
 
     for APV_SystSettings in [
-        apv_systems.APV_Morchenich_Checkerboard(),
-        apv_systems.Default(),
-        apv_systems.APV_Morchenich_EastWest(),
-        apv_systems.APV_Syst_InclinedTables_Juelich(),
-        apv_systems.SimpleSingleCheckerBoard(),
+        apv_system_settings.APV_Morchenich_Checkerboard(),
+        apv_system_settings.Default(),
+        apv_system_settings.APV_Morchenich_EastWest(),
+        apv_system_settings.APV_Syst_InclinedTables_Juelich(),
+        apv_system_settings.SimpleSingleCheckerBoard(),
     ]:
 
         brObj = apv.classes.br_wrapper.BR_Wrapper(

@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 import pandas as pd
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
-from apv.classes.util_classes.settings_grouper import Settings
+from apv.classes.util_classes.settings_handler import Settings
 from apv.utils import plotting_utils as plotting, study_utils
 from apv.utils import files_interface as fi
 import seaborn as sns

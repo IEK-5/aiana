@@ -9,7 +9,7 @@ from apv.settings import user_paths
 
 from apv.utils import files_interface
 
-from apv.classes.util_classes.settings_grouper import Settings
+from apv.classes.util_classes.settings_handler import Settings
 from apv.classes.br_wrapper import BR_Wrapper
 
 # ADS

@@ -1,5 +1,5 @@
 from pathlib import Path
-from apv.settings.apv_systems import Default as SystSettings
+from apv.settings.apv_system_settings import Default as SystSettings
 from apv.settings.view_settings import ViewSettings
 from apv.settings.sim_settings import Simulation
 from apv.settings.user_paths import UserPaths
@@ -11,10 +11,25 @@ class Settings:
         self.view = ViewSettings()
         self.sim = Simulation()
         self.set_names_and_paths()
+        self._verify_unique_setting_names()
 
     def set_names_and_paths(self):
         self.names = Names(self.sim, self.apv)
         self.paths = Paths(self.sim, self.names)
+
+    # #
+    def _verify_unique_setting_names(self):
+        all_settings_names = list(self.sim.__dict__)\
+            + list(self.apv.__dict__) + list(self.view.__dict__)
+        for name in all_settings_names:
+            if all_settings_names.count(name) > 1:
+                raise Exception(f'Duplicate setting name found: {name}')
+    # TODO https://stackoverflow.com/questions/9522877/pythonic-way-to-have-a-choice-of-2-3-options-as-an-argument-to-a-function
+    # to assert the Literals (e.g. module_form) see link above. Variables
+    # need to be splitted in type and value, only then allowed string list can
+    # be accessed by Literal.get_args(). Options would need to be shown in comments then
+    # which is meaningful as the usershould not change the options and only
+    # pick one of them...
 
 
 class Names:

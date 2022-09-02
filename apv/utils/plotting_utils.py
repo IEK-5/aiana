@@ -340,7 +340,7 @@ def plotStyle(
 # testing #TODO
 if __name__ == '__main__':
     from apv.classes.br_wrapper import BR_Wrapper
-    from apv.classes.util_classes.settings_grouper import Settings
+    from apv.classes.util_classes.settings_handler import Settings
 
     brObj = BR_Wrapper(Settings())
     if not brObj.settings.paths.csv_file_path.exists():

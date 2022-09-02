@@ -10,7 +10,7 @@ import urllib3
 from pathlib import Path
 import numpy as np
 
-from apv.classes.util_classes.settings_grouper import Settings
+from apv.classes.util_classes.settings_handler import Settings
 from apv.classes.util_classes.sim_datetime import SimDT
 import apv.utils.files_interface as fi
 

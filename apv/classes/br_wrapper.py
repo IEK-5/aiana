@@ -1,5 +1,5 @@
 from typing import Literal
-from apv.classes.util_classes.settings_grouper import Settings
+from apv.classes.util_classes.settings_handler import Settings
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
 from apv.classes.util_classes.sim_datetime import SimDT
 from apv.classes.weather_data import WeatherData

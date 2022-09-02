@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 from apv.classes.weather_data import WeatherData
 from apv.classes.util_classes.sim_datetime import SimDT
-from apv.classes.util_classes.settings_grouper import Settings
+from apv.classes.util_classes.settings_handler import Settings
 from apv.utils import files_interface as fi
 
 

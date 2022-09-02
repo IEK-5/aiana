@@ -8,7 +8,7 @@ from pathlib import Path
 import pvlib
 # import pvfactors
 import apv
-from apv.settings.apv_systems import Default as APV_System
+from apv.settings.apv_system_settings import Default as APV_System
 from apv.settings.sim_settings import Simulation
 from apv.classes.weather_data import WeatherData
 from apv.classes.util_classes.sim_datetime import SimDT

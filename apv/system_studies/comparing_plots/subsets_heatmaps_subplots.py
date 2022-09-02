@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 import pandas as pd
 from pathlib import Path
-from apv.classes.util_classes.settings_grouper import Settings
+from apv.classes.util_classes.settings_handler import Settings
 from apv.classes.br_wrapper import BR_Wrapper
 from apv.utils import plotting_utils
 from apv.utils import files_interface as fi

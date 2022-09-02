@@ -1,8 +1,8 @@
 # #
 import os
 from pandas.io.parsers import read_csv
-from apv.settings import apv_systems
-from apv.settings.apv_systems import Default as SystSettings
+from apv.settings import apv_system_settings
+from apv.settings.apv_system_settings import Default as SystSettings
 from apv.utils.files_interface import save_fig, df_from_file_or_folder
 import pandas as pd
 import apv.settings.user_paths as user_paths

@@ -2,7 +2,7 @@
 from pathlib import Path
 import pandas as pd
 from apv.classes.br_wrapper import BR_Wrapper
-from apv.classes.util_classes.settings_grouper import Settings
+from apv.classes.util_classes.settings_handler import Settings
 import apv.utils.files_interface as fi
 # #
 if __name__ == '__main__':
@@ -13,7 +13,7 @@ if __name__ == '__main__':
     # #
     settings.sim.spatial_resolution = 0.2
     # optional accelerad if installed:
-    settings.sim.use_acceleradRT_view = True
+    settings.view.use_acceleradRT_view = True
     settings.sim.use_accelerad_GPU_processing = True
     brObj = BR_Wrapper(settings)
     # brObj.create_and_view_octfile_for_SceneInspection()
@@ -28,6 +28,7 @@ if __name__ == '__main__':
                                         north_arrow_xy_posi=(-0.44, 1.2))
 
 # #
+
 
 def substract_test_from_ref_data(csv_path: Path):
     csv_path_ref = csv_path.replace(

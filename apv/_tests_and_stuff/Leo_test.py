@@ -32,7 +32,7 @@ import importlib as imp
 import sys
 import time
 import random
-from apv.settings import apv_systems
+from apv.settings import apv_system_settings
 import pandas
 import pytz
 from pandas.tseries.offsets import Minute

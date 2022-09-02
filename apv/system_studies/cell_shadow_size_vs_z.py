@@ -4,14 +4,13 @@
     nicht dass das glas im bürogebäude einfluss hat...
     """
 from apv.classes.br_wrapper import BR_Wrapper
-from apv.classes.util_classes.settings_grouper import Settings
-from apv.settings.apv_systems import APV_ForTesting
+from apv.classes.util_classes.settings_handler import Settings
+from apv.settings.apv_system_settings import APV_ForTesting
 
 if __name__ == '__main__':
     settings = Settings()
 
     settings.sim.spatial_resolution = 0.005
-    settings.sim.use_acceleradRT_view = True
     settings.sim.use_accelerad_GPU_processing = True
 
     settings.apv = APV_ForTesting()

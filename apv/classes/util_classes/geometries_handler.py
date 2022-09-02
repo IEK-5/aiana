@@ -13,7 +13,7 @@
 
 from tkinter import W
 import numpy as np
-from apv.classes.util_classes.settings_grouper import Settings
+from apv.classes.util_classes.settings_handler import Settings
 
 
 class GeometriesHandler:
@@ -200,6 +200,16 @@ class GeometriesHandler:
         else:
             return '!xform '
 
+    def get_rad_txt_for_ridgeRoofMods_xform(self) -> str:
+        if self.settings.apv.mountingStructureType == \
+                'framed_single_axes_ridgeRoofMods':
+            y_shift = -self.mod["y"]-self.mod['ygap']
+            angle = 180-2*self.scn["tilt"]
+            p = self.mount['post_thickness_y']/2
+            return f'-i 1 -t 0 {y_shift} 0 -a 2 -rx {angle} -i 1 -t 0 {p} 0'
+        else:
+            return ''
+
     def _set_y_grid_and_sensors(self):
         self.ygrid: list[float] = np.arange(
             self.scan_area_anchor_y,  # start
@@ -372,6 +382,7 @@ class GeometriesHandler:
         return text
 
     # ############### morschenich_fixed #############################
+
     def morschenich_fixed(self) -> str:
         """
         change post_start_x and add rails
@@ -523,8 +534,6 @@ class GeometriesHandler:
 
         return text
 
-    #############################################
-
     def _post_array(
             self, post_height: float, post_start_y: float) -> str:
         """ creats an array of posts for each row using
@@ -539,6 +548,8 @@ class GeometriesHandler:
             f'-a {self.scn["nRows"]} -t 0 {self.scn["pitch"]} 0 '
         )
         return text
+
+    #############################################
 
     def make_checked_module_text(self) -> str:
         mod = self.mod
@@ -608,7 +619,7 @@ class GeometriesHandler:
         Ny = mod['numpanels']  # currently must be 2
         offsetfromaxis = 0.01
         transition_y = (-mod['y']*Ny/2.0)-(mod['ygap']*(Ny-1)/2.0)
-        rotation_angle = 2*(90 - self.scn['tilt']) + 180
+        rotation_angle = -2*self.scn['tilt']
 
         text = '! genbox black {} {} {} {} '.format(
             name, mod['x'], mod['y'], z)
