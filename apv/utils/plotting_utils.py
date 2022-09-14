@@ -343,7 +343,7 @@ if __name__ == '__main__':
     from apv.classes.util_classes.settings_handler import Settings
 
     brObj = BR_Wrapper(Settings())
-    if not brObj.settings.paths.csv_file_path.exists():
+    if not brObj.settings._paths.inst_csv_file_path.exists():
         brObj.create_octfile_for_Simulation()
         brObj.simulate_and_evaluate()
     brObj.plotterObj.ground_heatmap()

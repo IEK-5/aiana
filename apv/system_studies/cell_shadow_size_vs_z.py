@@ -37,4 +37,4 @@ if __name__ == '__main__':
                                         plot_dpi=600,
                                         plot_title=f'z = {z}')
 # #
-brObj.settings.paths.csv_parent_folder
+brObj.settings._paths.inst_csv_parent_folder

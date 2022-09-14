@@ -2,6 +2,22 @@ always:
 - clean up and add documentation
 
 -----------------
+kann man in radiance geometrie spiegeln? (ridgeRoof)
+
+
+- cumulative false/true
+bei true: cumulate via gendaylit (oder gencumsky "not yet")
+
+und start und end time nehmen mit time_step_in_minutes
+einzelschritte bei bedarf alle neu schreiben oder nur was noch nicht da ist
+vollständig sollte es automatisch werden
+
+
+bei cumulative faslse:
+sim_date_time und gendaylit nehmen
+
+
+
 
 short term:
 - komprimierung pandas hdf5

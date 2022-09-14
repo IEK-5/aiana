@@ -1,5 +1,7 @@
 # #
-import sys
+from ast import Raise
+from logging import raiseExceptions
+import time
 from frads import util
 import subprocess as sp
 from typing import Literal
@@ -7,8 +9,6 @@ from pathlib import Path
 
 import bifacial_radiance as br
 from apv.classes.util_classes.print_hider import PrintHider
-# import apv.bifacial_radiance.main as br
-# import apv.bifacial_radiance.module as br_module
 from apv.utils import radiance_utils
 from apv.classes.weather_data import WeatherData
 from apv.classes.util_classes.settings_handler import Settings
@@ -19,21 +19,12 @@ from apv.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morscheni
 
 class OctFileHandler:
     """
-    Attributes:
-        simSettings (apv.settings.sim_settings.Simulation):
-        simulation settings object
-        --------
-        radObj (bifacial_radiance.RadianceObj): radiance object
-        scene (bifacial_radiance.SceneObj): scene object
-        oct_file_name (str): .oct file name with or without extension
-        met_data(bifacial_radiance.MetObj): meterologic data object
-
-        the ones above are retrieved from running setup_br()
-        --------
-
-        the ones above are calculated automatically on initialisation
-        but the extra margin can be set automatically
-
+    to create and views *.oct files, takes as input:
+        - a settings-object
+        - a weatherData-object containing the correct irradiance and sun
+            position based on the time settings in sim_settings, and
+        - a geometries_handler-object, which creates based on the apv_system
+            settings rad-files (Radiance text file format for geometries)
     """
 
     sceneObj: br.SceneObj  # set in get_radtext_of_all_modules
@@ -49,14 +40,12 @@ class OctFileHandler:
     ):
         self.settings = settings
         self.weatherData = weatherData
-        # for custom radiance geometry descriptions:
-        self.ghObj = ghObj
+        self.ghObj = ghObj  # for custom radiance geometry descriptions
         self.debug_mode = debug_mode
         self.ResultsFalsifyingVisualisationsAdded = False
 
-        # create a bifacial_radiance Radiance object
         self.radianceObj = br.RadianceObj(
-            path=str(self.settings.paths.bifacial_radiance_files)
+            path=str(self.settings._paths.bifacial_radiance_files)
         )
         self._create_materials()
         self.radianceObj.setGround(self.settings.sim.ground_albedo)
@@ -74,17 +63,17 @@ class OctFileHandler:
         self.sceneDict = self.settings.apv.sceneDict.copy()
         azimuth = self.sceneDict["azimuth"]
         # set azimuth for BR to 180
-        self.sceneDict['azimuth'] = 180  # always to bottom in rvu,
-        # to handle azimuth, the sky was already rotated instead
+        self.sceneDict['azimuth'] = 180
+        # to handle azimuth, we rotate the sky instead, which makes geometry
+        # description and result plotting much easier
 
         # modules and scene
-        self.create_module_radtext_and_modify_it()
+        self.create_module_radtext()
         self.sceneObj: br.SceneObj = self.radianceObj.makeScene(
             module=self.moduleObj, sceneDict=self.sceneDict
         )
 
         customObjects = {}
-
         # scan area
         if add_groundScanArea:
             customObjects['scan_area'] = self.ghObj.groundscan_area
@@ -116,11 +105,8 @@ class OctFileHandler:
         cloning_rad_text = self.ghObj.get_rad_txt_for_cloning_the_apv_system()
         extra_radtext_to_apply_on_a_radObject = {
             'north_arrow': f'!xform -rz {azimuth-180} -t 10 10 0 ',
-            'structure': cloning_rad_text,  # modules are cloned during
-            # modification before scene transformation...
-            # a bit nasty, but BR will make the scene transformation and
-            # add this in first line of grouping rad file anyways
-            # 'modules': cloning_rad_text,
+            'structure': cloning_rad_text,  # cloning only the structure here,
+            # the modules are cloned within self.create_module_radtext()
         }
 
         self._appendtoScene_condensedVersion(
@@ -128,40 +114,44 @@ class OctFileHandler:
         )  # for mounting structure, ground, etc
 
         # # # # create oct file without sky
-        # NOTE
         # to avoid the error: "fatal - boundary does not encompass scene",
         # when adding the larger sky to the scene, a boundary box with
         # the -b option needs to be defined:
         size = '400'
         xyz_min = '-200'
+
         cmd = ['oconv', '-b', xyz_min, xyz_min, xyz_min, size] \
             + self.radianceObj.materialfiles \
             + self.radianceObj.radfiles
-        with open(self.settings.paths.oct_fp_noSky, 'wb') as w:
-            # mode 'w+b' opens and truncates the file to 0 bytes
-            w.write(util.spcheckout(cmd))
 
-        # time.sleep(2)
+        oconv_result = self._call_cmd_serveral_times_and_return_result(cmd)
+        with open(self.settings._paths.oct_fp_noSky, 'wb') as w:
+            # mode 'w+b' opens and truncates the file to 0 bytes
+            w.write(oconv_result)
+
+    def _call_cmd_serveral_times_and_return_result(self, cmd, count=3):
+        """because sometimes oconv starts too early,
+        when sub rad files are not yet closed"""
+        result = util.spcheckout(cmd)
+        counter = 0
+        while result is None:
+            time.sleep(0.5)
+            print(f'trying to build oct file again...#{counter}. time\n')
+            result = util.spcheckout(cmd)
+            counter += 1
+            if counter == count:
+                Exception(f'Oconv failed {count} times, check rad file syntax')
+        return result
 
     def add_sky_to_octfile(self):
-
         # sky file name and sky creation
-        sky_fn = self.create_sky()
-        # time.sleep(1)
-        sky_fp = self.settings.paths.bifacial_radiance_files / sky_fn
+        sky_fn: str = self.create_sky()
+        sky_fp: Path = self.settings._paths.bifacial_radiance_files / sky_fn
         # NOTE the '-i' option is needed to add something to an existing oct
-        cmd = ['oconv', '-i', self.settings.paths.oct_fp_noSky, sky_fp]
+        cmd = ['oconv', '-i', self.settings._paths.oct_fp_noSky, sky_fp]
 
-        oconv_result = util.spcheckout(cmd)
-        counter = 0
-        while oconv_result is None:
-            print(f'trying to build oct file again...#{counter}\n')
-            oconv_result = util.spcheckout(cmd)
-            counter += 1
-            if counter == 5:
-                break
-
-        with open(self.settings.paths.oct_fp, 'wb') as w:
+        oconv_result = self._call_cmd_serveral_times_and_return_result(cmd)
+        with open(self.settings._paths.oct_fp, 'wb') as w:
             w.write(oconv_result)
 
     def view_octfile(
@@ -177,19 +167,19 @@ class OctFileHandler:
         Args:
             view_type(str): 'perspective' or 'parallel'
 
-            view_name(str): select from ['total', ...]
-                as defined in settings.scene_camera_dicts
-                a .vp file containing the sttings will be stored with this name
-                in e.g. 'C:\\Users\\Username\\agri-PV\\views\\total.vp'
+            view_name(str): select from ['total', ...]as defined in
+                settings.scene_camera_dicts.
+                A .vp file containing the settings will be stored with this
+                name in e.g. 'C:\\Users\\Username\\agri-PV\\views\\total.vp'
 
             oct_file_name(str): file name of the .oct file without extension
-                being located in the view_fp parent directory(e.g. 'Demo1')
+                being located in the view_fp parent directory
 
             """
 
         file_format = 'vf' if self.settings.view.use_acceleradRT_view else 'vp'
 
-        view_fp = self.settings.paths.bifacial_radiance_files / Path(
+        view_fp = self.settings._paths.bifacial_radiance_files / Path(
             f'views/{view_name}.{file_format}')
         try:
             scd = self.settings.view.scene_camera_dicts[view_name]
@@ -200,7 +190,7 @@ class OctFileHandler:
         radiance_utils.write_viewfile_in_vp_format(scd, view_fp, view_type)
 
         if oct_file_name is None:
-            oct_file_name = self.settings.names.oct_fn
+            oct_file_name = self.settings._names.oct_fn
 
         pr_str = ''  # with rpict' if use_rpict else ''
         print(f'Viewing {oct_file_name}{pr_str}.')
@@ -226,7 +216,6 @@ class OctFileHandler:
         #       " > images/"+name+viewfile[:-3] +".hdr")
 
         # TODO try _popen (move it to utils from simulator) to see error message
-        # else:
         if self.settings.view.use_acceleradRT_view:
             cmd = ['AcceleradRT', '-vf', view_fp, '-ab', '3', '-aa', '0',
                    '-ad', '1', '-x', str(x), '-y', str(y), '-s', '10000',
@@ -242,7 +231,7 @@ class OctFileHandler:
     def _create_materials(self):
         # self.makeCustomMaterial(mat_name='dark_glass', mat_type='glass',
         #                        R=0.6, G=0.6, B=0.6)
-        rad_mat_file = self.settings.paths.bifacial_radiance_files \
+        rad_mat_file = self.settings._paths.bifacial_radiance_files \
             / Path('materials/ground.rad')
         radiance_utils.makeCustomMaterial(
             rad_mat_file,
@@ -263,7 +252,7 @@ class OctFileHandler:
 
     def create_sky(self, tracked=False) -> str:
         """
-        We z-rotate the sky instead of the panel for an easier easier setup of
+        We z-rotate the sky instead of the panel for an easier setup of
         the mounting structure and the scan points.
 
         Returns
@@ -273,14 +262,15 @@ class OctFileHandler:
 
         if tracked:
             correction_angle = 90
-            # NOTE this is copy  for later from Leonhard (ISE)
+            # NOTE this is copy for later from Leonhard (ISE)
             # maybe it has to be "- 90" as i changed formula from
             # sunaz - scene - correc
-            # to sunaz - (scene - correc)
+            # to
+            # sunaz - (scene - correc)
         else:
             correction_angle = 180  # this will make north into the top in rvu
 
-        # we want north to be always ahead in front of us in view (azi = 180°)
+        # we want north to be always ahead in front of us in view for azi = 180
         # if panel azi is e.g. 200°, we rotate sky by -20°
         sunaz_modified = self.weatherData.sunaz + correction_angle\
             - self.settings.apv.sceneDict["azimuth"]
@@ -295,39 +285,36 @@ class OctFileHandler:
             raise ValueError("""Cannot handle negative sun alitudes.\
                 \n--> Creating radiance files and view_scene() is not \
                 possible without light. Please choose a different time.""")
-
+        else:
+            if self.weatherData.sunaz != sunaz_modified:
+                print('sun azimuth modified for sky rotation from:',
+                      self.weatherData.sunaz, 'to:', sunaz_modified)
         # gendaylit using Perez models for direct and diffuse components
+
         return self.radianceObj.gendaylit2manual(
             self.weatherData.dni, self.weatherData.dhi,
             self.weatherData.sunalt, sunaz_modified)
 
-    def create_module_radtext_and_modify_it(self):
+    def create_module_radtext(self):
         """
-        This method is realy difficult to understand...
-        but Bifacial_radiance is also complicated here and need to make it
-        even more complicate to enter new functionality(checker board,
-        set_cloning in x direction with gap between sets)
+        This method is a bit difficult to understand as we partly use
+        Bifacial_radiance and add new functionality (checker board, ridgeroof,
+        or APV-system set cloning in x-direction with a gap between sets)
 
-        in first step, custom_single_module_text_dict is created
-        # this is a bit nasty because we use self.radObj.makeModule()
-        # to create std or cell_gaps module, whereby in this case
-        # the (custom) "text" argument has to be None. For the other module
-        # forms, which are not present in self.radObj.makeModule(),
-        # we use the own ghObj methods
+        In a first step, custom_single_module_text_dict is created. Later we
+        will use br.ModuleObj() class to create a std or cell_gap module, for
+        which the (custom) "text" argument has to be None (value of the dict).
+        For the other module form(s), e.g. checker board we use own ghObj
+        method(s), which are are called only if needed (not in dict definition)
 
-        then we use BR to build the scene and extract partly rad texts out of
-        BR objects to puzzle these together to what we want.
+        After using br.ModuleObj(), we extract the rad text and store it into
+        a backup file "objects/{module_name}0.rad". It contains the module
+        cells, and optional the glass, and the frame. This file is loaded into
+        "objects/{module_name}.rad" without "0" to apply modifications (xform)
+        for set cloning and optional ridge roof, using the backup as input.
+        "objects/{module_name}.rad" is then used later by BR for
+        the scene transformation (tilt, nRow, ...)"
         """
-
-        # APV system-set cloned with optional ridgeRoof_modified module_text
-        # (not yet BR scene modification applied (tilt, nRow etc.)):
-
-        # 1. copy sunfarming file and rename it, apply modifications using the
-        # copy as input, save the result to original name so BR finds it
-        # for scene transformation
-        # !!!!! funktioniert nur, wenn doppelte datei weiterleitung von rad
-        # files doch funktioniert !!! --> als erstes testen
-        # module_text_modified
 
         custom_single_module_text_dict = {
             'std': None,  # rad text is created by self.radObj.makeModule()
@@ -363,13 +350,12 @@ class OctFileHandler:
                 frame_material='Metal_Grey', frame_thickness=0.05,
                 frame_z=0.03, frame_width=0.05, recompile=True)
 
-        single_module_text = self.moduleObj.text
         # backup BRs original single module rad text as file with a "0" suffix:
         module_name0_relPath = f'objects/{self.settings.apv.module_name}0.rad'
         with open(module_name0_relPath, 'wb') as f:
-            f.write(single_module_text.encode('ascii'))
+            f.write(self.moduleObj.text.encode('ascii'))
 
-        # modify module text and save to original name...
+        # modify module text and save to original name without "0"
         if self.settings.apv.module_form == 'none':
             single_module_text_modified = ''
         else:
@@ -378,6 +364,9 @@ class OctFileHandler:
                 + self.ghObj.get_rad_txt_for_ridgeRoofMods_xform() \
                 + f' {self.settings.apv.module_name}0.rad'
         module_name_relPath = f'objects/{self.settings.apv.module_name}.rad'
+
+        # store APV system-set cloned with optional ridgeRoof_modified
+        # module_text (BR scene modification (tilt, nRow, ...) not yet applied)
         with open(module_name_relPath, 'wb') as f:
             f.write(single_module_text_modified.encode('ascii'))
 
@@ -397,10 +386,6 @@ class OctFileHandler:
         # self.sceneObj.radfiles is a path
         # while
         # self.radianceObj.radfiles is a list ...
-
-        # TODO  get rid of doubled array
-        #  --> no, new idea: apply cloning AND ridgeRoof to Sunfarming
-        # file, then BR can do the rest
 
         for key in customObjects:
             # 1. create custom object rad file

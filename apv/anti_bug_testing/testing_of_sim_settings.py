@@ -1,5 +1,5 @@
 from apv.classes.br_wrapper import BR_Wrapper
-from apv.anti_bug_testing.tester import Tester
+from apv.anti_bug_testing.tester_class import Tester
 from apv.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morschenich
 
 if __name__ == '__main__':

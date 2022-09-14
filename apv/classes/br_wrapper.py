@@ -1,7 +1,9 @@
+import pandas as pd
+from apv.utils import files_interface as fi
+
 from typing import Literal
 from apv.classes.util_classes.settings_handler import Settings
 from apv.classes.util_classes.geometries_handler import GeometriesHandler
-from apv.classes.util_classes.sim_datetime import SimDT
 from apv.classes.weather_data import WeatherData
 from apv.classes.oct_file_handler import OctFileHandler
 from apv.classes.simulator import Simulator
@@ -10,6 +12,8 @@ from apv.classes.plotter import Plotter
 
 
 class BR_Wrapper():
+    # sim time/timespan in plot title
+    # TODO automatic plotting with equal color bar per day
 
     """This is the core class, which is linking all other classes. It passes
     a settings objevt (for simulation, APV system, names and pathes - all
@@ -19,7 +23,8 @@ class BR_Wrapper():
     1. OctFileHandler to create/view octfiles
         (the oct-format is needed for Radiance simulations and contains the
         scene information about the geometries, materials and sky.
-        The OctFileHandler takes as additional input two util_classes-objects:
+        The OctFileHandler takes besides the settings as input two
+        util_classes-objects:
         - a weatherData-object containing the correct irradiance and sun
             position based on the time settings in sim_settings, and
         - a geometries_handler-object, which creates based on the apv_system
@@ -40,8 +45,7 @@ class BR_Wrapper():
 
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.settings.set_names_and_paths()
-        # print('csv_file exists: ', self.settings.paths.csv_file_path.exists())
+        self.settings._set_names_and_paths()
 
         self.weatherData = WeatherData(self.settings)
         self.ghObj = GeometriesHandler(self.settings,  # self.debug_mode=True
@@ -51,36 +55,6 @@ class BR_Wrapper():
             # self.debug_mode=True
         )
         self._init_simulator_evaluator_and_plotter()
-
-    def _init_simulator_evaluator_and_plotter(self):
-        """put into a method to allow for calling it again
-        after updating the timestep from outside, which affects
-        self.settings.names and .paths
-        """
-        self.simulatorObj = Simulator(self.settings, self.ghObj)
-        self.evaluatorObj = Evaluator(self.settings, self.weatherData)
-        self.plotterObj = Plotter(self.settings, self.ghObj)
-
-    def create_octfile(
-            self, add_groundScanArea: bool = False,
-            add_sensor_vis: bool = False,
-            add_NorthArrow: bool = False,
-            update_sky_only: bool = False):
-        """for simulation preperation in two steps:
-            # 1 optional create scene without sky,
-            # 2 add sky
-        (set update_sky_only=True to skip step #1)
-        reduced large scene creation from 40 to 20 seconds.
-
-        WARNING: add_groundScanArea is needed for different scan startz
-        but the ground albedo won't be used this way. #TODO)
-        """
-        if update_sky_only:
-            pass
-        else:
-            self.octFileObj.create_octfile_without_sky(
-                add_groundScanArea, add_sensor_vis, add_NorthArrow)
-        self.octFileObj.add_sky_to_octfile()
 
     def create_and_view_octfile_for_SceneInspection(
             self, add_groundScanArea: bool = True,
@@ -92,37 +66,87 @@ class BR_Wrapper():
         more easy checking of a post-to-post scan area unit cell placement.
 
         view_name: Literal['total', 'close_up', 'top_down']
+
+        WARNING: add_groundScanArea is needed for different scan startz
+        but the ground albedo won't be used this way. #TODO
         """
-        self.create_octfile(
+        self.octFileObj.create_octfile_without_sky(
             add_groundScanArea, add_sensor_vis, add_NorthArrow)
+
+        self.update_time(hour=self.settings.sim.hour_for_sceneInspection)
+        self._update_sky()
         view_type = 'parallel' if view_name == 'top_down' else 'perspective'
         self.octFileObj.view_octfile(view_name=view_name, view_type=view_type)
 
-    def update_timeStep_and_sky(self, settings: Settings):
-        """refresh names, paths, sim settings, sky dome, and other objects
-        allowing that APV geometry does not have to be build again.
+    def update_time(self, **kwargs):
         """
-        self.settings = settings
-        self.settings.set_names_and_paths()
-        self.weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(
-            SimDT(self.settings.sim))
-        vis_added = self.octFileObj.ResultsFalsifyingVisualisationsAdded
+        # updates time settings, pathes, labels, weatherData...
+
+        **kwargs:
+        year: int = ..., month: int = ..., day: int = ...,
+        hour: int = ..., minute: int = ..., as in dt.replace()
+        """
+        self.settings.update_sim_dt_and_paths(**kwargs)
+        self.weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(self.settings)
+
+    def simulate_and_evaluate(self, skip_sim_for_existing_results=False):
+        # Creating octfile without scanArea or North_arrow as objects as these
+        # would falsify the simulation results, since e.g. the edge of the
+        # scanArea object would result in darker lines in the edge of the
+        # irradiation heatmaps. Sky is added later to save cpu time.
+        self.octFileObj.create_octfile_without_sky()
+
+        for hour in self.settings.sim.hours:
+            for minute in range(0, 60, self.settings.sim.time_step_in_minutes):
+                self.update_time(hour=hour, minute=minute)
+                # Sun alitude and GHI FILTER ==================================
+                if (self.weatherData.sunalt < 0):
+                    print(f'Sun alitude < 0 ({self.weatherData.sunalt}).')
+                elif self.weatherData.ghi < min(
+                        self.weatherData.dailyCumulated_ghi * 0.02, 50):
+                    print(f'GHI too low ({self.weatherData.ghi} Wh/m²).')
+                else:  # enough light
+                    # =========================================================
+                    res_path = self.settings._paths.inst_csv_file_path
+                    if res_path.exists() and skip_sim_for_existing_results:
+                        print(f'result for {res_path} exists, skipping sim...')
+                        # check if evaluated to avoid 'Wm2' key error
+                        df_check: pd.DataFrame = fi.df_from_file_or_folder(
+                            res_path
+                        )
+                        if 'Wm2' not in df_check.columns:
+                            self.evaluatorObj.evaluate_csv()
+                        self.plotterObj.ground_heatmap(df=df_check)
+                    else:
+                        self._update_sky()
+                        self._init_simulator_evaluator_and_plotter()
+                        self.simulatorObj.run_raytracing_simulation()
+                        self.evaluatorObj.evaluate_csv()
+                        self.plotterObj.ground_heatmap()
+        # cumulate
+        self.evaluatorObj.cumulate_gendaylit_results()
+        self.plotterObj.ground_heatmap(cumulative=True)
+
+    # helpers =============================================================
+    def _init_simulator_evaluator_and_plotter(self):
+        """put into a method to allow for calling it again
+        after updating the time from outside, which affects
+        self.settings.names and .paths
+        """
+        self.simulatorObj = Simulator(self.settings, self.ghObj)
+        self.evaluatorObj = Evaluator(self.settings, self.weatherData)
+        self.plotterObj = Plotter(self.settings, self.ghObj)
+
+    def _update_sky(self):
+        """refresh names, paths, sim settings, sky dome, and other objects
+        allowing that APV geometry does not have to be build again,
+        if no tracking is involved.
+
+        updating sky only instead of rebuilding geometry as well
+        reduced large scene creation from 40 to 20 seconds.
+        """
+
         self.octFileObj = OctFileHandler(
             self.settings, self.weatherData, self.ghObj
         )
-        # since octFileObj init sets vis_added to False:
-        self.octFileObj.ResultsFalsifyingVisualisationsAdded = vis_added
         self.octFileObj.add_sky_to_octfile()
-        self._init_simulator_evaluator_and_plotter()
-
-    def simulate_and_evaluate(self):
-        if self.octFileObj.ResultsFalsifyingVisualisationsAdded:
-            print('Warning: Creating octfile again without scanArea',
-                  'or North_arrow as objects as these would falsify',
-                  'the simulation results. To save time, create octfile',
-                  'without visualisations of scanArea or north arrow added.')
-            # NOTE "falsify", as the edge of the scanArea object will
-            # result in darker lines in the edge of the irradiation heatmaps.
-            self.create_octfile()
-        self.simulatorObj.run_raytracing_simulation()
-        self.evaluatorObj.rename_and_add_result_columns()

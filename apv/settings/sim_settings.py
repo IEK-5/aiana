@@ -1,5 +1,4 @@
 # #
-from pathlib import Path
 from typing import Literal
 from pvlib import location
 
@@ -11,17 +10,53 @@ class Simulation:
 
     def __init__(self):
 
-        self.results_subfolder: Path = Path('test')
+        self.study_name: str = 'myStudy'  # will be used as sub folder for
+        # all results of the current study
+        # this attribute is not placed in user_paths.py to allow for changing
+        # it within a working file from outside via settings.sim.study_name=...
+        # (Settings._paths is overwritten by user_paths.py default values and
+        # settings.sim is not).
 
-        self.study_name: str = 'APV_Floating'
-
-        self.ground_albedo = 0.24  # grass
+        self.sub_study_name: str = 'mySubStudy'  # will be added as prefix
+        # to cumulative plots and their corresponding data sub folders
 
         self.spatial_resolution = 0.1  # [m]
         # distance between virtual radiation sensors
+        self.ground_albedo = 0.24  # grass
 
+        # time settings (right labled with interval = time_step_in_minutes s.below)
         self.sim_year: Literal['TMY'] = 'TMY'  # or e.g. 2020
         # TMY = typical meterological year; here: mean data from 2005 to 2021
+
+        self.month: int = 6
+        self.day: int = 15
+
+        # hours as local time of the timezone defined in apv_location.tz
+        self.hours: list = list(range(3, 24))
+        # GHI will be summed for all hours given in this list
+        # (including minutes) to calculate the irradiation,
+        # cumulative shadow depth and DLI
+        self.hour_for_sceneInspection = 14  # noon, good to check azimuth
+
+        self.time_step_in_minutes: int = 60  # <= 60 and
+        # only prime-factos of 60! (1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60)
+
+        # sky generation type:
+        self.sky_gen_mode: Literal['gendaylit'
+                                   # , 'gencumsky'  # not included at the moment
+                                   ] = 'gendaylit'
+
+        """NOTE Important info
+        ghi and dhi are taken from an observation period ranging
+        from [sim_date_time - time_step_in_minutes] until [sim_date_time]
+        and the sunposition is calculated at a time in between.
+        e.g. a hours = [12] and time_step_in_minutes = 60
+        will at the moment result in irradiation data 11-12h and sol position
+        from 11:30h (bifacial radiance uses also right-labled timestamps)
+        epw also right-labled:
+        https://search.r-project.org/CRAN/refmans/eplusr/html/Epw.html
+        br.MetObj: def __init__(self, tmydata, metadata, label='right')
+        """
 
         self.use_typDay_perMonth_for_irradianceCalculation = True
         # for dni, dhi, ghi True to compare mean of month to mean of month
@@ -55,29 +90,8 @@ class Simulation:
 
         # location
         self.apv_location = location.Location(
-            50.86351, 6.52946, altitude=123, tz='Europe/Berlin', name='Morchenich'
+            50.86351, 6.52946, altitude=123, tz='Europe/Berlin', name='Morschenich'
         )
-
-        # time settings (right labled with interval = time_step_in_minutes s.below)
-        # and as local time of the timezone defined in apv_location.tz
-        # currently only as typical meterological year
-        self.sim_date_time: str = '06-15_12:00'  # month-day_time
-        # will be also used as second part of the .oct file name
-
-        self.time_step_in_minutes: int = 60
-        # only prime-factos of 60! (1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60)
-
-        """NOTE Important info
-        ghi and dhi are taken from an observation period ranging
-        from [sim_date_time - time_step_in_minutes] until [sim_date_time]
-        and the sunposition is calculated at a time in between.
-        e.g. a sim_date_time = 12h will at the moment result in irradiation data
-        11-12h and sol position 11:30h
-        (bifacial radiance uses also right-labled timestamps)
-        epw also right-labled:
-        https://search.r-project.org/CRAN/refmans/eplusr/html/Epw.html
-        br.MetObj: def __init__(self, tmydata, metadata, label='right')
-        """
 
         # quantity on the color map of the heatmap of the results (output)
         self.cm_quantity: Literal[
@@ -110,6 +124,8 @@ class Simulation:
         # to recieve the light
         self.RadSensors_to_scan_area_distance_z = 0.1
 
+        self.north_arrow_xy_posi = (1.6, 1.2)  # x, y within heat maps
+
         ##################
         # less important / not fully implemented or obsolete at the moment
 
@@ -121,19 +137,8 @@ class Simulation:
         self.scan_target: Literal['ground', 'module'] = 'ground'
         # TODO for module east west see br tutorial 19
 
-        # sky generation type:
-        self.sky_gen_mode: Literal['gendaylit'
-                                   # , 'gencumsky'  # not included at the moment
-                                   ] = 'gendaylit'
-
-        # needed for sky_gen_mode = 'gencumsky':
-        # Insert start date of the year as [month,day,hour]
-        self.startdt = '1-1_0:00'
-        # Insert end date of year as [month,day,hour]
-        self.enddt = '1-1_23:00'  # inclusive ([:end+1])
-
-        # cumulative is done at the moment via for loop of single moments
-        self.cumulative: bool = False
+        # cumulative is done at the moment via merging single time step results
+        # self.cumulative: bool = False
 
         self.irradiance_data_source: Literal['EPW', 'ADS_satellite'] = 'ADS_satellite'
         # >>> we dont use EPW anymore
@@ -142,9 +147,6 @@ class Simulation:
 class SimSettings_ForTesting(Simulation):
     def __init__(self):
         super().__init__()
-        self.sim_date_time = '06-15_14:00'  # 14:00 -> sunposition 13:30
-        # --> for hourly time_step sun at noon, which makes it easier to
-        # check the azimuth of the panels
         self.spatial_resolution = 1
         self.use_typDay_perMonth_for_irradianceCalculation = False
         self.use_CPU_multi_processing = False

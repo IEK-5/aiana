@@ -16,7 +16,7 @@ import apv.utils.files_interface as fi
 if __name__ == '__main__':
     settings = Settings()
     # ############ SIM SETTINGS #############
-    settings.sim.study_name = f'APV_Morschenich_S_inclinedTables'
+    settings.sim.sub_study_name = f'APV_Morschenich_S_inclinedTables'
     # settings.sim.scan_position = 'north'
     settings.sim.plot_title_components = [
         # 'weather', 'position',
@@ -61,7 +61,7 @@ if __name__ == '__main__':
 
     def create_results_subfolderPath(month, posi):
         return Path(
-            settings.sim.study_name, settings.apv.module_form
+            settings.sim.sub_study_name, settings.apv.module_form
             + f'_res-{settings.sim.spatial_resolution}m'
             + f'_step-{settings.sim.time_step_in_minutes}min'
             + f'_TMY_aggfunc-{settings.sim.TMY_irradiance_aggfunc}',
@@ -162,7 +162,7 @@ if __name__ == '__main__':
     brObj = BR_Wrapper(settings)
     # def get_cum_csv_path():
     results_folder_cum \
-        = brObj.settings.paths.results_folder.parent.parent / 'cumulative'
+        = brObj.settings._paths.results_folder.parent.parent / 'cumulative'
     fi.make_dirs_if_not_there(results_folder_cum)
 
     cum_file_name = brObj.plotterObj.return_plot_title(
@@ -181,7 +181,7 @@ if __name__ == '__main__':
             print(cum_csv_path, ' not found, cumulating...\n')
             # TODO speed up? cant append blindly directly after sim, as want to be able to redo only certain time steps
             return brObj.evaluatorObj.cumulate_gendaylit_results(
-                brObj.settings.paths.csv_parent_folder,
+                brObj.settings._paths.inst_csv_parent_folder,
                 cum_csv_path, add_DLI=True
             )
     df_merged = get_df_merged(cum_csv_path)
@@ -201,7 +201,7 @@ if __name__ == '__main__':
 test = df_merged.sort_values(by=['y', 'x'])
 test.agg([min, max])
 # #
-# comlex
+# complex
 if __name__ == '__main__':
     def meta_cumulate(agg_funcs: list, positions: list, equalColLims=False):
         month = 6
@@ -212,7 +212,7 @@ if __name__ == '__main__':
                 settings.sim.results_subfolder = create_results_subfolderPath(
                     month, settings.sim.scan_position)
                 # refresh other pathes #TODO |M automate via @property?
-                settings.set_names_and_paths()
+                settings._set_names_and_paths()
 
                 def get_date_time_str(file_name: str) -> str:
                     string_parts = file_name[:-4].replace('h', ':').split('_')
@@ -233,7 +233,7 @@ if __name__ == '__main__':
                     settings.sim.enddt = enddts[agg_func]
 
                 set_startdt_and_enddt(
-                    settings.paths.csv_parent_folder)
+                    settings._paths.inst_csv_parent_folder)
 
                 ##############################################################
 

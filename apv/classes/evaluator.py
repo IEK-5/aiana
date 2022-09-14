@@ -1,17 +1,13 @@
 from pathlib import Path
-import sys
 import pandas as pd
+from apv.utils import files_interface as fi
 from apv.classes.weather_data import WeatherData
 from apv.classes.util_classes.sim_datetime import SimDT
 from apv.classes.util_classes.settings_handler import Settings
-from apv.utils import files_interface as fi
 
 
 class Evaluator:
 
-    # TODO Wm2 rename to W/m^2 possible?
-    # TODO column header now sometimes = quantity name, sometimes = unit...
-    # unify!
     # TODO ADD Bifacial factor
 
     def __init__(
@@ -25,15 +21,17 @@ class Evaluator:
         self.debug_mode = debug_mode
         self.simDT = SimDT(self.settings.sim)
 
-    def rename_and_add_result_columns(self):
+    def evaluate_csv(self):
+        """renames columns and adds result columns to csv
+        """
 
         df: pd.DataFrame = fi.df_from_file_or_folder(
-            self.settings.paths.csv_file_path,
+            self.settings._paths.inst_csv_file_path,
             print_reading_messages=False)
         df = df.reset_index()
 
-        df['time_local'] = self.simDT.sim_dt_local
-        df['time_utc'] = self.simDT.sim_dt_utc_pd
+        df['time_local'] = self.simDT.sim_dt_naiv
+        df['time_utc'] = self.simDT.sim_dt_utc
 
         # if 'ground' in str(self.settings.paths.csv_file_path): # TODO needed?
         df.rename(columns={'Wm2Front': 'Wm2'}, inplace=True)
@@ -41,15 +39,15 @@ class Evaluator:
         df = self._add_PAR(df=df)
         df = self._add_shadowdepth(df=df, cumulative=False)
 
-        df.to_csv(self.settings.paths.csv_file_path)
+        df.to_csv(self.settings._paths.inst_csv_file_path)
 
-        print(f'Evaluated {self.settings.paths.csv_file_path}\n')
+        print(f'Evaluated {self.settings._paths.inst_csv_file_path}\n')
         self.df_ground_results = df
 
     @staticmethod
     def _add_PAR(df: pd.DataFrame) -> pd.DataFrame:
-        """Converts irradiance from [W/m2] to
-        Photosynthetic Active Radiation (PAR) [μmol quanta/ m2.s] [1]
+        """Converts irradiance from [W/m^2] to
+        Photosynthetic Active Radiation (PAR) [μmol quanta / (m^2*s)] [1]
 
         [1] Čatský, J. (1998): Langhans, R.W., Tibbitts, T.W. (ed.):
         Plant Growth Chamber Handbook. In Photosynt. 35 (2), p. 232.
@@ -79,19 +77,18 @@ class Evaluator:
         DOI: 10.1109/PVSC40753.2019.8981324
 
         Args:
-            df (DataFrame): The DataFrame with irradiance (W/m² not cumulative)
-            or irradiation (Wh/m², cumulative) data
-            SimSettings : self.settings.sim should be given.
+            df (DataFrame): The DataFrame with irradiance data in W/m² if not
+            cumulative or with irradiation data in Wh/m² if cumulative.
 
-            cumulative (bool, optional): used only if cumulative data were
-            used. Gencumsky turns this automaticaly to True. Defaults to False.
+            cumulative (bool, optional): to switch between instantaneous and
+            cumulative calculation. Defaults to False.
+
+            Gencumsky turns this automaticaly to True.
+            #TODO gencumsky is not in use atm !
 
         Returns:
             [type]: [description]
         """
-        # refresh time, to allow for looping cumulative evaluation from outside
-        simDT = SimDT(self.settings.sim)
-        self.weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(simDT)
 
         if self.settings.sim.for_shadowDepths_compare_GGI_to == 'clearsky_GHI':
             ghi_ref = self.weatherData.ghi_clearsky
@@ -121,7 +118,7 @@ class Evaluator:
         """Add Daily Light Integral (DLI)
 
         Args:
-            df (pd.DataFrame): daily cumulated irradiation with a Wh/m^2 column
+            df (pd.DataFrame): daily cumulated irradiation with a Whm2 column
         """
 
         df_merged['DLI'] = df_merged['Whm2']*0.0074034
@@ -134,10 +131,37 @@ class Evaluator:
         return df_merged
 
     def cumulate_gendaylit_results(self,
-                                   file_folder_to_merge: Path,
-                                   cum_csv_path: Path,
+                                   file_folder_to_merge: Path = None,
+                                   cum_csv_path: Path = None,
                                    add_DLI=False):
-        """add_DLI should only be set True, if cumulated timespan is a day"""
+        """_summary_
+
+        Args:
+            file_folder_to_merge (Path): source/input FOLDER path
+            all single gendaylit simulation result files in this folder path
+            will be merged. Defaults to self.settings.paths.csv_parent_folder,
+            built by settings_handler from
+            results_subfolder/'inst_data'
+            with results_subfolder defined in settings/user_paths.py.
+
+            Sub folders within file_folder_to_merge are ignored.
+
+            cum_csv_file_path (Path): destination/output FILE path,
+            defaults to file_folder_to_merge.parent/"cumulated.csv"
+            with SimSettings.results_subfolder defined in user_paths
+
+            add_DLI (bool, optional): Whether to add a Daily Light Integral
+            column. Should only be set True if the cumulated timespan is
+            a full day! Defaults to False.
+
+        Returns:
+            _type_: _description_
+        """
+
+        if file_folder_to_merge is None:
+            file_folder_to_merge: Path = self.settings._paths.inst_csv_parent_folder
+        if cum_csv_path is None:
+            cum_csv_path: Path = self.settings._paths.cum_csv_file_path
 
         # load all single results and append
         df = fi.df_from_file_or_folder(
@@ -151,7 +175,7 @@ class Evaluator:
             values=['Wm2', 'PARGround'],
             aggfunc='sum')
 
-        # TODO M| nicer way?  currently it results in two x and two y columns!
+        # TODO nicer way?  currently it results in two x and two y columns!
         df_merged2 = pd.pivot_table(
             df, index=['xy'],
             values=['x', 'y'],
@@ -174,6 +198,5 @@ class Evaluator:
             df_merged: pd.DataFrame = self._add_DLI(df_merged)
 
         df_merged.to_csv(cum_csv_path)
-        print(f'Cumulating completed!\n',
-              'NOTE: Shadow_depth was recalculated for cumulative data\n')
+        print(f'Cumulating completed!\n')
         return df_merged

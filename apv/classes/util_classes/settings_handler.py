@@ -3,19 +3,34 @@ from apv.settings.apv_system_settings import Default as SystSettings
 from apv.settings.view_settings import ViewSettings
 from apv.settings.sim_settings import Simulation
 from apv.settings.user_paths import UserPaths
+from apv.classes.util_classes.sim_datetime import SimDT
 
 
 class Settings:
+    """Changing _names, _paths from outside is useless, as they will be
+    overwritten by applying apv, sim, view, and dt settings.
+    To change time, dont use _dt, use the update_sim_dt() method instead"""
+
     def __init__(self):
         self.apv = SystSettings()
         self.view = ViewSettings()
         self.sim = Simulation()
-        self.set_names_and_paths()
+        self._dt = SimDT(self.sim)
+
+        self._set_names_and_paths()
         self._verify_unique_setting_names()
 
-    def set_names_and_paths(self):
-        self.names = Names(self.sim, self.apv)
-        self.paths = Paths(self.sim, self.names)
+    def update_sim_dt_and_paths(self, **kwargs):
+        """**kwargs:
+        year: int = ..., month: int = ..., day: int = ...,
+        hour: int = ..., minute: int = ..., as in datetime.replace()
+        """
+        self._dt.update_sim_dt(**kwargs)
+        self._set_names_and_paths()
+
+    def _set_names_and_paths(self):
+        self._names = Names(self.sim, self.apv, self._dt)
+        self._paths = Paths(self.sim, self._names)
 
     # #
     def _verify_unique_setting_names(self):
@@ -33,16 +48,22 @@ class Settings:
 
 
 class Names:
-    # Radiance scene file name (.oct) and the output files
-    oct_fn: str
-    csv_fn_ext: str  # fn_ext = file name extension added behind ground_results
+    """ Radiance scene file name (.oct) and strings for
+    output file names and paths
+    """
 
     def __init__(self, SimSettings: Simulation,
-                 APV_SystSettings: SystSettings):
+                 APV_SystSettings: SystSettings,
+                 dt: SimDT):
 
-        self.csv_fn_ext = SimSettings.sim_date_time.replace(':', 'h')+'.csv'
+        # for inst-plots and -data subfolder-name and cum-file-name:
+        self.studyName_modForm_yearMonthDay: str = SimSettings.sub_study_name \
+            + f'_{APV_SystSettings.module_form}-module_{dt.sim_dt_str.split(" ")[0]}'
 
-        self.oct_fn = SimSettings.study_name \
+        # for inst plots and data files
+        self.dateTimeForFileNames = dt.sim_dt_str.replace(':', 'h')
+
+        self.oct_fn = APV_SystSettings.mountingStructureType \
             + '_' + APV_SystSettings.module_form \
             + '.oct'
         # + '_' + self.csv_fn.replace('.csv', '.oct')#
@@ -51,19 +72,30 @@ class Names:
 
 
 class Paths(UserPaths):
-    def __init__(self, SimSettings: Simulation, FileNames: Names):
+    def __init__(self, SimSettings: Simulation, names: Names):
         # file paths of oct file without and with sky
         self.oct_fp_noSky = self.bifacial_radiance_files / Path(
-            FileNames.oct_fn[:-4]+'_withoutSky.oct')
+            names.oct_fn[:-4]+'_withoutSky.oct')
         self.oct_fp = self.bifacial_radiance_files / Path(
-            f'{FileNames.oct_fn}')
+            f'{names.oct_fn}')
 
         # file paths for saving results
         self.results_folder: Path = self.results_parent_folder \
-            / SimSettings.results_subfolder
-        self.csv_parent_folder: Path = self.results_folder / 'data'
-        self.csv_file_path: Path = self.csv_parent_folder /\
-            f'ground_results_{FileNames.csv_fn_ext}'
+            / SimSettings.study_name
+        self.inst_results_folder: Path = self.results_folder \
+            / f'{names.studyName_modForm_yearMonthDay}_data'
+
+        self.inst_csv_parent_folder: Path = self.inst_results_folder \
+            / 'instantaneous_csv_files'  # also used by simulator and evaluator
+        self.inst_csv_file_path: Path = self.inst_csv_parent_folder /\
+            f'{names.dateTimeForFileNames}.csv'
+        self.cum_csv_file_path: Path = self.inst_results_folder /\
+            f'{names.studyName_modForm_yearMonthDay}_cumulated.csv'
+
+        self.inst_plot_file_path: Path = self.inst_results_folder /\
+            f'{names.dateTimeForFileNames}_{SimSettings.cm_quantity}.jpg'
+        self.cum_plot_file_path: Path = self.results_folder /\
+            f'{names.studyName_modForm_yearMonthDay}_{SimSettings.cm_quantity}.jpg'
 
         # NOTE check folder existence is done right before saving sim results
         # to avoid creating empty folders upon init

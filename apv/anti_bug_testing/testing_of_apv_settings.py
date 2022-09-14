@@ -1,16 +1,32 @@
 # #
 if __name__ == '__main__':
     from apv.classes.br_wrapper import BR_Wrapper
-    from apv.anti_bug_testing.tester import Tester
+    from apv.anti_bug_testing.tester_class import Tester
     from apv.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morschenich
 
     testerObj = Tester(open_oct_viewer=True)
+    ##
+    # azimuth
+    testerObj.default_settings.sim.hours = [14]
+    testerObj._set_current_to_default_settings()
+    print('The local time for the sun position is set to',
+          testerObj.settings._dt.sunpos_locTime_str, '\n',
+          testerObj.settings._dt.sim_dt_naiv,
+          testerObj.settings._dt.sim_dt_utc)
+    #
+    for azimuth in [90, 180, 270  # east, south, west
+                    ]:
+        testerObj.test_dictItems_seperately("sceneDict", {'azimuth': azimuth},
+                                            view_name="top_down")
+    # #
+    # view system with default test settings
+    BR_Wrapper(testerObj.settings).create_and_view_octfile_for_SceneInspection()
     # #
     # mounting structure
     module_to_post_distance_x_dict = {
         'framed_single_axes_ridgeRoofMods': 0.5,
-        #'framed_single_axes': 0.5,
-        #'inclined_tables': -0.5  # to avoid modules floating between posts
+        # 'framed_single_axes': 0.5,
+        # 'inclined_tables': -0.5  # to avoid modules floating between posts
     }
     for mountingStructureType in module_to_post_distance_x_dict:
         s = testerObj.default_settings.apv
@@ -35,17 +51,14 @@ if __name__ == '__main__':
     # test module forms with and without glass
     # #
     for glass in [True,
-            False]:
+                  False]:
         testerObj.change_default_Setting("glass_modules", glass)
         testerObj.test_listItems_seperately("module_form", [
             # 'std',
-             #'cell_gaps',
-             'checker_board',
-             #'none'
+            # 'cell_gaps',
+            'checker_board',
+            # 'none'
         ])
-    # #
-    # view system with default test settings
-    BR_Wrapper(testerObj.settings).create_and_view_octfile_for_SceneInspection()
     # #
     # test apv system settings
     testerObj.test_dictItems_seperately("sceneDict", {'tilt': 70,
@@ -54,12 +67,6 @@ if __name__ == '__main__':
                                                       'nMods': 10,
                                                       'nRows': 5})
     # TODO pytest angucken "hooks"
-
-    # #
-    # azimuth
-    for azimuth in [90, 180, 270]:
-        testerObj.test_dictItems_seperately("sceneDict", {'azimuth': azimuth},
-                                            view_name="top_down")
 
     # #
     testerObj.test_dictItems_seperately("moduleDict", {'x': 0.5,
@@ -76,7 +83,6 @@ if __name__ == '__main__':
                                          'ground_scan_shift_y': 9,
                                          'round_up_scan_edgeLengths': True
                                          })
-
 
     # #
     # test and time updateSkyOnly for Morschenich APV and view scene

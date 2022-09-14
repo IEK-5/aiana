@@ -101,15 +101,15 @@ if __name__ == '__main__':
                             enough_light = True
 
                         ########
-                        brObj.settings.set_names_and_paths()
-                        if not brObj.settings.paths.csv_file_path.exists():
+                        brObj.settings._set_names_and_paths()
+                        if not brObj.settings._paths.inst_csv_file_path.exists():
                             brObj.update_timeStep_and_sky(settings)
                             brObj.simulate_and_evaluate()
                         else:
                             print('result exists, skipping')
                             # check if evaluated to avoid 'Wm2' key error
                             df_check: pd.DataFrame = fi.df_from_file_or_folder(
-                                brObj.settings.paths.csv_file_path
+                                brObj.settings._paths.inst_csv_file_path
                             )
                             if 'Wm2' not in df_check.columns:
                                 brObj.evaluatorObj.rename_and_add_result_columns()
@@ -117,8 +117,8 @@ if __name__ == '__main__':
 
                         if month in months:  # == months[0]:
                             for cm_unit in ['radiation']:
-                                fig_path = settings.paths.results_folder / Path(
-                                    f'{settings.names.csv_fn_ext[:-4]}_{cm_unit}.jpg')
+                                fig_path = settings._paths.results_folder / Path(
+                                    f'{settings._names.csv_fn_ext[:-4]}_{cm_unit}.jpg')
                                 if not fig_path.exists():
                                     brObj.plotterObj.ground_heatmap(
                                         plot_dpi=250,
@@ -162,7 +162,7 @@ if __name__ == '__main__':
             brObj = BR_Wrapper(settings)
 
             results_folder_cum \
-                = brObj.settings.paths.results_folder.parent / 'cumulative'
+                = brObj.settings._paths.results_folder.parent / 'cumulative'
             fi.make_dirs_if_not_there(results_folder_cum)
 
             cum_csv_path = su.get_cum_csv_path(
@@ -176,7 +176,7 @@ if __name__ == '__main__':
                     print(cum_csv_path, ' not found, cumulating...\n')
                     # TODO speed up? cant append blindly directly after sim, as want to be able to redo only certain time steps
                     return brObj.evaluatorObj.cumulate_gendaylit_results(
-                        brObj.settings.paths.csv_parent_folder,
+                        brObj.settings._paths.inst_csv_parent_folder,
                         cum_csv_path, add_DLI=True
                     )
             df_merged = get_df_merged(cum_csv_path)

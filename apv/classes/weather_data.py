@@ -1,5 +1,4 @@
 # #
-import sys
 import pandas as pd
 import pvlib
 import cdsapi
@@ -11,7 +10,6 @@ from pathlib import Path
 import numpy as np
 
 from apv.classes.util_classes.settings_handler import Settings
-from apv.classes.util_classes.sim_datetime import SimDT
 import apv.utils.files_interface as fi
 
 
@@ -35,7 +33,6 @@ class WeatherData:
     def __init__(self, settings: Settings, debug_mode=False):
         self.settings = settings
         self.debug_mode = debug_mode
-        self.simDT = SimDT(self.settings.sim)
 
         self.credentials = self.load_API_credentials()
 
@@ -56,7 +53,7 @@ class WeatherData:
         # set irradiance and sunpos
         self.set_dhi_dni_ghi_and_sunpos_to_simDT()
 
-        self.set_dayCumulative_ghi()
+        self.calc_cumulative_ghi()
 
         # dfs:
         # as downloaded from ads,
@@ -87,17 +84,17 @@ class WeatherData:
         self.time_step = self.settings.sim.time_step_in_minutes
         self.fn_resampled = str(self.download_file_path).split(
             '\\')[-1].replace('1minute', f'{self.time_step}minute')
-        self.weather_folder_path = self.settings.paths.root / Path(
+        self.weather_folder_path = self.settings._paths.root / Path(
             'satellite_weatherData')
         self.resampled_insolation_data_path: Path = \
             self.weather_folder_path/self.fn_resampled
 
-    def set_dhi_dni_ghi_and_sunpos_to_simDT(self, simDT: SimDT = None):
+    def set_dhi_dni_ghi_and_sunpos_to_simDT(self, settings: Settings = None):
         """allow simDT input for fast GHI filter from outside"""
-        if simDT is None:
-            simDT = self.simDT
-        t_stamp = simDT.sim_dt_utc
-        if self.settings.sim.use_typDay_perMonth_for_irradianceCalculation:
+        if settings is None:
+            settings = self.settings
+        t_stamp = settings._dt.sim_dt_utc
+        if settings.sim.use_typDay_perMonth_for_irradianceCalculation:
             s: pd.Series = self.df_irradiance_typ_day_per_month.loc[
                 (t_stamp.month, t_stamp.hour, t_stamp.minute)]
         else:
@@ -112,40 +109,32 @@ class WeatherData:
                             'can meet, starting at 00:00. E.g. not 15:30 and 60 min\n'
                             )
         # taking sun position in between adjacent right labled irradiation data
-        timedelta_sec = str(int(60*self.settings.sim.time_step_in_minutes/2))
+
         solpos: pd.DataFrame = \
-            self.settings.sim.apv_location.get_solarposition(
-                times=simDT.sim_dt_utc_pd-pd.Timedelta(f'{timedelta_sec}sec'),
+            settings.sim.apv_location.get_solarposition(
+                times=settings._dt.sim_dt_utc_pd_for_solarposition,
                 temperature=12  # TODO use temperature from ERA5 data
             )
         self.sunalt = float(solpos["elevation"])
         self.sunaz = float(solpos["azimuth"]-180.0)
 
-    def set_dayCumulative_ghi(self):
+    def calc_cumulative_ghi(self):
         "for ghi filter and shadow_depth calculation"
         if self.settings.sim.use_typDay_perMonth_for_irradianceCalculation:
-            # df_irradiance_typ_day_per_month is already aggregated over all
-            # days per month, therefore the following is the
-            # GHI sum of a single typical day in current month
-            self.dailyCumulated_ghi = self.df_irradiance_typ_day_per_month.loc[
-                (self.simDT.sim_dt_utc.month), 'ghi_Whm-2'].sum()
-            self.dailyCumulated_ghi_clearsky = \
-                self.df_irradiance_typ_day_per_month.loc[
-                    (self.simDT.sim_dt_utc.month), 'ghi_clearSky_Whm-2'].sum()
+            # summing all simulated months and hours (and minutes)
+            df_sum = self.df_irradiance_typ_day_per_month.loc[
+                pd.IndexSlice[[self.settings.sim.month],
+                              self.settings.sim.hours], ].sum()
         else:
-            date = self.simDT.sim_dt_utc_pd.date()
-            self.dailyCumulated_ghi = self.df_irr.loc[
-                self.df_irr.index.date == date]['ghi_Whm-2'].sum()
+            df_sum = self.df_irr.loc[
+                self.settings._dt.start_dt_utc: self.settings._dt.end_dt_utc,
+                # +1 is not needed for inclusive end with .loc,
+                # only with .iloc
+            ].sum()
 
-            self.dailyCumulated_ghi_clearsky = self.df_irr.loc[
-                self.df_irr.index.date == date]['ghi_clearSky_Whm-2'].sum()
-
-        # TODO maybe not only interested in day cumulated? then...
-        """cumulative_GHI = self.df_irr.loc[
-                    simDT.startdt_utc:simDT.enddt_utc,
-                    # +1 is not needed for inclusive end with .loc,
-                    # only with .iloc
-                    'ghi_clearSky_Whm-2'].sum()"""
+        # daily Cumulated for all hours given in list: settings.sim.hours
+        self.dailyCumulated_ghi = df_sum['ghi_Whm-2']
+        self.dailyCumulated_ghi_clearsky = df_sum['ghi_clearSky_Whm-2']
 
     # ## DOWNLOADS ##################
 
@@ -246,7 +235,7 @@ class WeatherData:
                 ],
             },
             os.path.join(
-                self.settings.paths.data_download_folder, file_name+'.nc')
+                self.settings._paths.data_download_folder, file_name+'.nc')
         )
 
     def download_insolation_data(
@@ -284,7 +273,7 @@ class WeatherData:
                      f'_lon-{location.longitude}'
                      f'_time_step-{time_step_str}')
 
-        file_path: Path = self.settings.paths.data_download_folder/Path(
+        file_path: Path = self.settings._paths.data_download_folder/Path(
             file_name+'.csv')
 
         if file_path.exists() is False:
@@ -404,7 +393,7 @@ class WeatherData:
 
         aggfunc = self.settings.sim.TMY_irradiance_aggfunc
         df_tmy_name: str = f'TMY_{aggfunc}_{self.fn_resampled}'
-        tmy_file_path = self.settings.paths.bifacial_radiance_files \
+        tmy_file_path = self.settings._paths.bifacial_radiance_files \
             / Path('satellite_weatherData', df_tmy_name)
 
         if tmy_file_path.exists() and not self.debug_mode:
@@ -492,3 +481,6 @@ class WeatherData:
                 abs(df_day_sums.loc[month]-df_all.loc[month, 'mean']))+1
 
         return df_tmy, df_all
+
+
+# if __name__ == '__main__':

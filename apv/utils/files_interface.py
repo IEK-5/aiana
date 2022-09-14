@@ -50,7 +50,7 @@ def df_from_file_or_folder(
     '''
     rel_path: relative file path with file extension,
     in case of append_all_in_folder=True: rel_path = folder path
-    and file extrionsion doesnt matter
+    containing the csv files. Sub folders are ignored.
 
     header=none if no header labels are there
     '''
@@ -74,7 +74,8 @@ def df_from_file_or_folder(
     if append_all_in_folder:
         source_files = []
         for file_name in os.listdir(f_path):
-            source_files += [os.path.join(f_path, file_name)]
+            if file_name[-4:] == '.csv':
+                source_files += [os.path.join(f_path, file_name)]
         # generator (as list comprehension but without storing the actual
         # content, only what to loop, which is much faster)
         dfs = (

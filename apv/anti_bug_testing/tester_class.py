@@ -20,6 +20,7 @@ class Tester():
             # overwrites by test setting-presets:
             self.default_settings.apv = APV_ForTesting()
             self.default_settings.sim = SimSettings_ForTesting()
+            self.default_settings._set_names_and_paths()
         else:
             self.default_settings = copy.deepcopy(default_settings)
         self._set_current_to_default_settings()
@@ -116,9 +117,11 @@ class Tester():
 
     def _set_current_to_default_settings(self):
         self.settings = copy.deepcopy(self.default_settings)
+        self.settings._set_names_and_paths()
 
     def _set_default_to_current_settings(self):
         self.default_settings = copy.deepcopy(self.settings)
+        self.default_settings._set_names_and_paths()
 
 
 # #

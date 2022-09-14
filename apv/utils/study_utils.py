@@ -15,7 +15,7 @@ def adjust_settings(
                         'checker_board', 'cell_gaps', 'roof_for_EW'],
         settings: Settings) -> Settings:
     # constant settings
-    settings.sim.study_name = 'framed_APV_noBorderEffects'
+    settings._paths.results_subfolder = 'framed_APV_noBorderEffects'
     settings.sim.spatial_resolution = 0.05
     settings.sim.time_step_in_minutes = 3
 
@@ -94,7 +94,7 @@ def adjust_APVclone_count(settings: Settings, hour: int) -> Settings:
 def create_results_subfolderPath(
         month: int, settings: Settings, subset: str) -> Path:
     return Path(
-        settings.sim.study_name,
+        settings._paths.results_subfolder,
         f'res-{settings.sim.spatial_resolution}m'
         + f'_step-{settings.sim.time_step_in_minutes}min',
         subset,

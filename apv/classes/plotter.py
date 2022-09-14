@@ -27,11 +27,11 @@ class Plotter:
         self,
         df: pd.DataFrame = None,
         cm_quantity: str = None,
-        cumulative: bool = None,
+        cumulative: bool = False,
         destination_file_path: Path = None,
         plot_dpi: int = None,
+        north_arrow_xy_posi: tuple = None,
         plot_title: str = None,
-        north_arrow_xy_posi: tuple = (-0.14, 1.2),
         col_bar_min: float = None,
         col_bar_max: float = None,
         df_col_limits: pd.DataFrame = None,
@@ -56,22 +56,25 @@ class Plotter:
 
             if an ax is passed, the plot is placed into the ax.
         """
+
         if df is None:
-            fp = self.settings.paths.csv_file_path
-            if fp.exists() is False:
-                raise Exception("Can't plot, "
-                                f"{self.settings.paths.csv_file_path} not found.")
+            if cumulative:
+                fp = self.settings._paths.cum_csv_file_path
             else:
-                df = fi.df_from_file_or_folder(
-                    str(self.settings.paths.csv_file_path))
+                fp = self.settings._paths.inst_csv_file_path
+            if fp.exists():
+                df = fi.df_from_file_or_folder(str(fp))
+            else:
+                raise Exception(f"Can't plot, file path {fp} not found.")
         if cm_quantity is None:
             cm_quantity = self.settings.sim.cm_quantity
 
         if plot_dpi is None:
             plot_dpi = self.settings.sim.plot_dpi
 
-        if cumulative is None:
-            cumulative = self.settings.sim.cumulative
+        if north_arrow_xy_posi is None:
+            north_arrow_xy_posi = self.settings.sim.north_arrow_xy_posi
+
         if plot_title is None:
             plot_title = self.return_plot_title(cumulative)
 
@@ -119,9 +122,11 @@ class Plotter:
         )
 
         if destination_file_path is None:
-            destination_file_path = self.settings.paths.results_folder / Path(
-                f'{self.settings.names.csv_fn_ext[:-4]}_{cm_quantity}.jpg'
-            )
+            if cumulative:
+                destination_file_path = self.settings._paths.cum_plot_file_path
+            else:
+                destination_file_path = self.settings._paths.inst_plot_file_path
+
         fi.save_fig(fig, destination_file_path, dpi=plot_dpi)
 
     def box_plot_month_comparing(self, df: pd.DataFrame, ax_blanc: Axes = None,
@@ -180,11 +185,17 @@ class Plotter:
         if 'module_form' in title_comps:
             title += f'Module Form: {self.settings.apv.module_form}'
         if 'datetime' in title_comps:
-            if self.settings.sim.sky_gen_mode == 'gendaylit' and not cumulative:
-                title += f'\nDate & Time: {self.settings.sim.sim_date_time}'
+            title += f'\nDate: {self.settings._dt.sim_dt_str.split(" ")[0]}'
+            if cumulative:
+                end_time: str = self.settings._dt.end_dt_str.split(" ")[1]
+                start_time: str = self.settings._dt.start_dt_str.split(" ")[1]
+                title += f'\nLocal time span: {start_time} to {end_time}'
             else:
-                title += (f'\nFrom: [{self.settings.sim.startdt}] '
-                          f'To: [{self.settings.sim.enddt}]')
+                sim_time: str = self.settings._dt.sim_dt_str.split(" ")[1]
+                title += f'\nIrradiance mean from: '\
+                         + self.settings._dt.irradiance_mean_timeSpan_start_str\
+                         + f' to {sim_time}\nSun position local time: '\
+                         + self.settings._dt.sunpos_locTime_str
         return title
 
     @ staticmethod

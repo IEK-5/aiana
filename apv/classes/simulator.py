@@ -28,13 +28,13 @@ class Simulator:
 
         # instantiate analysis
         self.analObj = br.AnalysisObj(
-            octfile=self.settings.names.oct_fn,
+            octfile=self.settings._names.oct_fn,
             # name=self.radObj.name # TODO needed?
         )
         self.ghObj = ghObj
 
         self.temp_results_folder: Path = \
-            self.settings.paths.bifacial_radiance_files / Path('results')
+            self.settings._paths.bifacial_radiance_files / Path('results')
 
     def run_raytracing_simulation(
             self, skip_if_result_exists=True) -> pd.DataFrame:
@@ -47,12 +47,12 @@ class Simulator:
         print('\n##### Starting simulation - module_form:', mod_form, '#####')
 
         # eventually create results (parent) folder existence
-        fi.make_dirs_if_not_there(self.settings.paths.csv_parent_folder)
+        fi.make_dirs_if_not_there(self.settings._paths.inst_csv_parent_folder)
         # #NOTE done here to avoid creating empty folders,
         # if csv parent folder is changed from outside)
 
         # check for results file
-        csv_file_path = self.settings.paths.csv_file_path
+        csv_file_path = self.settings._paths.inst_csv_file_path
         if csv_file_path.exists() and not skip_if_result_exists:
             print(f'\nSimulation result {csv_file_path} already there.\n')
             return
@@ -81,7 +81,7 @@ class Simulator:
 
     def _run_area_scan(self, scanDict: dict):
         temp_name = (
-            f'{self.settings.sim.study_name}_{self.settings.sim.scan_target}_'
+            f'_{self.settings.sim.scan_target}_'
         )
         linepts = self._write_linepts(scanDict)
 
@@ -89,9 +89,9 @@ class Simulator:
             try:
                 with PrintHider():  # otherwise accelerad prints a lot...
                     groundDict = self._irrPlotMod_modified(
-                        self.settings.names.oct_fn, linepts)
+                        self.settings._names.oct_fn, linepts)
                 self.analObj._saveResults(
-                    groundDict, savefile=self.settings.paths.csv_file_path)
+                    groundDict, savefile=self.settings._paths.inst_csv_file_path)
                 break
             except TypeError:  # 'NoneType' object is not subscriptable
                 # rarely there is a accelerad polygon problem, e.g.:
@@ -105,7 +105,7 @@ class Simulator:
     def _run_line_scan(self, y_start):
 
         temp_name = (
-            f'{self.settings.sim.study_name}_{self.settings.sim.scan_target}_'
+            f'_{self.settings.sim.scan_target}_'
             f'scan_{y_start:.3f}'
         )
         if self.settings.sim.scan_target == 'module':
@@ -120,7 +120,7 @@ class Simulator:
             self.backscan['ystart'] = y_start
 
             self.analObj.analysis(
-                self.settings.names.oct_fn, temp_name,
+                self.settings._names.oct_fn, temp_name,
                 self.frontscan, self.backscan,
                 accuracy=self.settings.sim.ray_tracing_accuracy)
 
@@ -128,7 +128,7 @@ class Simulator:
             self.ghObj.ground_lineScan['ystart'] = y_start
             linepts = self._write_linepts(self.ghObj.ground_lineScan)
             groundDict = self._irrPlotMod_modified(
-                self.settings.names.oct_fn, linepts)
+                self.settings._names.oct_fn, linepts)
             self.analObj._saveResults(
                 groundDict, savefile=f'irr_{temp_name}.csv'
             )
@@ -155,8 +155,8 @@ class Simulator:
             print_reading_messages=False)
         df = df.reset_index()
 
-        df.to_csv(self.settings.paths.csv_file_path)
-        print(f'merged line scans into {self.settings.paths.csv_file_path}\n')
+        df.to_csv(self.settings._paths.inst_csv_file_path)
+        print(f'merged line scans into {self.settings._paths.inst_csv_file_path}\n')
         self.df_ground_results = df
 
     def _irrPlotMod_modified(self, octfile, linepts):
