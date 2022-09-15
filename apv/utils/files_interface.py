@@ -158,11 +158,11 @@ def save_fig(
     return
 
 
-def get_min_max_of_cols_in_several_csv_files(csv_files: list) -> pd.DataFrame:
+def get_min_max_in_several_csv_files(csv_files: list) -> pd.DataFrame:
     """
 
     Args:
-        csv_files (list): list of csv-file-paths
+        csv_files (list): list of csv-file-paths (list items: Path)
 
     Returns:
         pd.DataFrame with min and max of each csv-file-column

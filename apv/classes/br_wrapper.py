@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from apv.utils import files_interface as fi
 
@@ -96,38 +97,50 @@ class BR_Wrapper():
         # irradiation heatmaps. Sky is added later to save cpu time.
         self.octFileObj.create_octfile_without_sky()
 
-        for hour in self.settings.sim.hours:
-            for minute in range(0, 60, self.settings.sim.time_step_in_minutes):
-                self.update_time(hour=hour, minute=minute)
-                # Sun alitude and GHI FILTER ==================================
-                if (self.weatherData.sunalt < 0):
-                    print(f'Sun alitude < 0 ({self.weatherData.sunalt}).')
-                elif self.weatherData.ghi < min(
-                        self.weatherData.dailyCumulated_ghi * 0.02, 50):
-                    print(f'GHI too low ({self.weatherData.ghi} Wh/m²).')
-                else:  # enough light
+        for loop_to in ["sim", "plot"]:  # for equal colbar all results needed
+            if loop_to == "plot" and \
+                    self.settings.sim.equal_colBars_for_instantaneous_plots:
+                csv_root = self.settings._paths.inst_csv_parent_folder
+                csv_files = [csv_root/file for file in os.listdir(csv_root)]
+                df_limits = fi.get_min_max_in_several_csv_files(
+                    csv_files).round(1)
+            else:
+                df_limits = None
+
+            for hour in self.settings.sim.hours:
+                for minute in range(0, 60, self.settings.sim.time_step_in_minutes):
+                    self.update_time(hour=hour, minute=minute)
+                    # Sun alitude and GHI FILTER ==============================
+                    if (self.weatherData.sunalt < 0):
+                        print(f'Sun alitude < 0 ({self.weatherData.sunalt}).')
+                    elif self.weatherData.ghi < min(
+                            self.weatherData.dailyCumulated_ghi * 0.02, 50):
+                        print(f'GHI too low ({self.weatherData.ghi} Wh/m²).')
                     # =========================================================
-                    res_path = self.settings._paths.inst_csv_file_path
-                    if res_path.exists() and skip_sim_for_existing_results:
-                        print(f'result for {res_path} exists, skipping sim...')
-                        # check if evaluated to avoid 'Wm2' key error
-                        df_check: pd.DataFrame = fi.df_from_file_or_folder(
-                            res_path
-                        )
-                        if 'Wm2' not in df_check.columns:
+                    elif loop_to == "sim":  # enough light and sim loop
+                        res_path = self.settings._paths.inst_csv_file_path
+                        if res_path.exists() and skip_sim_for_existing_results:
+                            print(f'result {res_path} exists, skipping sim...')
+                            # check if evaluated to avoid 'Wm2' key error
+                            df_check: pd.DataFrame = fi.df_from_file_or_folder(
+                                res_path
+                            )
+                            if 'Wm2' not in df_check.columns:
+                                self.evaluatorObj.evaluate_csv()
+                        else:
+                            self._update_sky()
+                            self._init_simulator_evaluator_and_plotter()
+                            self.simulatorObj.run_raytracing_simulation()
                             self.evaluatorObj.evaluate_csv()
-                        self.plotterObj.ground_heatmap(df=df_check)
-                    else:
-                        self._update_sky()
-                        self._init_simulator_evaluator_and_plotter()
-                        self.simulatorObj.run_raytracing_simulation()
-                        self.evaluatorObj.evaluate_csv()
-                        self.plotterObj.ground_heatmap()
+                    elif loop_to == "plot":
+                        self.plotterObj.ground_heatmap(
+                            df_col_limits=df_limits)
         # cumulate
         self.evaluatorObj.cumulate_gendaylit_results()
         self.plotterObj.ground_heatmap(cumulative=True)
 
     # helpers =============================================================
+
     def _init_simulator_evaluator_and_plotter(self):
         """put into a method to allow for calling it again
         after updating the time from outside, which affects

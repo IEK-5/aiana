@@ -97,6 +97,7 @@ class Simulation:
         self.cm_quantity: Literal[
             'radiation', 'PAR', 'shadow_depth', 'DLI'] = 'radiation'
         # !!! NOTE 'DLI' is only for daily cumulative data, no single timesteps
+        self.equal_colBars_for_instantaneous_plots = True
 
         self.for_shadowDepths_compare_GGI_to: Literal[  # GGI =Global ground ir.
             'clearsky_GHI', 'GHI_as_TMY_aggfunc'] = 'GHI_as_TMY_aggfunc'
