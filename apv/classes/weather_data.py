@@ -38,17 +38,18 @@ class WeatherData:
 
         self.set_self_variables()
 
-        if self.settings.sim.sim_year == 'TMY':
+        if self.settings.sim.year == 'TMY':
             # sim year is set to dummy non leap year 2019,
             # but with irradiance values averaged
 
             self.df_irr = self.df_irradiance_to_TMY()
-            # make TMY typcal day per month data (W/m2)
-            # #multi-index (month, hour...)
-            self.df_irradiance_typ_day_per_month = \
-                self.calc_typical_day_of_month(self.df_irr)
         else:
             self.df_irr = self.load_and_process_insolation_data()
+
+        # make TMY typcal day per month data (W/m2)
+        # #multi-index (month, hour...)
+        self.df_irradiance_typ_day_per_month = \
+            self.calc_typical_day_of_month(self.df_irr)
 
         # set irradiance and sunpos
         self.set_dhi_dni_ghi_and_sunpos_to_simDT()

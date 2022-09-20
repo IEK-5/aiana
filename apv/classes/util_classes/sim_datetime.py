@@ -8,7 +8,7 @@ from apv.settings.sim_settings import Simulation
 
 class SimDT:
 
-    sim_dt_naiv: datetime # and local
+    sim_dt_naiv: datetime  # and local
     sim_dt_utc: datetime
     sim_dt_str: str
     sim_dt_utc_pd_for_solarposition: pd.Timestamp
@@ -62,19 +62,19 @@ class SimDT:
 
     def _get_str_format(self, dtObj: datetime) -> str:
         sim_dt_str: str = dtObj.strftime('-%m-%d %H:%M')
-        if self.SimSettings.sim_year == 'TMY':
+        if self.SimSettings.year == 'TMY':
             sim_dt_str = 'TMY'+sim_dt_str
         else:
-            sim_dt_str = str(self.SimSettings.sim_year)+sim_dt_str
+            sim_dt_str = str(self.SimSettings.year)+sim_dt_str
         return sim_dt_str
 
     def _get_start_or_end_dt_tz_naiv(
             self, which: Literal['start', 'current', 'end']) -> datetime:
 
-        if self.SimSettings.sim_year == 'TMY':
+        if self.SimSettings.year == 'TMY':
             year = 2019  # (dummy, non leap year, wont be used)
         else:
-            year = self.SimSettings.sim_year
+            year = self.SimSettings.year
 
         if which == 'start':
             i = 0

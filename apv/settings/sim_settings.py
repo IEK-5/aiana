@@ -5,8 +5,8 @@ from pvlib import location
 
 class Simulation:
     """all settings can also be overwritten in a working file
-    as long as a br_wrapperObj is initializated afterwards.
-    See system_studies/apv_main.py for a simple example"""
+    as long as a br_wrapperObj is initializated afterwards,
+    as e.g. in system_studies/minimal_example.py"""
 
     def __init__(self):
 
@@ -25,7 +25,7 @@ class Simulation:
         self.ground_albedo = 0.24  # grass
 
         # time settings (right labled with interval = time_step_in_minutes s.below)
-        self.sim_year: Literal['TMY'] = 'TMY'  # or e.g. 2020
+        self.year: Literal['TMY'] = 'TMY'  # or e.g. 2020
         # TMY = typical meterological year; here: mean data from 2005 to 2021
 
         self.month: int = 6
@@ -46,7 +46,7 @@ class Simulation:
                                    # , 'gencumsky'  # not included at the moment
                                    ] = 'gendaylit'
 
-        """NOTE Important info
+        """NOTE
         ghi and dhi are taken from an observation period ranging
         from [sim_date_time - time_step_in_minutes] until [sim_date_time]
         and the sunposition is calculated at a time in between.
@@ -59,8 +59,16 @@ class Simulation:
         """
 
         self.use_typDay_perMonth_for_irradianceCalculation = True
-        # for dni, dhi, ghi True to compare mean of month to mean of month
-        # and not to data of 15th
+        # if set to True, irradiance data (dni, dhi, ghi) is set to mean
+        # value per day-time-step for the month given either in certain
+        # year or in TMY. The day input is ignored for irradiance. This
+        # allows to compare different month better as weather is
+        # averaged. To check for other weather in TMY, change the
+        # setting TMY_irradiance_aggfunc:
+
+        self.TMY_irradiance_aggfunc: Literal['min', 'mean', 'max'] = 'mean'
+        # used as aggregation function for watherdata pivoting to TMY
+        # min: extreme cloudy day, max: sunny day with distant bright clouds
 
         self.use_CPU_multi_processing = True
         # if True, single lines of the scan area will be passed to a job pool
@@ -101,10 +109,6 @@ class Simulation:
 
         self.for_shadowDepths_compare_GGI_to: Literal[  # GGI =Global ground ir.
             'clearsky_GHI', 'GHI_as_TMY_aggfunc'] = 'GHI_as_TMY_aggfunc'
-
-        self.TMY_irradiance_aggfunc: Literal['min', 'mean', 'max'] = 'mean'
-        # also used as aggregation function for satelite watherdata pivoting to TMY
-        # min: extreme cloudy day, max: sunny day with distant high bright clouds
 
         self.plot_dpi: int = 300  # dots per inch in the result heatmaps
 
