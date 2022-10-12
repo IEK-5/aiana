@@ -11,9 +11,15 @@ def makeCustomMaterial(
     transmissivity: float = 0, transmitted_specularity: float = 0,
     debug_mode=False
 ):
-    """type trans = translucent plastic
-    radiance materials documentation:
-    https://floyd.lbl.gov/radiance/refer/ray.html#Materials"""
+    """radiance materials input documentation:
+    https://floyd.lbl.gov/radiance/refer/ray.html#Materials or
+    https://www.radiance-online.org/archived/radsite/radiance/refer/Notes/materials.html
+
+    specularity and roughness effect examples:
+    https://thinkmoult.com/radiance-specularity-and-roughness-value-examples.html
+
+
+    """
 
     # read old file
     with open(rad_mat_file, 'r') as f:
@@ -90,6 +96,3 @@ def write_viewfile_in_vp_format(
             # + '-vs 0 -vl 0' # ist in der demo von acceleradRT nicht drin
             # braucht man das?
         )
-
-
-

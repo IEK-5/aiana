@@ -11,6 +11,8 @@ Nach der Radiance Installation in Windows 10 nach „Systemumgebungsvariablen be
 Software training: https://www.youtube.com/watch?v=1X9L-R-RVGA
 PHD defense of Ms. Pelaez: https://www.youtube.com/watch?v=11Jp7GqzLPQ
 
+radiance user manual: https://floyd.lbl.gov/radiance/refer/usman2.pdf
+
 # toml dependencies leads to apv installation error??
 # Overview
 

@@ -101,7 +101,7 @@ if __name__ == '__main__':
                             enough_light = True
 
                         ########
-                        brObj.settings._set_names_and_paths()
+                        brObj.settings.update_sim_dt_and_paths()
                         if not brObj.settings._paths.inst_csv_file_path.exists():
                             brObj.update_timeStep_and_sky(settings)
                             brObj.simulate_and_evaluate()

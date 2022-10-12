@@ -105,15 +105,6 @@ class Default:
             'std',
             'cell_gaps',
             'checker_board',
-            'roof_for_EW',  # TODO glass part will not result in
-            # roof shape at the moment, since br.radObj.make_module() is used
-            # resulting in standard shape (straight)
-
-            # and the tilt is happening later in br.radObj.make_scene()
-            # so the second module is facing upwards-down, might be a problem
-            # later
-
-            # # 'cell_gaps_roof_for_EW',  # not implemented atm
             'none'
         ] = 'std'
 
@@ -132,11 +123,21 @@ class Default:
         self.mountingStructureType: Literal[
             'none',
             'framed_single_axes',
-            'framed_single_axes_ridgeRoofMods'
+            'framed_single_axes_ridgeRoofMods'  # TODO: use mirror instead of
+            # rotation so that the copied modules are not facing upwards-down
             'inclined_tables',
-            'morschenich_fixed',  # NOTE this one should only be used in the
+            # NOTE the following should only be used in the
             # APV_Syst_InclinedTables_S_Morschenich Child
+            'morschenich_fixed'
         ] = 'framed_single_axes'
+
+        self.add_trans_plastic_between_modules: bool = False  # currently only
+        # affecting mountingStructureType 'morschenich_fixed'
+
+        # to optionally add a glass plate on the black modules:
+        self.glass_modules: bool = False
+
+        self.framed_modules: bool = False
 
         # ### ground scan area settings
         self.gScanAreaDict: dict = {
@@ -144,12 +145,12 @@ class Default:
             'ground_scan_margin_y': 0,  # [m]
             'ground_scan_shift_x': 0,  # [m] positiv: towards east
             'ground_scan_shift_y': 0,  # [m] positiv: towards north
-            'round_up_scan_edgeLengths': False  # round up to full meters
         }  # NOTE the gScan area is placed below the foot print of the modules,
-        # so that the modules projected to groud (foot print) are just inside
-        # of it (all rows, but not the system clones). The visualized object
-        # will not be included in the ray tracing simulation and thus not
-        # influence the results.
+        # so that the modules of the main APV_system (not clones)
+        # projected to ground (foot print) are just inside of the scan area.
+        # To be precice, the scan starts at the south-west corner of the foot-
+        # print and is extended byond the north-east corner to get an integer
+        # count of sensor points with respect to the spatial_resolution.
         # One-sided margins [m] can be added to enlarge the field
         # (or to reduce by negative values).
 
@@ -158,14 +159,6 @@ class Default:
 
         # for 'framed_single_axes':
         self.enlarge_beams_for_periodic_shadows: bool = False
-
-        # to optionally add a glass plate on the black modules:
-        self.glass_modules: bool = False
-        self.framed_modules: bool = False
-        # NOTE Adding glass and frames creates it as in BR
-        # for module_form = 'std', which is nice for cell level
-        # and for checker board but not suitable for roof yet.
-        # TODO make roof out of BR module with nPanels = 1?
 
         self.moduleSpecs: pd.Series = pd.read_csv(
             Path(__file__).parent.parent.resolve()  # apv package location
@@ -179,6 +172,9 @@ class APV_Syst_InclinedTables_S_Morschenich(Default):
 
     def __init__(self):
         super().__init__()
+        self.mountingStructureType = 'morschenich_fixed'
+        self.add_trans_plastic_between_modules: bool = False
+        self.glass_modules: bool = True
 
         self.sceneDict = {'tilt': 20,  # 18.34,
                           'pitch': 7.32,  # 7.46 was a mistake for first 3 sim
@@ -195,8 +191,6 @@ class APV_Syst_InclinedTables_S_Morschenich(Default):
                            'zgap': 0,  # 0.046,
                            'numpanels': 1
                            }
-
-        self.mountingStructureType = 'morschenich_fixed'
 
         self.mountingStructureDict.update({
             'material': 'Metal_Aluminum_Anodized',

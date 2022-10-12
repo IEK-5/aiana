@@ -55,7 +55,7 @@ def plot_value_difference(cm_quantity='shadow_depth'):
     # # get test result csv path (not need if done after sim directly,
     # # but this would make problems uppon reference creation)
     brObj.settings.sim.sim_date_time = f'06-15_{hour:02}:00'
-    brObj.settings._set_names_and_paths()
+    brObj.settings.update_sim_dt_and_paths()
     csv_path = str(brObj.settings._paths.inst_csv_file_path)
 
     # get difference df to use as input for plotterObj.ground_heatmap

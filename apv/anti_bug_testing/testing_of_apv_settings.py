@@ -5,7 +5,8 @@ if __name__ == '__main__':
     from apv.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morschenich
 
     testerObj = Tester(open_oct_viewer=True)
-    ##
+
+    # #
     # azimuth
     testerObj.default_settings.sim.hours = [14]
     testerObj._set_current_to_default_settings()
@@ -22,7 +23,8 @@ if __name__ == '__main__':
     # view system with default test settings
     BR_Wrapper(testerObj.settings).create_and_view_octfile_for_SceneInspection()
     # #
-    # mounting structure
+    # helper dict to modify the post_distnce in x direction
+    # of the mounting structure for this test:
     module_to_post_distance_x_dict = {
         'framed_single_axes_ridgeRoofMods': 0.5,
         # 'framed_single_axes': 0.5,
@@ -80,24 +82,23 @@ if __name__ == '__main__':
                                         {'ground_scan_margin_x': 9,
                                          'ground_scan_margin_y': 9,
                                          'ground_scan_shift_x': 9,
-                                         'ground_scan_shift_y': 9,
-                                         'round_up_scan_edgeLengths': True
+                                         'ground_scan_shift_y': 9
                                          })
 
     # #
-    # test and time updateSkyOnly for Morschenich APV and view scene
+    # tictoc oct_file creation for Morschenich APV
+    # (1. scene without sky, 2. adding sky)
 
     import pytictoc
     tictoc = pytictoc.TicToc()
 
-    for updateSk in [False, True]:
-        testerObj.settings.apv = APV_Syst_InclinedTables_S_Morschenich()
-        brObj = BR_Wrapper(testerObj.settings)
+    testerObj.settings.apv = APV_Syst_InclinedTables_S_Morschenich()
+    brObj = BR_Wrapper(testerObj.settings)
+    for method in [
+            brObj.octFileObj.create_octfile_without_sky,
+            brObj.octFileObj.add_sky_to_octfile]:
         tictoc.tic()
-        brObj.create_octfile(update_sky_only=updateSk)
+        method()
         tictoc.toc()
         print('=================================')
-    brObj.octFileObj.view_octfile()
-
-    # #
-    testerObj.view_in_rvu_then_in_acceleradRT()
+# #

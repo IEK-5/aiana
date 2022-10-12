@@ -7,7 +7,7 @@ from apv.classes.util_classes.sim_datetime import SimDT
 
 
 class Settings:
-    """Changing _names, _paths from outside is useless, as they will be
+    """Changing _names, _paths, or _dt from outside is useless, as they will be
     overwritten by applying apv, sim, view, and dt settings.
     To change time, dont use _dt, use the update_sim_dt() method instead"""
 
@@ -15,9 +15,8 @@ class Settings:
         self.apv = SystSettings()
         self.view = ViewSettings()
         self.sim = Simulation()
-        self._dt = SimDT(self.sim)
 
-        self._set_names_and_paths()
+        self.update_sim_dt_and_paths()
         self._verify_unique_setting_names()
 
     def update_sim_dt_and_paths(self, **kwargs):
@@ -25,10 +24,8 @@ class Settings:
         year: int = ..., month: int = ..., day: int = ...,
         hour: int = ..., minute: int = ..., as in datetime.replace()
         """
+        self._dt = SimDT(self.sim)
         self._dt.update_sim_dt(**kwargs)
-        self._set_names_and_paths()
-
-    def _set_names_and_paths(self):
         self._names = Names(self.sim, self.apv, self._dt)
         self._paths = Paths(self.sim, self._names)
 

@@ -1,6 +1,12 @@
 always:
 - clean up and add documentation
 
+--------------
+    ----> use setter propperty for names and pathes etc?
+    setter and getters should call only fast methods
+
+    as acceccing them looks like fast attribute access
+
 -----------------
 kann man in radiance geometrie spiegeln? (ridgeRoof)
 

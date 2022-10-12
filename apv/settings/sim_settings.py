@@ -20,9 +20,9 @@ class Simulation:
         self.sub_study_name: str = 'mySubStudy'  # will be added as prefix
         # to cumulative plots and their corresponding data sub folders
 
-        self.spatial_resolution = 0.1  # [m]
+        self.spatial_resolution: float = 0.1  # [m]
         # distance between virtual radiation sensors
-        self.ground_albedo = 0.24  # grass
+        self.ground_albedo: float = 0.24  # grass
 
         # time settings (right labled with interval = time_step_in_minutes s.below)
         self.year: Literal['TMY'] = 'TMY'  # or e.g. 2020
@@ -36,7 +36,7 @@ class Simulation:
         # GHI will be summed for all hours given in this list
         # (including minutes) to calculate the irradiation,
         # cumulative shadow depth and DLI
-        self.hour_for_sceneInspection = 14  # noon, good to check azimuth
+        self.hour_for_sceneInspection: int = 14  # noon, good to check azimuth
 
         self.time_step_in_minutes: int = 60  # <= 60 and
         # only prime-factos of 60! (1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60)
@@ -58,7 +58,7 @@ class Simulation:
         br.MetObj: def __init__(self, tmydata, metadata, label='right')
         """
 
-        self.use_typDay_perMonth_for_irradianceCalculation = True
+        self.use_typDay_perMonth_for_irradianceCalculation: bool = True
         # if set to True, irradiance data (dni, dhi, ghi) is set to mean
         # value per day-time-step for the month given either in certain
         # year or in TMY. The day input is ignored for irradiance. This
@@ -70,7 +70,7 @@ class Simulation:
         # used as aggregation function for watherdata pivoting to TMY
         # min: extreme cloudy day, max: sunny day with distant bright clouds
 
-        self.use_CPU_multi_processing = True
+        self.use_CPU_multi_processing: bool = True
         # if True, single lines of the scan area will be passed to a job pool
         # worked off by the cpu cores in parallel
 
@@ -92,9 +92,10 @@ class Simulation:
 
         # Accelerad settings ####################
         # need to be installed first https://nljones.github.io/Accelerad/index.html
-        self.use_accelerad_GPU_processing = False  # GPU paralellization, all line scans
-        # at once. GPU multiprocessing is not compatible with CPU multiprocessing
-        # and will thus ignore use_CPU_multi_processing setting, if True
+        self.use_accelerad_GPU_processing: bool = False  # GPU paralellization,
+        # all line scans at once. GPU multiprocessing is not compatible with
+        # CPU multiprocessingand will thus ignore use_CPU_multi_processing
+        # setting, if True
 
         # location
         self.apv_location = location.Location(
@@ -105,7 +106,7 @@ class Simulation:
         self.cm_quantity: Literal[
             'radiation', 'PAR', 'shadow_depth', 'DLI'] = 'radiation'
         # !!! NOTE 'DLI' is only for daily cumulative data, no single timesteps
-        self.equal_colBars_for_instantaneous_plots = True
+        self.equal_colBars_for_instantaneous_plots: bool = True
 
         self.for_shadowDepths_compare_GGI_to: Literal[  # GGI =Global ground ir.
             'clearsky_GHI', 'GHI_as_TMY_aggfunc'] = 'GHI_as_TMY_aggfunc'
@@ -127,9 +128,9 @@ class Simulation:
                                           'Nz': 1}  # not yet implemented
         # multiple z,x,y doesnt make sense anyways as object is needed
         # to recieve the light
-        self.RadSensors_to_scan_area_distance_z = 0.1
+        self.RadSensors_to_scan_area_distance_z: float = 0.1
 
-        self.north_arrow_xy_posi = (1.6, 1.2)  # x, y within heat maps
+        self.north_arrow_xy_posi: tuple = (1.6, 1.2)  # x, y within heat maps
 
         ##################
         # less important / not fully implemented or obsolete at the moment
@@ -153,6 +154,9 @@ class SimSettings_ForTesting(Simulation):
     def __init__(self):
         super().__init__()
         self.spatial_resolution = 1
+        self.hours = [11]
         self.use_typDay_perMonth_for_irradianceCalculation = False
         self.use_CPU_multi_processing = False
         self.use_accelerad_GPU_processing = True
+
+# #

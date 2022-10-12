@@ -1,6 +1,4 @@
 # #
-from ast import Raise
-from logging import raiseExceptions
 import time
 from frads import util
 import subprocess as sp
@@ -42,7 +40,6 @@ class OctFileHandler:
         self.weatherData = weatherData
         self.ghObj = ghObj  # for custom radiance geometry descriptions
         self.debug_mode = debug_mode
-        self.ResultsFalsifyingVisualisationsAdded = False
 
         self.radianceObj = br.RadianceObj(
             path=str(self.settings._paths.bifacial_radiance_files)
@@ -85,11 +82,6 @@ class OctFileHandler:
         # sensors
         if add_sensor_vis:
             customObjects['sensors'] = self.ghObj.sensor_visualization
-
-        if add_NorthArrow or add_sensor_vis:
-            self.ResultsFalsifyingVisualisationsAdded = True
-        else:
-            self.ResultsFalsifyingVisualisationsAdded = False
 
         # mounting structure
         structure_type = self.settings.apv.mountingStructureType
@@ -249,6 +241,22 @@ class OctFileHandler:
             rad_mat_file,
             mat_name='red', mat_type='plastic',
             R=1, G=0, B=0)
+
+        radiance_utils.makeCustomMaterial(
+            rad_mat_file,
+            mat_name='black', mat_type='plastic',
+            R=0, G=0, B=0.001)  # bifacial_radiance overwrite for a bit pv blue
+
+        radiance_utils.makeCustomMaterial(
+            rad_mat_file,
+            mat_name='trans_plastic',
+            mat_type='trans',
+            R=.8, G=.8, B=.9,
+            specularity=.01,
+            roughness=.04,
+            transmissivity=1,
+            transmitted_specularity=1
+        )
 
     def create_sky(self, tracked=False) -> str:
         """

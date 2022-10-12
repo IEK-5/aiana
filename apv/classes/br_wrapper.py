@@ -46,7 +46,7 @@ class BR_Wrapper():
 
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.settings._set_names_and_paths()
+        self.settings.update_sim_dt_and_paths()
 
         self.weatherData = WeatherData(self.settings)
         self.ghObj = GeometriesHandler(self.settings,  # self.debug_mode=True
@@ -55,6 +55,7 @@ class BR_Wrapper():
             self.settings, self.weatherData, self.ghObj,
             # self.debug_mode=True
         )
+        self.update_simTime()
         self._init_simulator_evaluator_and_plotter()
 
     def create_and_view_octfile_for_SceneInspection(
@@ -74,12 +75,12 @@ class BR_Wrapper():
         self.octFileObj.create_octfile_without_sky(
             add_groundScanArea, add_sensor_vis, add_NorthArrow)
 
-        self.update_time(hour=self.settings.sim.hour_for_sceneInspection)
+        self.update_simTime(hour=self.settings.sim.hour_for_sceneInspection)
         self._update_sky()
         view_type = 'parallel' if view_name == 'top_down' else 'perspective'
         self.octFileObj.view_octfile(view_name=view_name, view_type=view_type)
 
-    def update_time(self, **kwargs):
+    def update_simTime(self, **kwargs):
         """
         # updates time settings, pathes, labels, weatherData...
 
@@ -109,7 +110,7 @@ class BR_Wrapper():
 
             for hour in self.settings.sim.hours:
                 for minute in range(0, 60, self.settings.sim.time_step_in_minutes):
-                    self.update_time(hour=hour, minute=minute)
+                    self.update_simTime(hour=hour, minute=minute)
                     # Sun alitude and GHI FILTER ==============================
                     if (self.weatherData.sunalt < 0):
                         print(f'Sun alitude < 0 ({self.weatherData.sunalt}).')

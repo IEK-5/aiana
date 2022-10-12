@@ -212,7 +212,7 @@ if __name__ == '__main__':
                 settings.sim.results_subfolder = create_results_subfolderPath(
                     month, settings.sim.scan_position)
                 # refresh other pathes #TODO |M automate via @property?
-                settings._set_names_and_paths()
+                settings.update_sim_dt_and_paths()
 
                 def get_date_time_str(file_name: str) -> str:
                     string_parts = file_name[:-4].replace('h', ':').split('_')
