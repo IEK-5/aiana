@@ -1,14 +1,21 @@
 # #
 
+from typing import Literal
 from apv.classes.br_wrapper import BR_Wrapper
 from apv.anti_bug_testing.tester_class import Tester
 from apv.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morschenich
 
 
-def run():
-    testerObj = Tester(  # open_oct_viewer=True,
-        mode='create_reference'
-    )
+def run(**kwargs):
+    """runs all tests at once but placed here to allow for single test
+    execution due to "# #" cell marker in the IDE "vs code"
+
+    Args:
+        mode (optional): Defaults to 'check_difference'.
+        Alternative: create_reference
+        open_oct_viewer (bool, optional): _description_. Defaults to False.
+    """
+    testerObj = Tester(**kwargs)
     ##
     # azimuth
     # testerObj.default_settings.sim.hours = [14]  # for easier visual checking

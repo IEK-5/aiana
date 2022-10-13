@@ -10,7 +10,11 @@ from apv.settings.apv_system_settings import APV_ForTesting
 
 class Tester():
     """methods to loop through config settings step by step while
-    resetting the other settings to the default_settings"""
+    resetting the other settings to the default_settings
+
+    open_oct_viewer=True results in that one has to close the viewer after
+    each test step to continue
+    """
 
     def __init__(
             self, default_settings: Settings = None, open_oct_viewer=False,

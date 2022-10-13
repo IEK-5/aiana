@@ -73,7 +73,8 @@ class BR_Wrapper():
         but the ground albedo won't be used this way. #TODO
         """
         self.octFileObj.create_octfile_without_sky(
-            add_groundScanArea, add_sensor_vis, add_NorthArrow)
+            add_groundScanArea=add_groundScanArea,
+            add_sensor_vis=add_sensor_vis, add_NorthArrow=add_NorthArrow)
 
         self.update_simTime(hour=self.settings.sim.hour_for_sceneInspection)
         self._update_sky()
@@ -92,7 +93,7 @@ class BR_Wrapper():
         self.weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(self.settings)
 
     def simulate_and_evaluate(self, skip_sim_for_existing_results=False,
-                              #clear_existing_results=False # for testing to avoid cumulating different settings
+                              # clear_existing_results=False # for testing to avoid cumulating different settings
                               ):
         # Creating octfile without scanArea or North_arrow as objects as these
         # would falsify the simulation results, since e.g. the edge of the
