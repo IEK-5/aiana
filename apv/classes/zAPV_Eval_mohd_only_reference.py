@@ -278,10 +278,10 @@ class Evaluator:
 
     def get_weather_data(self, SimSettings: Simulation):
         """ get EPW to use Temperature and wind speed """
-        epw = UserPaths.bifacial_radiance_files_folder / Path('EPWs/')
+        epw = UserPaths.radiance_input_files_folder / Path('EPWs/')
         for file in os.listdir(epw):
             if file.endswith(".epw"):
-                epw = os.path.join(UserPaths.bifacial_radiance_files_folder,
+                epw = os.path.join(UserPaths.radiance_input_files_folder,
                                    'EPWs/', file)
         (self.tmydata, self.metadata) = pvlib.iotools.read_epw(
             epw, coerce_year=2001)
@@ -292,11 +292,11 @@ class Evaluator:
         self.tmydata.index = self.tmydata.index+pd.Timedelta(hours=1)
 
         # get EPW.csv to use GHI and DHI
-        epw_csv = UserPaths.bifacial_radiance_files_folder / Path('EPWs/')
+        epw_csv = UserPaths.radiance_input_files_folder / Path('EPWs/')
         for file in os.listdir(epw_csv):
             if file.endswith(".csv"):
                 epw_csv = os.path.join(
-                    UserPaths.bifacial_radiance_files_folder, 'EPWs/', file)
+                    UserPaths.radiance_input_files_folder, 'EPWs/', file)
         self.irrad_data: pd.DataFrame = pd.read_csv(
             epw_csv, sep=' ')
         self.irrad_data.columns = ['ghi', 'dhi']

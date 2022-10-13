@@ -43,7 +43,7 @@ def compare_vs_time(df, qty: str, ads_year_label: str):
 def helper(df_ads: pd.DataFrame, ads_year_label: str, year=2019):
     """df: df_ads"""
     (tmydata, metadata) = pvlib.iotools.epw.read_epw(
-        settings._paths.bifacial_radiance_files/r'EPWs/DEU_Dusseldorf.104000_IWEC.epw',
+        settings._paths.radiance_input_files/r'EPWs/DEU_Dusseldorf.104000_IWEC.epw',
         coerce_year=year)
     df = df_ads.copy()
     df.rename(columns={'dni_Wm-2': 'DNI - ADS',

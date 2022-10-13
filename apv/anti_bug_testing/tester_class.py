@@ -13,7 +13,15 @@ class Tester():
     resetting the other settings to the default_settings"""
 
     def __init__(
-            self, default_settings: Settings = None, open_oct_viewer=False):
+            self, default_settings: Settings = None, open_oct_viewer=False,
+            run_simulation=True,
+            mode: Literal[
+                'create_reference', 'check_difference'] = 'check_difference'
+    ):
+
+        self.open_oct_viewer = open_oct_viewer
+        self.run_simulation = run_simulation
+        self.mode = mode
 
         if default_settings is None:
             self.default_settings = Settings()
@@ -23,17 +31,32 @@ class Tester():
             self.default_settings.update_sim_dt_and_paths()
         else:
             self.default_settings = copy.deepcopy(default_settings)
-        self._set_current_to_default_settings()
+        self.set_current_to_default_settings()
 
         self.sim_SettingNames = list(self.settings.sim.__dict__)
         self.apv_settingNames = list(self.settings.apv.__dict__)
         self.view_settingNames = list(self.settings.view.__dict__)
 
+    def _test_then_resetSettings(self, sub_study_name: str, **kwargs):
+        brObj = BR_Wrapper(self.settings)
+        if self.open_oct_viewer:
+            brObj.create_and_view_octfile_for_SceneInspection(**kwargs)
+        if self.run_simulation:
+            if self.mode == 'create_reference':
+                brObj.settings.sim.study_name += '/reference'
+            else:
+                brObj.settings.sim.study_name += '/test'
+            brObj.settings.sim.sub_study_name = f'testing_{sub_study_name}'
+            brObj.settings.update_sim_dt_and_paths()  # TODO would not
+            # neneccessery when using setters and getters properties?
+            brObj.simulate_and_evaluate()
+        self.set_current_to_default_settings()
+
     def change_default_Setting(self, attr_name: str, value) -> None:
         parentObj = self._find_out_attr_parentObj(attr_name)
         setattr(parentObj, attr_name, value)
         print(parentObj, attr_name, 'set to', value)
-        self._set_default_to_current_settings()
+        self.set_default_to_current_settings()
 
     # =========================================================================
 
@@ -50,21 +73,22 @@ class Tester():
             print(attr_name, 'was set to', currentValue,
                   '-> testing', not currentValue, 'now...')
             setattr(parentObj, attr_name, not currentValue)
-            self._view_oct_then_resetSettings(**kwargs)
+            self._test_then_resetSettings(
+                sub_study_name=f'{attr_name}-{not currentValue}', **kwargs)
         return
 
     def test_dictItems_seperately(
             self, settings_dict_name: str, test_dict: dict, **kwargs):
-        """Tests passed settings.apv dictionary, but not all
-        items at once. Instead, each item is tested in a loop
-        seperately with otherwise default settings as written in
-        the class SimSettings_ForTesting and is set to default afterwards.
+        """this method tests the passed settings dictionary ("test_dict").
+        However not all items at once. Instead, each item is tested in a loop
+        seperately by changing the value only within a "temp_dict" with
+        otherwise default settings as written in "default_dict".
 
         Args:
             settings_dict_name (str): name of the dictionary in the settings,
             whichs items will be tested seperately with the values
-            of test_dict (dict).
-            test_dict (dict):
+            written in test_dict.
+            test_dict (dict): see settings_dict_name doc string.
 
             **kwargs: add_groundScanArea: bool = True,
             add_sensor_vis: bool = True,
@@ -85,7 +109,8 @@ class Tester():
             temp_dict[key] = test_dict[key]
             setattr(self.settings.apv, settings_dict_name, temp_dict)
 
-            self._view_oct_then_resetSettings(**kwargs)
+            self._test_then_resetSettings(
+                sub_study_name=f'{key}-{temp_dict[key]}', **kwargs)
 
     def test_listItems_seperately(
             self, setting_name: str, test_list: list, **kwargs):
@@ -95,8 +120,16 @@ class Tester():
         parentObj = self._find_out_attr_parentObj(setting_name)
         for item in test_list:
             setattr(parentObj, setting_name, item)
-            self._view_oct_then_resetSettings(**kwargs)
+            self._test_then_resetSettings(
+                sub_study_name=f'{setting_name}-{item}', **kwargs)
 
+    def set_current_to_default_settings(self):
+        self.settings = copy.deepcopy(self.default_settings)
+        self.settings.update_sim_dt_and_paths()
+
+    def set_default_to_current_settings(self):
+        self.default_settings = copy.deepcopy(self.settings)
+        self.default_settings.update_sim_dt_and_paths()
     # =========================================================================
 
     def _find_out_attr_parentObj(self, attr_name: str):
@@ -108,20 +141,6 @@ class Tester():
             return self.settings.view
         else:
             raise Exception(attr_name, " not in apv, sim or view settings.")
-
-    def _view_oct_then_resetSettings(self, **kwargs):
-        BR_Wrapper(self.settings).create_and_view_octfile_for_SceneInspection(
-            **kwargs
-        )
-        self._set_current_to_default_settings()
-
-    def _set_current_to_default_settings(self):
-        self.settings = copy.deepcopy(self.default_settings)
-        self.settings.update_sim_dt_and_paths()
-
-    def _set_default_to_current_settings(self):
-        self.default_settings = copy.deepcopy(self.settings)
-        self.default_settings.update_sim_dt_and_paths()
 
 
 # #

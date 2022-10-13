@@ -14,7 +14,7 @@ from apv.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morscheni
 from apv.classes.br_wrapper import BR_Wrapper
 from apv.utils import plotting_utils
 import apv.utils.files_interface as fi
-from apv.classes.util_classes.geometries_handler import GeometriesHandler
+from apv.classes.rad_txt_related.geometries_handler import GeometriesHandler
 
 
 def load_dfs(csv_files: list):

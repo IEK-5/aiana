@@ -10,7 +10,7 @@ from subprocess import Popen, PIPE  # replacement for os.system()
 
 from apv.utils import files_interface as fi
 from apv.classes.util_classes.settings_handler import Settings
-from apv.classes.util_classes.geometries_handler import GeometriesHandler
+from apv.classes.rad_txt_related.geometries_handler import GeometriesHandler
 from apv.classes.util_classes.print_hider import PrintHider
 
 
@@ -34,7 +34,7 @@ class Simulator:
         self.ghObj = ghObj
 
         self.temp_results_folder: Path = \
-            self.settings._paths.bifacial_radiance_files / Path('results')
+            self.settings._paths.radiance_input_files / Path('results')
 
     def run_raytracing_simulation(
             self, skip_if_result_exists=True) -> pd.DataFrame:

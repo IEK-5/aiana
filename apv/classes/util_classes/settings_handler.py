@@ -71,9 +71,9 @@ class Names:
 class Paths(UserPaths):
     def __init__(self, SimSettings: Simulation, names: Names):
         # file paths of oct file without and with sky
-        self.oct_fp_noSky = self.bifacial_radiance_files / Path(
+        self.oct_fp_noSky = self.radiance_input_files / Path(
             names.oct_fn[:-4]+'_withoutSky.oct')
-        self.oct_fp = self.bifacial_radiance_files / Path(
+        self.oct_fp = self.radiance_input_files / Path(
             f'{names.oct_fn}')
 
         # file paths for saving results

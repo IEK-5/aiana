@@ -11,7 +11,7 @@ from apv.classes.br_wrapper import BR_Wrapper
 from apv.classes.weather_data import WeatherData
 from apv.classes.util_classes.sim_datetime import SimDT
 from apv.classes.util_classes.settings_handler import Settings
-from apv.classes.util_classes.geometries_handler import GeometriesHandler
+from apv.classes.rad_txt_related.geometries_handler import GeometriesHandler
 
 # #
 if __name__ == '__main__':

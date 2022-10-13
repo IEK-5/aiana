@@ -1,5 +1,5 @@
 import numpy as np
-from apv.classes.apv_rad_texts.geometry_basics import GeomBasics
+from apv.classes.rad_txt_related.geometry_basics import GeomBasics
 from apv.classes.util_classes.settings_handler import Settings
 
 

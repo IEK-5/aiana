@@ -12,7 +12,7 @@ imp.reload(apv.classes.br_wrapper)
 simSettings = apv.settings.sim_settings.Simulation()
 simSettings.spatial_resolution = 0.5
 
-weather_file = UserPaths.bifacial_radiance_files_folder / \
+weather_file = UserPaths.radiance_input_files_folder / \
     Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
 
 for hour in range(12, 20, 2):

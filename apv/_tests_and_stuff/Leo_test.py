@@ -1,5 +1,36 @@
 # #
-import os, sys
+import pickle
+import copy
+from pandas.tseries.offsets import Minute
+import pytz
+import pandas
+from apv.settings import apv_system_settings
+import random
+import time
+import sys
+import importlib as imp
+from apv import settings
+from apv.utils import files_interface as fi
+import pytictoc
+import os
+import json
+import pandas as pd
+import numpy as np
+import subprocess
+import apv
+from pathlib import Path
+from types import SimpleNamespace
+from datetime import datetime as dt
+from typing import Literal
+import apv.settings.user_paths as user_paths
+import re
+import apv.utils.files_interface as fi
+from apv.utils import files_interface
+from apv.classes.weather_data import WeatherData
+import pvlib
+from apv.classes.util_classes.sim_datetime import SimDT
+import os
+import sys
 
 from apv.classes.util_classes.print_hider import PrintHider
 with PrintHider():
@@ -8,45 +39,20 @@ with PrintHider():
 print("This will be printed as before")
 
 # #
-from apv.classes.util_classes.sim_datetime import SimDT
-import pvlib
-from apv.classes.weather_data import WeatherData
-from apv.utils import files_interface
-import apv.utils.files_interface as fi
-import re
-import apv.settings.user_paths as user_paths
-from typing import Literal
-from datetime import datetime as dt
-from types import SimpleNamespace
-from pathlib import Path
-import apv
-import subprocess
-import numpy as np
-import pandas as pd
-import json
-import os
-import pytictoc
-from apv.utils import files_interface as fi
-from apv import settings
-import importlib as imp
-import sys
-import time
-import random
-from apv.settings import apv_system_settings
-import pandas
-import pytz
-from pandas.tseries.offsets import Minute
 
 
 def foo(a=1):
     print(2*a)
 
+
 def bar(b=2, **kwargs):
     foo(**kwargs)
+
 
 bar(a=3)
 
 # #
+
 
 class test:
     a = 1
@@ -95,15 +101,16 @@ test.temperature
 
 # #
 
-import copy
 
 class NestedTest:
     def __init__(self) -> None:
         self.a = 2
 
+
 class Test:
     def __init__(self) -> None:
         self.n_obj = NestedTest()
+
 
 foo = Test()
 foo2 = copy.deepcopy(foo)
@@ -112,15 +119,17 @@ foo2.n_obj.a = 3
 foo.n_obj.a
 
 # #
-import pickle
+
 
 class NestedTest:
     def __init__(self) -> None:
         self.a = 2
 
+
 class Test:
     def __init__(self) -> None:
         self.n_obj = NestedTest()
+
 
 foo = Test()
 pickled = pickle.dumps(foo)
@@ -140,7 +149,7 @@ leo.temperature = 0
 # #
 
 # #
-csv_files=[]
+csv_files = []
 apv.utils.files_interface.df_from_file_or_folder(
                     csv_files[0]).columns
 
@@ -245,7 +254,7 @@ download_file_path = weatherObj.download_insolation_data(
 source_file_path = download_file_path
 
 file_name = 'TMY_'+str(source_file_path).split('\\')[-1]
-tmy_folder_path = user_paths.bifacial_radiance_files_folder / Path(
+tmy_folder_path = user_paths.radiance_input_files_folder / Path(
     'satellite_weatherData')
 
 tmy_file_path = tmy_folder_path/file_name
@@ -362,12 +371,12 @@ solar_position.zenith[0]
 
 # #
 fi.df_from_file_or_folder(
-    user_paths.bifacial_radiance_files_folder/Path(
+    user_paths.radiance_input_files_folder/Path(
         'satellite_weatherData/TMY_nearJuelichGermany.csv'
     ), names=['ghi', 'dhi'], delimiter=' '
 )
 # #
-rad_mat_file: Path = user_paths.bifacial_radiance_files_folder / Path(
+rad_mat_file: Path = user_paths.radiance_input_files_folder / Path(
     'materials/ground2.rad')
 
 mat_name = 'grass'

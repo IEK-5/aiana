@@ -4,7 +4,7 @@ from apv.utils import files_interface as fi
 
 from typing import Literal
 from apv.classes.util_classes.settings_handler import Settings
-from apv.classes.util_classes.geometries_handler import GeometriesHandler
+from apv.classes.rad_txt_related.geometries_handler import GeometriesHandler
 from apv.classes.weather_data import WeatherData
 from apv.classes.oct_file_handler import OctFileHandler
 from apv.classes.simulator import Simulator
@@ -91,7 +91,9 @@ class BR_Wrapper():
         self.settings.update_sim_dt_and_paths(**kwargs)
         self.weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(self.settings)
 
-    def simulate_and_evaluate(self, skip_sim_for_existing_results=False):
+    def simulate_and_evaluate(self, skip_sim_for_existing_results=False,
+                              #clear_existing_results=False # for testing to avoid cumulating different settings
+                              ):
         # Creating octfile without scanArea or North_arrow as objects as these
         # would falsify the simulation results, since e.g. the edge of the
         # scanArea object would result in darker lines in the edge of the

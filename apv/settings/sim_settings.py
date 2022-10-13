@@ -113,9 +113,9 @@ class Simulation:
 
         self.plot_dpi: int = 300  # dots per inch in the result heatmaps
 
-        self.plot_title_components: list = ['weather', 'datetime']
-        # all options: ['weather', 'module_form', 'resolution',
-        #                'position', 'agg_func', 'datetime']
+        self.plot_title_components: list = ['sub_study_name', 'datetime']
+        # all options: ['agg_func', 'datetime', 'module_form', 'position',
+        #  'resolution', 'sub_study_name', 'weather']
 
         # for the radiance sensors, zstart is where a radiance sensor vector starts
         # it is looking downwards with orientation 0 0 -1 and will read the
@@ -130,7 +130,7 @@ class Simulation:
         # to recieve the light
         self.RadSensors_to_scan_area_distance_z: float = 0.1
 
-        self.north_arrow_xy_posi: tuple = (1.6, 1.2)  # x, y within heat maps
+        self.north_arrow_xy_posi: tuple = (1.7, 1.4)  # x, y within heat maps
 
         ##################
         # less important / not fully implemented or obsolete at the moment
@@ -153,8 +153,9 @@ class Simulation:
 class SimSettings_ForTesting(Simulation):
     def __init__(self):
         super().__init__()
-        self.spatial_resolution = 1
-        self.hours = [11]
+        self.study_name = 'testing'
+        self.spatial_resolution = 0.4
+        self.hours = [13, 14, 15]
         self.use_typDay_perMonth_for_irradianceCalculation = False
         self.use_CPU_multi_processing = False
         self.use_accelerad_GPU_processing = True

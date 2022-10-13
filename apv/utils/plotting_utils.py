@@ -75,7 +75,7 @@ def plot_heatmap(
     if z_label is None:
         z_label = c
 
-    sns.heatmap(
+    sns.heatmap(  # modifies ax
         data,
         annot=False,
         linewidths=0,
@@ -102,6 +102,7 @@ def plot_heatmap(
                for item in ax.get_yticklabels()]
     ax.set_xticklabels(xlabels, rotation=0)
     ax.set_yticklabels(ylabels, rotation=0)
+    ax.tick_params(labelsize='small')
 
     return ax
 
@@ -157,7 +158,7 @@ def add_north_arrow(
 
     ax.text(
         xy[0],
-        xy[1] - 0.14, "    ", ha=ha, va=va, rotation=arrow_rotation, size=5,
+        xy[1] - 0.1, "    ", ha=ha, va=va, rotation=arrow_rotation, size=5,
         bbox=dict(boxstyle='rarrow, pad=0.3', fc='black',
                   ec=arrow_color, lw=0.4), transform=ax.transAxes)
 

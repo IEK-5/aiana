@@ -394,7 +394,7 @@ class WeatherData:
 
         aggfunc = self.settings.sim.TMY_irradiance_aggfunc
         df_tmy_name: str = f'TMY_{aggfunc}_{self.fn_resampled}'
-        tmy_file_path = self.settings._paths.bifacial_radiance_files \
+        tmy_file_path = self.settings._paths.radiance_input_files \
             / Path('satellite_weatherData', df_tmy_name)
 
         if tmy_file_path.exists() and not self.debug_mode:

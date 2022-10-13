@@ -5,7 +5,7 @@ import sys
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 import pandas as pd
-from apv.classes.util_classes.geometries_handler import GeometriesHandler
+from apv.classes.rad_txt_related.geometries_handler import GeometriesHandler
 from apv.classes.util_classes.settings_handler import Settings
 from apv.utils import plotting_utils as plotting, study_utils
 from apv.utils import files_interface as fi
@@ -172,8 +172,10 @@ class Plotter:
         if title_comps is None:
             title_comps = self.settings.sim.plot_title_components
         title = ''
-        if 'weather' in title_comps:
 
+        if 'sub_study_name' in title_comps:
+            title += f'{self.settings.sim.sub_study_name}\n'
+        if 'weather' in title_comps:
             title += f'Weather: {self.return_weather_description()}\n'
         if 'agg_func' in title_comps:  # redundant to weather
             title += (f'TMY aggregation function: '

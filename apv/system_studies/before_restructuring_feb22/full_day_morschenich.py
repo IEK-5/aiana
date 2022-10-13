@@ -45,7 +45,7 @@ if __name__ == '__main__':
     # APV_SystSettings.module_form = 'checker_board'
     SimSettings.sim_name = (f'APV_Morschenich_{APV_SystSettings.module_form}'
                             f'res_{SimSettings.spatial_resolution}')
-    weather_file = apv.settings.user_paths.bifacial_radiance_files_folder / \
+    weather_file = apv.settings.user_paths.radiance_input_files_folder / \
         Path('EPWs/DEU_Dusseldorf.104000_IWEC.epw')
 
     #

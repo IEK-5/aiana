@@ -136,7 +136,7 @@ results_folder
 # #
 source_file = \
     'TMY_insolation-data_2005-01-01_to_2021-01-01_lat-50.86351_lon-6.52946_time_step-1hour.csv'
-path = user_paths.bifacial_radiance_files_folder / Path(
+path = user_paths.radiance_input_files_folder / Path(
     'satellite_weatherData/' + source_file)
 ads_TMY = df_from_file_or_folder(str(path), header=None, delimiter=' ')
 ads_TMY.columns = names = ['ghi', 'dhi']

@@ -6,11 +6,10 @@ from typing import Literal
 from pathlib import Path
 
 import bifacial_radiance as br
-from apv.classes.util_classes.print_hider import PrintHider
 from apv.utils import radiance_utils
 from apv.classes.weather_data import WeatherData
 from apv.classes.util_classes.settings_handler import Settings
-from apv.classes.util_classes.geometries_handler import GeometriesHandler
+from apv.classes.rad_txt_related.geometries_handler import GeometriesHandler
 # for testing
 from apv.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morschenich
 
@@ -25,9 +24,8 @@ class OctFileHandler:
             settings rad-files (Radiance text file format for geometries)
     """
 
-    sceneObj: br.SceneObj  # set in get_radtext_of_all_modules
-    moduleObj: br.ModuleObj  # "
     radianceObj: br.RadianceObj
+    sceneObj: br.SceneObj  # set in create_octfile_without_sky()
 
     def __init__(
             self,
@@ -42,18 +40,20 @@ class OctFileHandler:
         self.debug_mode = debug_mode
 
         self.radianceObj = br.RadianceObj(
-            path=str(self.settings._paths.bifacial_radiance_files)
+            path=str(self.settings._paths.radiance_input_files)
         )
         self._create_materials()
         self.radianceObj.setGround(self.settings.sim.ground_albedo)
         # ground only needed for sky, but needs to be set only once
         # for all timesteps, so it is done here
 
-    def create_octfile_without_sky(
-            self, add_groundScanArea=False, add_NorthArrow=False,
-            add_sensor_vis=False):
+    def create_octfile_without_sky(self, **kwargs):
         """creates pv modules and mounting structure (optional)
         so sky with ground can be added later
+
+        **kwargs:
+        add_groundScanArea=False, add_NorthArrow=False,
+            add_sensor_vis=False
         """
 
         # backup azimuth
@@ -65,45 +65,16 @@ class OctFileHandler:
         # description and result plotting much easier
 
         # modules and scene
-        self.create_module_radtext()
+        self.ghObj.create_module_radtext()
         self.sceneObj: br.SceneObj = self.radianceObj.makeScene(
-            module=self.moduleObj, sceneDict=self.sceneDict
+            module=self.ghObj.moduleObj, sceneDict=self.sceneDict
         )
 
-        customObjects = {}
-        # scan area
-        if add_groundScanArea:
-            customObjects['scan_area'] = self.ghObj.groundscan_area
-
-        # north arrow
-        if add_NorthArrow:
-            customObjects['north_arrow'] = self.ghObj.north_arrow
-
-        # sensors
-        if add_sensor_vis:
-            customObjects['sensors'] = self.ghObj.sensor_visualization
-
-        # mounting structure
-        structure_type = self.settings.apv.mountingStructureType
-        if structure_type == 'inclined_tables':
-            customObjects['structure'] = self.ghObj.inclined_tables
-        elif structure_type == 'morschenich_fixed':
-            customObjects['structure'] = self.ghObj.morschenich_fixed
-        elif structure_type in [
-                'framed_single_axes', 'framed_single_axes_ridgeRoofMods']:
-            customObjects['structure'] = self.ghObj.framed_single_axes_mount
-        # else: structure_type == 'none' --> add nothing
-
-        cloning_rad_text = self.ghObj.get_rad_txt_for_cloning_the_apv_system()
-        extra_radtext_to_apply_on_a_radObject = {
-            'north_arrow': f'!xform -rz {azimuth-180} -t 10 10 0 ',
-            'structure': cloning_rad_text,  # cloning only the structure here,
-            # the modules are cloned within self.create_module_radtext()
-        }
-
+        # for mounting structure, ground, etc.:
         self._appendtoScene_condensedVersion(
-            customObjects, extra_radtext_to_apply_on_a_radObject
-        )  # for mounting structure, ground, etc
+            self.ghObj.get_customObjects(**kwargs),
+            self.ghObj.get_customObj_transformations(azimuth)
+        )
 
         # # # # create oct file without sky
         # to avoid the error: "fatal - boundary does not encompass scene",
@@ -138,7 +109,7 @@ class OctFileHandler:
     def add_sky_to_octfile(self):
         # sky file name and sky creation
         sky_fn: str = self.create_sky()
-        sky_fp: Path = self.settings._paths.bifacial_radiance_files / sky_fn
+        sky_fp: Path = self.settings._paths.radiance_input_files / sky_fn
         # NOTE the '-i' option is needed to add something to an existing oct
         cmd = ['oconv', '-i', self.settings._paths.oct_fp_noSky, sky_fp]
 
@@ -171,7 +142,7 @@ class OctFileHandler:
 
         file_format = 'vf' if self.settings.view.use_acceleradRT_view else 'vp'
 
-        view_fp = self.settings._paths.bifacial_radiance_files / Path(
+        view_fp = self.settings._paths.radiance_input_files / Path(
             f'views/{view_name}.{file_format}')
         try:
             scd = self.settings.view.scene_camera_dicts[view_name]
@@ -223,7 +194,7 @@ class OctFileHandler:
     def _create_materials(self):
         # self.makeCustomMaterial(mat_name='dark_glass', mat_type='glass',
         #                        R=0.6, G=0.6, B=0.6)
-        rad_mat_file = self.settings._paths.bifacial_radiance_files \
+        rad_mat_file = self.settings._paths.radiance_input_files \
             / Path('materials/ground.rad')
         radiance_utils.makeCustomMaterial(
             rad_mat_file,
@@ -303,86 +274,15 @@ class OctFileHandler:
             self.weatherData.dni, self.weatherData.dhi,
             self.weatherData.sunalt, sunaz_modified)
 
-    def create_module_radtext(self):
-        """
-        This method is a bit difficult to understand as we partly use
-        Bifacial_radiance and add new functionality (checker board, ridgeroof,
-        or APV-system set cloning in x-direction with a gap between sets)
-
-        In a first step, custom_single_module_text_dict is created. Later we
-        will use br.ModuleObj() class to create a std or cell_gap module, for
-        which the (custom) "text" argument has to be None (value of the dict).
-        For the other module form(s), e.g. checker board we use own ghObj
-        method(s), which are are called only if needed (not in dict definition)
-
-        After using br.ModuleObj(), we extract the rad text and store it into
-        a backup file "objects/{module_name}0.rad". It contains the module
-        cells, and optional the glass, and the frame. This file is loaded into
-        "objects/{module_name}.rad" without "0" to apply modifications (xform)
-        for set cloning and optional ridge roof, using the backup as input.
-        "objects/{module_name}.rad" is then used later by BR for
-        the scene transformation (tilt, nRow, ...)"
-        """
-
-        custom_single_module_text_dict = {
-            'std': None,  # rad text is created by self.radObj.makeModule()
-            'cell_gaps': None,  # ""
-            'checker_board': self.ghObj.make_checked_module_text,
-            'none': "",  # empty
-        }  # (only black part, no glass / omega etc.)
-
-        module_form = self.settings.apv.module_form
-        if module_form in ['std', 'cell_gaps', 'none']:
-            # pass dict value without calling
-            single_module_text = custom_single_module_text_dict[module_form]
-        else:
-            # pass dict value being a ghObj-method with calling
-            # (usefull if more custom modules will be added again)
-            single_module_text = custom_single_module_text_dict[module_form]()
-
-        with PrintHider():  # hide custom text usage warning
-            self.moduleObj = br.ModuleObj(
-                name=self.settings.apv.module_name,
-                **self.settings.apv.moduleDict,
-                text=single_module_text,
-                glass=self.settings.apv.glass_modules,
-                # there are now also new frame and omega input options
-            )
-
-        if module_form == 'cell_gaps':
-            self.moduleObj.addCellModule(
-                **self.settings.apv.cellLevelModuleParams)
-
-        if self.settings.apv.framed_modules:
-            self.moduleObj.addFrame(
-                frame_material='Metal_Grey', frame_thickness=0.05,
-                frame_z=0.03, frame_width=0.05, recompile=True)
-
-        # backup BRs original single module rad text as file with a "0" suffix:
-        module_name0_relPath = f'objects/{self.settings.apv.module_name}0.rad'
-        with open(module_name0_relPath, 'wb') as f:
-            f.write(self.moduleObj.text.encode('ascii'))
-
-        # modify module text and save to original name without "0"
-        if self.settings.apv.module_form == 'none':
-            single_module_text_modified = ''
-        else:
-            single_module_text_modified = \
-                self.ghObj.get_rad_txt_for_cloning_the_apv_system()\
-                + self.ghObj.get_rad_txt_for_ridgeRoofMods_xform() \
-                + f' {self.settings.apv.module_name}0.rad'
-        module_name_relPath = f'objects/{self.settings.apv.module_name}.rad'
-
-        # store APV system-set cloned with optional ridgeRoof_modified
-        # module_text (BR scene modification (tilt, nRow, ...) not yet applied)
-        with open(module_name_relPath, 'wb') as f:
-            f.write(single_module_text_modified.encode('ascii'))
-
-    def _appendtoScene_condensedVersion(
-            self, customObjects: dict,
-            extra_radtext_dict: dict):
+    def _appendtoScene_condensedVersion(self, customObjects: dict,
+                                        customObj_transformations: dict):
         """
         customObjects: key: file-name, value: rad_text
+        customObj_transformations: optional additional transforming rad_text
+        placed before a rad_file reference so it looks like e.g.
+        '!xform -t 1 0 0 objects/customObj.rad'
+        For easier understanding open the *.rad files in the folder
+        radiance_input_files/objects with a text editor.
 
         this method creates first object/*.rad files for each custom object
         (structure, scan area etc.) and then append these to the grouping
@@ -394,7 +294,6 @@ class OctFileHandler:
         # self.sceneObj.radfiles is a path
         # while
         # self.radianceObj.radfiles is a list ...
-
         for key in customObjects:
             # 1. create custom object rad file
 
@@ -405,13 +304,12 @@ class OctFileHandler:
             # write single object rad_file_pathes in a grouping rad_file
             # with an optional radiance text operation being applied on the
             # single object as a sub group:
-            if key in extra_radtext_dict:
-                extra_radtext = extra_radtext_dict[key]
+            if key in customObj_transformations:
+                extra_radtext = customObj_transformations[key]
             else:
                 extra_radtext = "!xform "
 
             # 2. add custom object rad file path to grouping rad file
-
             with open(self.sceneObj.radfiles, 'a+') as f:
                 f.write(f'\n{extra_radtext}{rad_file_path}')
 

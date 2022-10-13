@@ -7,7 +7,7 @@ from typing import Literal
 
 import apv.utils.files_interface as fi
 from apv.classes.util_classes.settings_handler import Settings
-from apv.classes.util_classes.geometries_handler import GeometriesHandler
+from apv.classes.rad_txt_related.geometries_handler import GeometriesHandler
 
 
 def adjust_settings(
