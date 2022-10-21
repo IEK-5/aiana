@@ -21,6 +21,10 @@ poetry work flow:
 
 -------
 
+allgemein bei bugs: interactive window schließen um code neu zu laden
+
+-----
+
 bei df filtern und dem error:
 ValueError: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all()
 

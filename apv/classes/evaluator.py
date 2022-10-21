@@ -198,5 +198,5 @@ class Evaluator:
             df_merged: pd.DataFrame = self._add_DLI(df_merged)
 
         df_merged.to_csv(cum_csv_path)
-        print(f'Cumulating completed!\n')
+        print(f'Cumulating completed.\n')
         return df_merged

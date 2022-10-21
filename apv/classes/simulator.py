@@ -43,8 +43,8 @@ class Simulator:
         """
         tictoc = pytictoc.TicToc()
         tictoc.tic()
-        mod_form = self.settings.apv.module_form
-        print('\n##### Starting simulation - module_form:', mod_form, '#####')
+        print('\n##### Starting simulation',
+              self.settings.sim.sub_study_name, '#####')
 
         # eventually create results (parent) folder existence
         fi.make_dirs_if_not_there(self.settings._paths.inst_csv_parent_folder)

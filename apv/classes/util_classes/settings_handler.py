@@ -78,18 +78,19 @@ class Paths(UserPaths):
 
         # file paths for saving results
         self.results_folder: Path = self.results_parent_folder \
-            / SimSettings.study_name
-        self.inst_results_folder: Path = self.results_folder \
+            / SimSettings.study_sub_folderName
+        self.results_data_folder: Path = self.results_folder \
             / f'{names.studyName_modForm_yearMonthDay}_data'
 
-        self.inst_csv_parent_folder: Path = self.inst_results_folder \
+        self.inst_csv_parent_folder: Path = self.results_data_folder \
             / 'instantaneous_csv_files'  # also used by simulator and evaluator
         self.inst_csv_file_path: Path = self.inst_csv_parent_folder /\
             f'{names.dateTimeForFileNames}.csv'
-        self.cum_csv_file_path: Path = self.inst_results_folder /\
-            f'{names.studyName_modForm_yearMonthDay}_cumulated.csv'
+        self.cum_csv_file_path: Path = self.results_data_folder /\
+            f'{names.dateTimeForFileNames}_cumulated.csv'
+        # TODO time should be removed in cumulated name
 
-        self.inst_plot_file_path: Path = self.inst_results_folder /\
+        self.inst_plot_file_path: Path = self.results_data_folder /\
             f'{names.dateTimeForFileNames}_{SimSettings.cm_quantity}.jpg'
         self.cum_plot_file_path: Path = self.results_folder /\
             f'{names.studyName_modForm_yearMonthDay}_{SimSettings.cm_quantity}.jpg'

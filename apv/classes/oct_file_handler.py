@@ -254,8 +254,8 @@ class OctFileHandler:
         sunaz_modified = self.weatherData.sunaz + correction_angle\
             - self.settings.apv.sceneDict["azimuth"]
 
-        if self.weatherData.dni == 0 and self.weatherData.dhi == 0:
-            raise ValueError("""DNI and DHI are 0!
+        if self.weatherData.dni <= 0 and self.weatherData.dhi <= 0:
+            raise ValueError("""DNI and DHI are <= 0!
                 \n--> Creating radiance files and view_scene() is not
                 possible without light. Maybe choose a different time
                 or start over again with fresh interactive window?""")

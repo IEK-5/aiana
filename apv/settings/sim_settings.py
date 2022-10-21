@@ -10,15 +10,17 @@ class Simulation:
 
     def __init__(self):
 
-        self.study_name: str = 'myStudy'  # will be used as sub folder for
-        # all results of the current study
+        self.study_sub_folderName: str = 'myStudy'  # will be used as sub
+        # folder within the results root folder (as defined in user_paths.py)
+        # for the results of the current study
         # this attribute is not placed in user_paths.py to allow for changing
-        # it within a working file from outside via settings.sim.study_name=...
+        # it within a for loop within a working file from outside via
+        # settings.sim.study_sub_folderName=...
         # (Settings._paths is overwritten by user_paths.py default values and
         # settings.sim is not).
 
         self.sub_study_name: str = 'mySubStudy'  # will be added as prefix
-        # to cumulative plots and their corresponding data sub folders
+        # to cumulative plots and their corresponding data sub(-sub) folders
 
         self.spatial_resolution: float = 0.1  # [m]
         # distance between virtual radiation sensors
@@ -83,6 +85,7 @@ class Simulation:
             'acc_no_interp': {'ab': 2, 'aa': 0, 'ar': 512, 'ad': 2048, 'as': 1024},  # 8.4 sec
             'hq':      {'ab': 3, 'aa': .1, 'ar': 1024, 'ad': 4096, 'as': 2048}  # 10 sec
         }
+
         # NOTE hq results in really dark artefacts around posts
         # std in smaler dots
         # without interpolation: no artefacts
@@ -153,8 +156,8 @@ class Simulation:
 class SimSettings_ForTesting(Simulation):
     def __init__(self):
         super().__init__()
-        self.study_name = 'testing'
-        self.spatial_resolution = 0.4
+        self.study_sub_folderName = 'testing'
+        self.spatial_resolution = 0.05
         self.hours = [13, 14, 15]
         self.use_typDay_perMonth_for_irradianceCalculation = False
         self.use_CPU_multi_processing = False

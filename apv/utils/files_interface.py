@@ -174,7 +174,10 @@ def get_min_max_in_several_csv_files(csv_files: list) -> pd.DataFrame:
     return df.agg([min, max])
 
 
-def write_to_txt_file(filepath: Path, text: str):
-    with open(filepath, 'w') as f:
+def write_to_txt_file(file_path: Path, text: str, mode='w'):
+    if type(file_path) != Path:
+        file_path = Path(file_path)
+    make_dirs_if_not_there(file_path.parent)
+    with open(file_path, mode) as f:
         f.writelines(text)
         f.close()
