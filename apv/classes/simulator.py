@@ -3,7 +3,7 @@ import pytictoc
 import pandas as pd
 from pathlib import Path
 import concurrent.futures
-from typing import Iterator, Literal
+from typing import Iterator, Literal, Tuple
 from tqdm.auto import trange
 import bifacial_radiance as br
 from subprocess import Popen, PIPE  # replacement for os.system()
@@ -36,8 +36,7 @@ class Simulator:
         self.temp_results_folder: Path = \
             self.settings._paths.radiance_input_files / Path('results')
 
-    def run_raytracing_simulation(
-            self, skip_if_result_exists=True) -> pd.DataFrame:
+    def run_raytracing_simulation(self, skip_if_result_exists=True):
         """provides irradiation readings on ground in form of a Dataframe
         as per predefined resolution.
         """
@@ -80,11 +79,7 @@ class Simulator:
         tictoc.toc()
 
     def _run_area_scan(self, scanDict: dict):
-        temp_name = (
-            f'_{self.settings.sim.scan_target}_'
-        )
         linepts = self._write_linepts(scanDict)
-
         for _ in range(3):
             try:
                 with PrintHider():  # otherwise accelerad prints a lot...
@@ -100,7 +95,8 @@ class Simulator:
                 # in this case data will be empty (NoneType).
                 print('TypeError: result data empty, trying again...')
 
-        return 'Area scan done.'
+        if self.debug_mode:
+            print('Area scan done.')
 
     def _run_line_scan(self, y_start):
 
@@ -132,10 +128,12 @@ class Simulator:
             self.analObj._saveResults(
                 groundDict, savefile=f'irr_{temp_name}.csv'
             )
-        return f'y_start: {y_start} done.'
+        print(f'y_start: {y_start} done.')
 
-    def _write_linepts(self, scanDict: dict):
-        """creates a string of point coordinates used by BR to call rtrace"""
+    # #
+    def _write_linepts(self, scanDict: dict) -> str:
+        """creates a tape of sensor coordinates within a plane, as defined in
+        the scanDict, which is used by BR as input when calling rtrace"""
         d = scanDict
         linepts = ""
         for iz in range(int(d['Nz'])):
@@ -145,7 +143,7 @@ class Simulator:
                     ypos = d['ystart'] + iy*d['yinc']
                     zpos = d['zstart'] + iz*d['zinc']
                     linepts += f'{xpos} {ypos} {zpos} {d["orient"]} \r'
-        return(linepts)
+        return linepts
 
     def merge_line_scans(self):
         """merge results to create one complete ground DataFrame
@@ -159,7 +157,7 @@ class Simulator:
         print(f'merged line scans into {self.settings._paths.inst_csv_file_path}\n')
         self.df_ground_results = df
 
-    def _irrPlotMod_modified(self, octfile, linepts):
+    def _irrPlotMod_modified(self, octfile, linepts) -> dict[str, list]:
         """
         copied and modifiend from bifacial_radiance.main.py to be able
         to switch between CPU and GPU parallelization and to change radiance
@@ -180,13 +178,11 @@ class Simulator:
             .title      - title passed in
         """
 
-        if octfile is None:
-            print('Analysis aborted. octfile = None')
-            return None
+        assert octfile is not None, 'Analysis aborted. octfile == None'
 
         keys = ['Wm2', 'x', 'y', 'z', 'r', 'g', 'b', 'mattype']
         out = {key: [] for key in keys}
-        #out = dict.fromkeys(['Wm2','x','y','z','r','g','b','mattype','title'])
+        # out = dict.fromkeys(['Wm2','x','y','z','r','g','b','mattype','title'])
 
         if self.settings.sim.use_accelerad_GPU_processing:
             prefix = 'accelerad_'
@@ -197,12 +193,12 @@ class Simulator:
             self.settings.sim.rtraceAccuracy]
         for key in s:
             s[key] = str(s[key])
-        cmd = f"{prefix}rtrace -i -ab {s['ab']} -aa {s['aa']} -ar {s['ar']}"\
-            + f" -ad {s['ad']} -as {s['as']} -h -oovs {octfile}"
+        cmd = f"{prefix}rtrace -i -ab {s['ab']} -aa {s['aa']} -ar {s['ar']}"
+        + f" -ad {s['ad']} -as {s['as']} -h -oovs {octfile}"
 
         temp_out, err = _popen(cmd, linepts.encode())
         if err is not None:
-            if err[0:5] == 'error':
+            if err[0: 5] == 'error':
                 raise Exception(err[7:])
             else:
                 print(err)

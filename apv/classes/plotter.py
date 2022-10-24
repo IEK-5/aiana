@@ -2,6 +2,7 @@
 import copy
 from pathlib import Path
 import sys
+from typing import Literal
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 import pandas as pd
@@ -144,7 +145,7 @@ class Plotter:
         if ax_blanc is not None:
             ax = ax_blanc
         else:
-            fig, ax = plt.subplots(1, 1)
+            fig, ax = plt.subplots()
 
         ax = sns.boxplot(x="Month", y=label_and_cm_input['z'],
                          data=df, palette="autumn", ax=ax)
@@ -160,13 +161,19 @@ class Plotter:
 
         return ax
 
-    def return_weather_description(self):
-        if self.settings.sim.TMY_irradiance_aggfunc == 'min':
+    def return_weather_description(self) -> (
+            Literal['max cloudy', 'mean cloudy', 'clear sky'] | None):
+        aggfunc = self.settings.sim.TMY_irradiance_aggfunc
+        if aggfunc == 'min':
             return 'max cloudy'
-        if self.settings.sim.TMY_irradiance_aggfunc == 'mean':
+        if aggfunc == 'mean':
             return 'mean cloudy'
-        if self.settings.sim.TMY_irradiance_aggfunc == 'max':
+        if aggfunc == 'max':
             return 'clear sky'  # TODO take clear_sky values then?
+        else:
+            raise ValueError(
+                f'settings.sim.TMY_irradiance_aggfunc has to be '
+                f'"min", "mean", or "max" but was set to "{aggfunc}".')
 
     def return_plot_title(self, cumulative: bool, title_comps=None) -> str:
         if title_comps is None:

@@ -59,7 +59,8 @@ class Evaluator:
         df['PARGround'] = df['Wm2'] * 4.57
         return df
 
-    def _add_shadowdepth(self, df, cumulative=False):
+    def _add_shadowdepth(
+            self, df: pd.DataFrame, cumulative=False) -> pd.DataFrame:
         """Shadow Depth is loss of incident solar energy in comparison
         with a non intersected irradiation; if 90% of irradiation available
         after being intersected by objects then the shadow depth is 10% [1][2].
@@ -133,7 +134,7 @@ class Evaluator:
     def cumulate_gendaylit_results(self,
                                    file_folder_to_merge: Path = None,
                                    cum_csv_path: Path = None,
-                                   add_DLI=False):
+                                   add_DLI=False) -> pd.DataFrame:
         """_summary_
 
         Args:

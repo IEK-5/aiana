@@ -18,10 +18,10 @@ class GeometriesHandler(GeomBasics):
     def __init__(self, settings: Settings):
         super().__init__(settings)
 
-    def morschenich_fixed(self):
+    def morschenich_fixed(self) -> str:
         return Morschenich(self.settings).morschenich_fixed()
 
-    def create_module_radtext(self):
+    def create_module_radtext(self) -> str:
         """
         This method is a bit difficult to understand as we partly use
         Bifacial_radiance and add new functionality (checker board, ridgeroof,
@@ -99,7 +99,7 @@ class GeometriesHandler(GeomBasics):
 
     def get_customObjects(self, add_groundScanArea=False,
                           add_NorthArrow=False,
-                          add_sensor_vis=False) -> dict:
+                          add_sensor_vis=False) -> dict[str, str]:
         customObjects = {}
         # scan area
         if add_groundScanArea:
@@ -126,7 +126,7 @@ class GeometriesHandler(GeomBasics):
 
         return customObjects
 
-    def get_customObj_transformations(self, azimuth: float):
+    def get_customObj_transformations(self, azimuth: float) -> dict[str, str]:
         # this is defined here to have it next to the customObjects dict def
         return {
             'north_arrow': f'!xform -rz {azimuth-180} -t 10 10 0 ',

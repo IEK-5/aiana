@@ -12,16 +12,15 @@ import os as os
 from pathlib import Path
 
 
-def clear_folder_content(folder_path, print_msg=True):
+def clear_folder_content(folder_path: str, print_msg=True):
     for filename in os.listdir(folder_path):
         file_path = os.path.join(folder_path, filename)
         os.unlink(file_path)
     if print_msg:
         print(f'cleared {folder_path}')
-    return
 
 
-def make_dirs_if_not_there(folder_paths: str or list):
+def make_dirs_if_not_there(folder_paths: (str | list)):
     """Checks if the folder/s exist and makes it/them
     if they are not there yet.
 
@@ -37,7 +36,6 @@ def make_dirs_if_not_there(folder_paths: str or list):
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
             print('Made folder: ' + str(folder_path))
-    return
 
 
 def df_from_file_or_folder(
@@ -56,7 +54,7 @@ def df_from_file_or_folder(
     '''
     df = pd.DataFrame()
 
-    def read_file(f_path):
+    def read_file(f_path) -> pd.DataFrame:
         if print_reading_messages:
             print('reading ' + str(f_path).split('\\')[-1])
         df = pd.read_csv(
@@ -106,7 +104,7 @@ def df_from_nc(file_path: str) -> pd.DataFrame:
         pd.DataFrame: [description]
     """
 
-    ds = xr.open_dataset(file_path)
+    ds: xr.Dataset = xr.open_dataset(file_path)
     return ds.to_dataframe()
 
 
@@ -132,7 +130,6 @@ def df_export(
         csv_file_path, float_format=float_format,
         index=index, sep=sep, header=header)
     print('exported df to', csv_file_path)
-    return
 
 
 def save_fig(
@@ -155,7 +152,6 @@ def save_fig(
     fig.savefig(file_path, bbox_inches='tight',
                 dpi=dpi, transparent=transparent)
     print('saved fig ' + str(file_path))
-    return
 
 
 def get_min_max_in_several_csv_files(csv_files: list) -> pd.DataFrame:

@@ -52,13 +52,13 @@ class Morschenich(GeomBasics):
 
         return text
 
-    def _row_array(self, nRowsReduc=0):
+    def _row_array(self, nRowsReduc=0) -> str:
         return f'-a {self.scn["nRows"]-nRowsReduc} -t 0 {self.scn["pitch"]} 0 '
 
-    def _clone_to_other_side_in_x(self, x_shift=0):
+    def _clone_to_other_side_in_x(self, x_shift=0) -> str:
         return f'-a 2 -t {self.l_x+x_shift} 0 0 '
 
-    def _outer_frame(self, y_start, hh):
+    def _outer_frame(self, y_start, hh) -> str:
 
         sp_x = self.mount['post_thickness_x']
         sp_y = self.mount['post_thickness_y']
@@ -100,7 +100,7 @@ class Morschenich(GeomBasics):
         return text
 
     def _corrugated_glass_between_modules(self, y_start: float,
-                                          tilt=-14, height=3.8):
+                                          tilt=-14, height=3.8) -> str:
         """TODO still quick and dirty... move out morschenich to extra file?
         y_start = y_start of the upper edge
         (upper for the default negative tilt)
@@ -116,7 +116,7 @@ class Morschenich(GeomBasics):
 
     def _rails_between_modules(
         self, y_start: float, hh: float, tilt=-14, height=3.8, n_rails=8,
-    ):
+    ) -> str:
         """y_start = y_start of the (upper) height anchor of the rails
         (upper for the default negative tilt)
         hh = height_horizontal bar as in drawing 2.5m

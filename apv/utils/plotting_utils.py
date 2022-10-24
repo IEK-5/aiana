@@ -1,9 +1,11 @@
 # #
+from typing import Tuple
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
+
 # from matplotlib.figure import Figure
 import pandas as pd
-from pandas.core.frame import DataFrame
 import seaborn as sns
 import joypy
 from scipy import stats
@@ -41,14 +43,8 @@ def plot_heatmap(
         cm (str, optional): color map style. Defaults to 'inferno'.
         vmin, vmax (float): color bar limits.
 
-
-        kwargs : other keyword arguments
-        All other keyword arguments are passed to matplotlib.axes.Axes.pcolormesh.
-
-
     Returns:
-        Figure: matplotlib.figure.Figure object, which can be modified
-        or saved later.
+        ax (matplotlib.axes.Axes)
     """
 
     # prepare and print heatmap-input data for inspection
@@ -60,7 +56,7 @@ def plot_heatmap(
     if ax_blanc is None:
         # create a figure object, which is a top level container for subplots
         # and axes objects, which are the subplots (here only one)
-        fig, ax = plt.subplots(1, 1)
+        fig, ax = plt.subplots()
     else:
         ax = ax_blanc
 
@@ -117,7 +113,7 @@ def add_north_arrow(
     ha="center",
     va="center",
     panel_azimuth=180,
-):
+) -> Axes:
     """Add a north arrow to the map.
 
     Args:
@@ -135,6 +131,9 @@ def add_north_arrow(
         headwidth (int, optional): head width of the north arrow. Defaults 15.
         ha (str, optional): Horizontal alignment. Defaults to "center".
         va (str, optional): Vertical alignment. Defaults to "center".
+
+    Returns:
+        ax (matplotlib.axes.Axes)
     """
 
     # text "N"
@@ -166,28 +165,34 @@ def add_north_arrow(
 
 
 def Ridge_plot(data, seperate_by='Month', column='ShadowDepth_cum',
-               color='#eb4d4b', xlabel='Shadow depth [%]'):
-    """Creates multiple Kernel Denisty Plots by grouping data
+               color='#eb4d4b', xlabel='Shadow depth [%]') \
+        -> Tuple[Figure, Axes]:
+    """
+    Creates multiple Kernel Denisty Plots by grouping data. Basically
+    just utilizing joyplot with certain Defaults.
 
     Args:
-        data ([DataFrame]): Contains column to plot and column to group by
+        data ([pd.DataFrame]): Contains column to plot and column to group by
         seperate_by (str, optional): Element to group by. Defaults to 'Month'.
-        column (str, optional): column of the df. Defaults to 'ShadowDepth_cum'.
+        column (str, optional): column of the data.
+            Defaults to 'ShadowDepth_cum'.
         color (str, optional): Red. Defaults to '#eb4d4b'.
-        xlabel (str, optional): according to column. Defaults to 'Shadow depth [%]'.
+        xlabel (str, optional): according to column.
+            Defaults to 'Shadow depth [%]'.
 
     Returns:
-        Figure: Kernel denisty function for each month
+        Tuple[Figure, Axes]: Figure and Axes containing
+        kernel denisty function plots for each month.
     """
 
-    fig, axes = joypy.joyplot(data=data, by=seperate_by,
-                              column=column,
-                              color=color, fade=False, grid=True,
-                              xlabels=True, ylabels=True, alpha=0.85)
+    fig, axs = joypy.joyplot(data=data, by=seperate_by,
+                             column=column,
+                             color=color, fade=False, grid=True,
+                             xlabels=True, ylabels=True, alpha=0.85)
     plt.xlabel(xlabel)
     plt.ylabel(seperate_by)
 
-    return fig, axes
+    return fig, axs
 
 
 # snippet (not ready) for drawing module position into heatmap,
@@ -223,7 +228,7 @@ def Ridge_plot(data, seperate_by='Month', column='ShadowDepth_cum',
 def comparing_plot_sns(
         df: pd.Series, x: str, y: str, unit=' [-]', hue=None,
         scatter_alpha=0.4, scatter_size=0.1,
-        xy_min='default', xy_max='default', title=''):
+        xy_min='default', xy_max='default', title='') -> sns.JointGrid:
 
     df = df.dropna(subset=[x, y])
     if xy_max == 'default':

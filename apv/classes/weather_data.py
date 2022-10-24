@@ -429,7 +429,7 @@ class WeatherData:
         df_tmy.Name = df_tmy_name
         return df_tmy
 
-    def calc_typical_day_of_month(self, df: pd.DataFrame):
+    def calc_typical_day_of_month(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         df is meant for self.df_irradiance_tmy
 

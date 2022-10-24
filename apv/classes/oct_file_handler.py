@@ -92,7 +92,8 @@ class OctFileHandler:
             # mode 'w+b' opens and truncates the file to 0 bytes
             w.write(oconv_result)
 
-    def _call_cmd_serveral_times_and_return_result(self, cmd, count=3):
+    def _call_cmd_serveral_times_and_return_result(
+            self, cmd, count=3) -> bytes:
         """because sometimes oconv starts too early,
         when sub rad files are not yet closed"""
         result = util.spcheckout(cmd)
@@ -235,8 +236,7 @@ class OctFileHandler:
         the mounting structure and the scan points.
 
         Returns
-            skyname: string
-            Filename of sky in /skies / directory
+            skyname (str): filename of the sky in the /skies directory
         """
 
         if tracked:

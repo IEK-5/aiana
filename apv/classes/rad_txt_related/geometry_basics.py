@@ -77,7 +77,8 @@ class GeomBasics:
     def _add_cell_sizes(self):
         """adds cell sizes to the self.settings.apv.cellLevelModuleParams
         dictionary"""
-        def calc_cSize(mod_size, num_cell, cell_gap):
+        def calc_cSize(
+                mod_size: float, num_cell: int, cell_gap: float) -> float:
             # formula derivation:
             # x = numcellsx * xcell + (numcellsx-1) * xcellgap
             # xcell = (x - (numcellsx-1)*xcellgap) / numcellsx
