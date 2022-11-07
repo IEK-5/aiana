@@ -1,6 +1,11 @@
 # Intro
 apv = agri(photo)voltaic
 
+
+# Code structure
+
+<img src="./aiana/class_structure.drawio.png" alt="a drawio diagram" />
+
 # Installation
 
 Bifacial-radiance
