@@ -6,7 +6,7 @@ import seaborn as sns
 
 from pathlib import Path
 from aiana.classes.util_classes.settings_handler import Settings
-from aiana.classes.aiana_main import Aiana
+from aiana.classes.aiana_main import AianaMain
 from aiana.classes.weather_data import WeatherData
 from aiana.utils import plotting_utils
 from aiana.utils import files_interface as fi
@@ -72,7 +72,7 @@ def box_plot(dfs, subsets, titles=None, y="DLI", orient='horizontal',
             len(subsets), 1, sharex=True, sharey=True
         )
 
-    aiana = Aiana(Settings())
+    aiana = AianaMain(Settings())
     for i, subset in enumerate(subsets):
         if titles is not None:
             axes[i].set_title(titles[i])

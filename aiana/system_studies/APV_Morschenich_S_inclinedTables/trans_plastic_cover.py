@@ -1,5 +1,5 @@
 # #
-from aiana.classes.aiana_main import Aiana
+from aiana.classes.aiana_main import AianaMain
 from aiana.classes.util_classes.settings_handler import Settings
 from aiana.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morschenich
 if __name__ == '__main__':
@@ -12,7 +12,7 @@ if __name__ == '__main__':
     settings.apv.add_trans_plastic_between_modules = True
     settings.apv.glass_modules = False
 
-    aiana = Aiana(settings)
+    aiana = AianaMain(settings)
     ##
     aiana.create_and_view_octfile_for_SceneInspection()
 # #

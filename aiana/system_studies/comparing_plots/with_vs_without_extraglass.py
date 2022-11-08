@@ -11,7 +11,7 @@ import os
 from aiana.classes.util_classes.sim_datetime import SimDT
 from aiana.classes.util_classes.settings_handler import Settings
 from aiana.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morschenich
-from aiana.classes.aiana_main import Aiana
+from aiana.classes.aiana_main import AianaMain
 from aiana.utils import plotting_utils
 import aiana.utils.files_interface as fi
 from aiana.classes.rad_txt_related.geometries_handler import GeometriesHandler

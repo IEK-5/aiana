@@ -10,7 +10,7 @@ from aiana.settings import user_paths
 from aiana.utils import files_interface
 
 from aiana.classes.util_classes.settings_handler import Settings
-from aiana.classes.aiana_main import Aiana
+from aiana.classes.aiana_main import AianaMain
 
 # ADS
 
@@ -18,7 +18,7 @@ settings = Settings()
 settings.sim.apv_location = pvlib.location.Location(
     51.2217, 6.7761, altitude=45, tz='Europe/Berlin')  # düsseldorf
 settings.sim.time_step_in_minutes = 60
-aiana = Aiana(settings)
+aiana = AianaMain(settings)
 
 
 # #

@@ -3,7 +3,7 @@ import copy
 from datetime import datetime
 from pathlib import Path
 from typing import Literal
-from aiana.classes.aiana_main import Aiana
+from aiana.classes.aiana_main import AianaMain
 from aiana.classes.plotter import Plotter
 from aiana.classes.util_classes.settings_handler import Settings
 from aiana.settings.sim_settings import SimSettings_ForTesting
@@ -87,7 +87,7 @@ class Tester():
         return cpf.parents[1].joinpath('difference', cpf.parts[-1])
 
     def _test_then_resetSettings(self, sub_study_name: str, **kwargs):
-        aiana = Aiana(self.settings)
+        aiana = AianaMain(self.settings)
         if self.open_oct_viewer:
             aiana.create_and_view_octfile_for_SceneInspection(**kwargs)
         if self.run_simulation:

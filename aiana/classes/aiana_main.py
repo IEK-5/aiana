@@ -12,7 +12,7 @@ from aiana.classes.evaluator import Evaluator
 from aiana.classes.plotter import Plotter
 
 
-class Aiana():
+class AianaMain():
     # sim time/timespan in plot title
     # TODO automatic plotting with equal color bar per day
 

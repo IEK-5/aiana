@@ -6,7 +6,7 @@ from matplotlib.figure import Figure
 import pandas as pd
 from pathlib import Path
 from aiana.classes.util_classes.settings_handler import Settings
-from aiana.classes.aiana_main import Aiana
+from aiana.classes.aiana_main import AianaMain
 from aiana.utils import plotting_utils
 from aiana.utils import files_interface as fi
 from aiana.utils import study_utils as su
@@ -66,7 +66,7 @@ def plot_ground_heatmaps_subplots(dfs: pd.DataFrame, subsets: list,
     df_limits = dfs.agg([min, max])
     df_limits.loc['min', 'kWhm2'] = 1
 
-    aiana = Aiana(Settings())
+    aiana = AianaMain(Settings())
     cb_orientation = "vertical"
     if subplot_orientation == "horizontal":
         fig, axes = plt.subplots(1, len(subsets),  # sharey=True

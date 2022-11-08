@@ -10,7 +10,7 @@ import os
 from aiana.classes.util_classes.sim_datetime import SimDT
 from aiana.classes.util_classes.settings_handler import Settings
 from aiana.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morschenich
-from aiana.classes.aiana_main import Aiana
+from aiana.classes.aiana_main import AianaMain
 import aiana.utils.files_interface as fi
 
 if __name__ == '__main__':
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     # #
     backup = settings.sim.spatial_resolution
     settings.sim.spatial_resolution = 1
-    Aiana(settings).create_and_view_octfile_for_SceneInspection(  # topDownParallel_view=True
+    AianaMain(settings).create_and_view_octfile_for_SceneInspection(  # topDownParallel_view=True
     )
     settings.sim.spatial_resolution = backup
 
@@ -126,7 +126,7 @@ if __name__ == '__main__':
                         enough_light = True
 
                     # to update time settings in all sub classes of BR_Wrapper:
-                    aiana = Aiana(settings)
+                    aiana = AianaMain(settings)
 
                     ########
                     aiana.octFileObj.create_octfile_without_sky()
@@ -159,7 +159,7 @@ if __name__ == '__main__':
     settings.sim.results_subfolder = create_results_subfolderPath(
         month, settings.sim.scan_position)
 
-    aiana = Aiana(settings)
+    aiana = AianaMain(settings)
     # def get_cum_csv_path():
     results_folder_cum \
         = aiana.settings._paths.results_folder.parent.parent / 'cumulative'

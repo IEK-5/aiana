@@ -1,5 +1,5 @@
 # #
-from aiana.classes.aiana_main import Aiana
+from aiana.classes.aiana_main import AianaMain
 from aiana.anti_bug_testing.tester_class import Tester
 from aiana.settings.apv_system_settings \
     import APV_Syst_InclinedTables_S_Morschenich

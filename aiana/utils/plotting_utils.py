@@ -345,10 +345,10 @@ def plotStyle(
 
 # testing #TODO
 if __name__ == '__main__':
-    from aiana.classes.aiana_main import Aiana
+    from aiana.classes.aiana_main import AianaMain
     from aiana.classes.util_classes.settings_handler import Settings
 
-    aiana = Aiana(Settings())
+    aiana = AianaMain(Settings())
     if not aiana.settings._paths.inst_csv_file_path.exists():
         aiana.create_octfile_for_Simulation()
         aiana.simulate_and_evaluate()

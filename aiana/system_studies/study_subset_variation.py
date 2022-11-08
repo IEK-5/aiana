@@ -7,7 +7,7 @@ from typing import Literal
 
 import aiana.utils.study_utils as su
 import aiana.utils.files_interface as fi
-from aiana.classes.aiana_main import Aiana
+from aiana.classes.aiana_main import AianaMain
 from aiana.classes.weather_data import WeatherData
 from aiana.classes.util_classes.sim_datetime import SimDT
 from aiana.classes.util_classes.settings_handler import Settings
@@ -27,7 +27,7 @@ if __name__ == '__main__':
         settings = su.adjust_settings(subset, settings)
         settings.sim.sim_date_time = '4-15_09:00'
         settings.sim.spatial_resolution = 0.5
-        aiana = Aiana(settings)
+        aiana = AianaMain(settings)
         aiana.create_and_view_octfile_for_SceneInspection(
             # add_NorthArrow=True,
             # add_groundScanArea=False,
@@ -63,7 +63,7 @@ if __name__ == '__main__':
         settings = su.adjust_APVclone_count(settings, hours[0])
         settings.sim.rtraceAccuracy = 'accurate'
         # to update time settings in all sub classes of BR_Wrapper:
-        aiana = Aiana(settings)
+        aiana = AianaMain(settings)
         aiana.octFileObj.create_octfile_without_sky()
         for month in months:
             day = 15  # (int(df_all['day_nearest_to_mean'].loc[month]))
@@ -76,7 +76,7 @@ if __name__ == '__main__':
                 if i > 0:
                     if hour > 13 and hours[i-1] <= 13:
                         settings = su.adjust_APVclone_count(settings, hour)
-                        aiana = Aiana(settings)
+                        aiana = AianaMain(settings)
                         aiana.octFileObj.create_octfile_without_sky()
 
                 for minute in minutes:
@@ -159,7 +159,7 @@ if __name__ == '__main__':
             settings.sim.results_subfolder = su.create_results_subfolderPath(
                 month, settings, subset)
 
-            aiana = Aiana(settings)
+            aiana = AianaMain(settings)
 
             results_folder_cum \
                 = aiana.settings._paths.results_folder.parent / 'cumulative'
