@@ -5,7 +5,7 @@ from aiana.utils import files_interface as fi
 from aiana.anti_bug_testing.tester_class import Tester
 
 # #
-apv_test.run_apv_test(mode='create_reference',
+apv_test.run_apv_test(#mode='create_reference',
                       # open_oct_viewer=True
                       )
 # #

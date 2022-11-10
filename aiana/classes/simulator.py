@@ -60,6 +60,9 @@ class Simulator:
             self.temp_results_folder, print_msg=False)
         if self.settings.sim.use_accelerad_GPU_processing:
             self._run_area_scan(self.ghObj.ground_areaScan)
+            if self.settings.sim.use_CPU_multi_processing:
+                print('GPU and CPU multiprocessing were both set to True.',
+                      'GPU has priority, CPU multiprocessing is not used.')
 
         elif self.settings.sim.use_CPU_multi_processing:
             with concurrent.futures.ProcessPoolExecutor() as executor:
@@ -79,21 +82,31 @@ class Simulator:
         tictoc.toc()
 
     def _run_area_scan(self, scanDict: dict):
+        """with gpu -> simulate all scan lines at once"""
         linepts = self._write_linepts(scanDict)
-        for _ in range(3):
+        for i in range(4):
             try:
-                with PrintHider():  # otherwise accelerad prints a lot...
-                    groundDict = self._irrPlotMod_modified(
-                        self.settings._names.oct_fn, linepts)
+                #with PrintHider():  # otherwise accelerad prints a lot...
+                    # this will run the actual simulation:
+                groundDict = self._irrPlotMod_modified(
+                    self.settings._names.oct_fn, linepts)
                 self.analObj._saveResults(
-                    groundDict, savefile=self.settings._paths.inst_csv_file_path)
+                    groundDict,
+                    savefile=self.settings._paths.inst_csv_file_path
+                )
                 break
             except TypeError:  # 'NoneType' object is not subscriptable
                 # rarely there is a accelerad polygon problem, e.g.:
                 # accelerad_rtrace: fatal - (!xform...:
                 # bad arguments for polygon "a4.1.a1.SUNFARMING.6457"
                 # in this case data will be empty (NoneType).
-                print('TypeError: result data empty, trying again...')
+                if i < 3:
+                    print('TypeError: result data empty, trying again...')
+                else:
+                    print('Simulator._run_area_scan() returned NoneType 4x,',
+                          'something wrong with the oct-file or linepts?',
+                          'You can also try self._irrPlotMod_modified()',
+                          'without PrintHider.')
 
         if self.debug_mode:
             print('Area scan done.')

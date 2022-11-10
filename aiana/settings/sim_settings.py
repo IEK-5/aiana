@@ -72,7 +72,7 @@ class SimSettingsDefault:
         # used as aggregation function for watherdata pivoting to TMY
         # min: extreme cloudy day, max: sunny day with distant bright clouds
 
-        self.use_CPU_multi_processing: bool = True
+        self.use_CPU_multi_processing: bool = False
         # if True, single lines of the scan area will be passed to a job pool
         # worked off by the cpu cores in parallel
 
@@ -95,7 +95,7 @@ class SimSettingsDefault:
 
         # Accelerad settings ####################
         # need to be installed first https://nljones.github.io/Accelerad/index.html
-        self.use_accelerad_GPU_processing: bool = False  # GPU paralellization,
+        self.use_accelerad_GPU_processing: bool = True  # GPU paralellization,
         # all line scans at once. GPU multiprocessing is not compatible with
         # CPU multiprocessingand will thus ignore use_CPU_multi_processing
         # setting, if True

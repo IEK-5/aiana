@@ -63,7 +63,15 @@ class AianaMain():
             add_sensor_vis: bool = True,
             add_NorthArrow: bool = True,
             view_name: Literal['total', 'close_up', 'top_down'] = 'total'):
-        """for scene inspection: add ground scan area and north arrow
+        """
+        opens the oct file in the viewer. If Accererad is used, you can
+        navigate as following:
+
+        rotate = holding right-click and move mouse
+        pan = holding shift+right-click and move mouse
+        zoom in/out = mousewheel up/down
+
+        for scene inspection: add ground scan area and north arrow
         visualiation, switch to parallel view for top down, which allows for
         more easy checking of a post-to-post scan area unit cell placement.
 
