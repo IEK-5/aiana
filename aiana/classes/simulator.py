@@ -86,8 +86,8 @@ class Simulator:
         linepts = self._write_linepts(scanDict)
         for i in range(4):
             try:
-                #with PrintHider():  # otherwise accelerad prints a lot...
-                    # this will run the actual simulation:
+                # with PrintHider():  # otherwise accelerad prints a lot...
+                # this will run the actual simulation:
                 groundDict = self._irrPlotMod_modified(
                     self.settings._names.oct_fn, linepts)
                 self.analObj._saveResults(
@@ -206,8 +206,8 @@ class Simulator:
             self.settings.sim.rtraceAccuracy]
         for key in s:
             s[key] = str(s[key])
-        cmd = f"{prefix}rtrace -i -ab {s['ab']} -aa {s['aa']} -ar {s['ar']}"
-        + f" -ad {s['ad']} -as {s['as']} -h -oovs {octfile}"
+        cmd = (f"{prefix}rtrace -i -ab {s['ab']} -aa {s['aa']} -ar {s['ar']}"
+               f" -ad {s['ad']} -as {s['as']} -h -oovs {octfile}")
 
         temp_out, err = _popen(cmd, linepts.encode())
         if err is not None:

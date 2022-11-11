@@ -30,3 +30,12 @@ ValueError: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.i
 
 - schon mit "&" bzw. "|" statt "and" bzw. "or" probiert?
 - wenn das nicht hilft: df.loc[:,col] statt df[col]
+
+
+-----
+(to get code lines count:
+push to git (no spaces in folder names) and then put following command in bash console within apv subdirectory as working path:
+
+git ls-files --exclude-standard -- ':!:**/*.[pjs][npv]g' ':!:_tests_and_stuff' ':!:system_studies/before_restructuring_feb22' ':!:*/*only_reference*' ':!:**/*.txt' ':!:**/*.csv' ':!:**/*.pyc' ':!:*__pycache__*' ':!:*__init__*' ':!:*.gitignore*' | xargs wc -l
+
+)
