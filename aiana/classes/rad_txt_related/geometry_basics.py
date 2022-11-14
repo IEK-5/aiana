@@ -399,9 +399,17 @@ class GeomBasics:
             return ''
 
     def make_checked_module_text(self) -> str:
+        """
+        Copyright (c) 2017-2021, Alliance for Sustainable Energy, LLC
+        All rights reserved. (see BSD 3-Clause License)
+
+        copied from br.main.RadianceObj.makeModule() and modified
+        """
+
+
         mod = self.mod
         c = self.settings.apv.cellLevelModuleParams
-        # copied from br.main.RadianceObj.makeModule() and modified:
+
         x = c['numcellsx']*c['xcell']+(c['numcellsx']-1)*c['xcellgap']
         y = c['numcellsy']*c['ycell']+(c['numcellsy']-1)*c['ycellgap']
 

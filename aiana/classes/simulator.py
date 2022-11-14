@@ -1,3 +1,16 @@
+""" This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>."""
+
 import sys
 import pytictoc
 import pandas as pd
@@ -172,7 +185,10 @@ class Simulator:
 
     def _irrPlotMod_modified(self, octfile, linepts) -> dict[str, list]:
         """
-        copied and modifiend from bifacial_radiance.main.py to be able
+        Copyright (c) 2017-2021, Alliance for Sustainable Energy, LLC
+        All rights reserved. (see BSD 3-Clause License)
+
+        Copied and modified from bifacial_radiance.main.py to be able
         to switch between CPU and GPU parallelization and to change radiance
         settings
         ------------
@@ -237,6 +253,9 @@ class Simulator:
 
 def _popen(cmd, data_in, data_out=PIPE):
     """
+    Copyright (c) 2017-2021, Alliance for Sustainable Energy, LLC
+    All rights reserved. (see BSD 3-Clause License)
+
     copied also from bifacial_radiance.main.py
 
     Helper function subprocess.popen replaces os.system
