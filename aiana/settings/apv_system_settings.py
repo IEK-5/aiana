@@ -173,6 +173,8 @@ class APV_SettingsDefault:
         # for 'framed_single_axes':
         self.enlarge_beams_for_periodic_shadows: bool = False
 
+        # not in use at the moment, as preparation for later, to be used
+        # as PVlib input:
         self.moduleSpecs: pd.Series = pd.read_csv(
             Path(__file__).parent.parent.resolve()  # apv package location
             / Path(
