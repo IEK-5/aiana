@@ -80,6 +80,8 @@ class GeometriesHandler(GeomBasics):
         module_name0_relPath = f'objects/{self.settings.apv.module_name}0.rad'
         with open(module_name0_relPath, 'wb') as f:
             f.write(self.moduleObj.text.encode('ascii'))
+            f.close()  # should not be neccessary due to "with", but without
+            # oconv sometimes complains about an empty module_name_0.rad file
 
         # modify module text and save to original name without "0"
         if self.settings.apv.module_form == 'none':
@@ -96,6 +98,7 @@ class GeometriesHandler(GeomBasics):
         # module_text (BR scene modification (tilt, nRow, ...) not yet applied)
         with open(module_name_relPath, 'wb') as f:
             f.write(module_text_modified.encode('ascii'))
+            f.close()
 
     def get_customObjects(self, add_groundScanArea=False,
                           add_NorthArrow=False,

@@ -22,8 +22,8 @@ if __name__ == '__main__':
     settings.sim.hours = list(range(3, 15))  # only morning
     am = AianaMain(settings)
 
-    #am.create_and_view_octfile_for_SceneInspection()
-##
+    am.create_and_view_octfile_for_SceneInspection()
+# #
 if __name__ == '__main__':
     for month in [4, 8]:
         am.update_simTime(month=month)

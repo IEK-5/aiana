@@ -5,6 +5,7 @@ with open('README.md', 'r') as f:
 
 setuptools.setup(
     name='aiana',
+    lisense='GPL 3',
     version='0.9',
     author='Leonard Raumann',
     author_email='leo.raumann@gmail.com',

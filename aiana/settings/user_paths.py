@@ -29,11 +29,11 @@ class UserPaths:
     # radiance input files (will contain files for geometries, sky, materials)
     radiance_input_files: Path = root / 'radiance_input_files'
     # for weather data
-    data_download_folder: Path = root / 'data_downloads'
+    weatherData_folder: Path = root / 'satellite_weatherData'
     # for plots and tables. See also utils/results_organizer.py
     results_parent_folder: Path = root / 'results'
 
     # check folder existence
     fi.make_dirs_if_not_there(
-        [radiance_input_files, data_download_folder, results_parent_folder]
+        [radiance_input_files, weatherData_folder, results_parent_folder]
     )

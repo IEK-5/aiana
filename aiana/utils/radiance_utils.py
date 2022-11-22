@@ -29,8 +29,6 @@ def makeCustomMaterial(
 
     specularity and roughness effect examples:
     https://thinkmoult.com/radiance-specularity-and-roughness-value-examples.html
-
-
     """
 
     # read old file
@@ -41,14 +39,22 @@ def makeCustomMaterial(
     # write new file
     with open(rad_mat_file, 'w') as f:
         print_string = 'Creating'
+
         lines_new = lines
+        # check if material name is already there to avoid multiple
+        # materials with the same name (which would also cause bad object count
+        # bug in oconv)
         for i, line in enumerate(lines):
-            if mat_name in line:
+            words = line.split(' ')
+            mat_name_check = words[-1][:-1]  # \n counts as one sign
+            if len(words) == 3 and mat_name_check == mat_name:
                 print_string = 'Overwriting'
                 # slice away existing material
                 lines_new = lines[:i-1] + lines[i+4:]
                 break
-        # check for extra new line at the end
+        # check for extra line break at the current file end,
+        # after which custom materials will be added
+
         if lines_new[-1][-1:] == '\n':
             text = ''
         else:
@@ -108,3 +114,4 @@ def write_viewfile_in_vp_format(
             # + '-vs 0 -vl 0' # ist in der demo von acceleradRT nicht drin
             # braucht man das?
         )
+        f.close()
