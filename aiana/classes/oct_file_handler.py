@@ -103,6 +103,7 @@ class OctFileHandler:
         with open(self.settings._paths.oct_fp_noSky, 'wb') as w:
             # mode 'w+b' opens and truncates the file to 0 bytes
             w.write(oconv_result)
+            #w.close()
 
     def _call_cmd_serveral_times_and_return_result(
             self, cmd, count=3) -> bytes:
@@ -129,6 +130,7 @@ class OctFileHandler:
         oconv_result = self._call_cmd_serveral_times_and_return_result(cmd)
         with open(self.settings._paths.oct_fp, 'wb') as w:
             w.write(oconv_result)
+            #w.close()
 
     def view_octfile(
         self,
@@ -312,6 +314,7 @@ class OctFileHandler:
             rad_file_path = f'objects/{key}.rad'
             with open(rad_file_path, 'wb') as f:
                 f.write(customObjects[key]().encode('ascii'))
+                f.close()
 
             # write single object rad_file_pathes in a grouping rad_file
             # with an optional radiance text operation being applied on the
@@ -324,6 +327,7 @@ class OctFileHandler:
             # 2. add custom object rad file path to grouping rad file
             with open(self.sceneObj.radfiles, 'a+') as f:
                 f.write(f'\n{extra_radtext}{rad_file_path}')
+                f.close()
 
             self.radianceObj.radfiles.append(rad_file_path)
 

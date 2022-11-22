@@ -75,23 +75,28 @@ class AianaMain():
             add_sensor_vis: bool = True,
             add_NorthArrow: bool = True,
             view_name: Literal['total', 'close_up', 'top_down'] = 'total'):
+        """ Opens the oct-file in the viewer.
+        The sun position is based on
+        settings/simulation/hour_for_sceneInspection
+
+        If Accererad is used, you can navigate as following:
+            rotate = holding right-click and move mouse
+            pan = holding shift+right-click and move mouse
+            zoom in/out = mousewheel up/down
+
+        Args:
+            add_groundScanArea (bool, optional): A green area on the ground
+                to visualize the scanned area. Defaults to True.
+            add_sensor_vis (bool, optional): red small cubes to visualize
+                the scan resolution. Defaults to True.
+            add_NorthArrow (bool, optional): Arrow(s TODO) pointing to north.
+                Defaults to True.
+            view_name (Literal['total', 'close_up', 'top_down'], optional):
+                As defined in settings/view_settings.py. Defaults to 'total'.
+                If this set to 'top_down', the view mode is changed from
+                perspective to parallel.
         """
-        opens the oct file in the viewer. If Accererad is used, you can
-        navigate as following:
 
-        rotate = holding right-click and move mouse
-        pan = holding shift+right-click and move mouse
-        zoom in/out = mousewheel up/down
-
-        for scene inspection: add ground scan area and north arrow
-        visualiation, switch to parallel view for top down, which allows for
-        more easy checking of a post-to-post scan area unit cell placement.
-
-        view_name: Literal['total', 'close_up', 'top_down']
-
-        WARNING: add_groundScanArea is needed for different scan startz
-        but the ground albedo won't be used this way. #TODO
-        """
         self.octFileObj.create_octfile_without_sky(
             add_groundScanArea=add_groundScanArea,
             add_sensor_vis=add_sensor_vis, add_NorthArrow=add_NorthArrow)

@@ -93,14 +93,12 @@ class WeatherData:
             1  # always 1 minute, will be resampled coarser later
         )
 
-        # resampled data file path
+        # resampled ppdata file path
         self.time_step = self.settings.sim.time_step_in_minutes
         self.fn_resampled = str(self.download_file_path).split(
             '\\')[-1].replace('1minute', f'{self.time_step}minute')
-        self.weather_folder_path = self.settings._paths.root / Path(
-            'satellite_weatherData')
-        self.resampled_insolation_data_path: Path = \
-            self.weather_folder_path/self.fn_resampled
+        self.resampled_insolation_data_path = \
+            self.settings._paths.weatherData_folder / Path(self.fn_resampled)
 
     def set_dhi_dni_ghi_and_sunpos_to_simDT(self, settings: Settings = None):
         """allow simDT input for fast GHI filter from outside"""
@@ -248,7 +246,7 @@ class WeatherData:
                 ],
             },
             os.path.join(
-                self.settings._paths.data_download_folder, file_name+'.nc')
+                self.settings._paths.weatherData_folder, 'raw_downloads', file_name+'.nc')
         )
 
     def download_insolation_data(
@@ -286,10 +284,11 @@ class WeatherData:
                      f'_lon-{location.longitude}'
                      f'_time_step-{time_step_str}')
 
-        file_path: Path = self.settings._paths.data_download_folder/Path(
-            file_name+'.csv')
+        file_path: Path = self.settings._paths.weatherData_folder/Path(
+            'raw_downloads', file_name+'.csv')
 
         if file_path.exists() is False:
+            os.makedirs(file_path.parent)
             print(f'Downloading Insolation data to {file_path}')
 
             c = cdsapi.Client(
@@ -347,8 +346,6 @@ class WeatherData:
             return df
 
         # else:
-        fi.make_dirs_if_not_there(
-            self.weather_folder_path)
         print(f'reading {self.download_file_path}...')
         df: pd.DataFrame = pd.read_csv(
             self.download_file_path, skiprows=42, sep=';')
@@ -406,8 +403,8 @@ class WeatherData:
 
         aggfunc = self.settings.sim.TMY_irradiance_aggfunc
         df_tmy_name: str = f'TMY_{aggfunc}_{self.fn_resampled}'
-        tmy_file_path = self.settings._paths.radiance_input_files \
-            / Path('satellite_weatherData', df_tmy_name)
+        tmy_file_path = self.settings._paths.weatherData_folder \
+            / Path(df_tmy_name)
 
         if tmy_file_path.exists() and not self.debug_mode:
             df_tmy = fi.df_from_file_or_folder(

@@ -133,17 +133,17 @@ class SimSettingsDefault:
         # all options: ['agg_func', 'datetime', 'module_form', 'position',
         #  'resolution', 'sub_study_name', 'weather']
 
-        # for the radiance sensors, zstart is where a radiance sensor vector starts
+        self.RadSensors_z_params: dict = {'zstart': 0.1,
+                                          'zinc': 0,  # not yet implemented,
+                                          'Nz': 1}  # not yet implemented
+        # NOTE for the radiance sensors, zstart is where a radiance sensor
+        # vector starts.
         # it is looking downwards with orientation 0 0 -1 and will read the
         # irradiance (?) of the surface the ray will hit first. To measure
         # something being heigher than the ground with z = 0, we need to add an
         # object with a surface (a scan_area or a plant...)
+        # but then ground albedo won't be used anyway... #TODO
 
-        self.RadSensors_z_params: dict = {'zstart': 0.1,
-                                          'zinc': 0,  # not yet implemented,
-                                          'Nz': 1}  # not yet implemented
-        # multiple z,x,y doesnt make sense anyways as object is needed
-        # to recieve the light
         self.RadSensors_to_scan_area_distance_z: float = 0.1
 
         self.north_arrow_xy_posi: tuple = (1.7, 1.4)  # x, y within heat maps

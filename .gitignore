@@ -2,6 +2,8 @@ data/
 notizen/
 sync.expect
 _test_and_stuff/
+agri_pv.egg-info/
+aiana.egg-info/
 
 
 # OS generated files #
