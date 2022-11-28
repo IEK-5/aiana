@@ -67,9 +67,9 @@ class Tester():
             # deepcopy so that the passed Obj stays unchanged
 
         if self.mode == 'create_reference':
-            self.default_settings.sim.study_sub_folderName += '/reference'
+            self.default_settings.sim.study_name += '/reference'
         elif self.mode == 'test':
-            self.default_settings.sim.study_sub_folderName += '/test'
+            self.default_settings.sim.study_name += '/test'
             # testObj-specific paths ###########
             # mean of differences abs(reference - test) of
             # time-cumulative shadowDepth are stored to:

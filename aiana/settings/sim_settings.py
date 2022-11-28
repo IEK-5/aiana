@@ -23,7 +23,7 @@ class SimSettingsDefault:
 
     def __init__(self):
 
-        self.study_sub_folderName: str = 'myStudy'  # will be used as sub
+        self.study_name: str = 'myStudy'  # will be used as sub
         # folder within the results root folder (as defined in user_paths.py)
         # for the results of the current study
         # this attribute is not placed in user_paths.py to allow for changing
@@ -169,7 +169,7 @@ class SimSettingsDefault:
 class SimSettings_ForTesting(SimSettingsDefault):
     def __init__(self):
         super().__init__()
-        self.study_sub_folderName = 'testing'
+        self.study_name = 'testing'
         self.spatial_resolution = 0.05
         self.hours = [13, 14, 15]
         self.use_typDay_perMonth_for_irradianceCalculation = False

@@ -30,7 +30,7 @@ class UserPaths:
     radiance_input_files: Path = root / 'radiance_input_files'
     # for weather data
     weatherData_folder: Path = root / 'satellite_weatherData'
-    # for plots and tables. See also utils/results_organizer.py
+    # for plots and tables.
     results_parent_folder: Path = root / 'results'
 
     # check folder existence

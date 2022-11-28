@@ -1,5 +1,6 @@
 
 from aiana.classes.util_classes.settings_handler import Settings
+from typing import Literal
 import numpy as np
 
 
@@ -49,6 +50,11 @@ class GeomBasics:
 
     ygrid: list[int]
     ground_lineScan: dict
+
+    mod: dict
+    scn: dict
+    mount: dict
+
     # frontscan: dict
     # backscan: dict
 
@@ -139,14 +145,47 @@ class GeomBasics:
         else:
             self.post_distance_x = self.mount['post_distance_x']
 
+    def _calc_scan_length(
+            self, where: Literal['x', 'y'], value: (str | int | float)
+    ) -> float:
+        if value == "module_footprint":
+            if where == 'x':
+                return self.allRows_footprint_x \
+                    + 2*self.settings.apv.groundScanAreaDict['margin_x'] \
+                    + 2*self.mount['module_to_post_distance_x']
+            elif type(value) in [int, float]:
+                self.scan_length_x = value
+        else:
+            raise Exception(
+                "The type of "
+                "settings.apv.groundScanAreaDict['length_x'] "
+                "has to be 'module_footprint' or an int or float.")
+
     def _set_scan_lengths_x_y(self):
         """ground scan dimensions (old name: x_field, y_field)"""
-        self.scan_length_x = self.allRows_footprint_x \
-            + 2*self.settings.apv.gScanAreaDict['ground_scan_margin_x'] \
-            + 2*self.mount['module_to_post_distance_x'] \
+        sl_x = self.settings.apv.groundScanAreaDict['length_x']
+        sl_y = self.settings.apv.groundScanAreaDict['length_y']
+        exception_msg = (
+            "settings.apv.groundScanAreaDict['length_x'] and"
+            "settings.apv.groundScanAreaDict['length_y'] "
+            "have to be set to 'module_footprint' or to an int or float.")
 
-        self.scan_length_y = self.allRows_footprint_y \
-            + 2*self.settings.apv.gScanAreaDict['ground_scan_margin_y']
+        if sl_x == "module_footprint":
+            self.scan_length_x = self.allRows_footprint_x
+            + 2*self.settings.apv.groundScanAreaDict['margin_x']
+            + 2*self.mount['module_to_post_distance_x']
+        elif type(sl_x) in [int, float]:
+            self.scan_length_x = sl_x
+        else:
+            raise Exception(exception_msg)
+
+        if sl_y == "module_footprint":
+            self.scan_length_y = self.allRows_footprint_y
+            + 2*self.settings.apv.groundScanAreaDict['margin_y']
+        elif type(sl_y) in [int, float]:
+            self.scan_length_y = sl_y
+        else:
+            raise Exception(exception_msg)
 
     def _set_APVSystCenter_to_origin_offsets(self):
         self.center_offset_x = 0
@@ -166,9 +205,9 @@ class GeomBasics:
 
         # south west corners of the ground scan area
         self.scan_area_anchor_x = -self.scan_length_x/2 + self.center_offset_x \
-            + self.settings.apv.gScanAreaDict['ground_scan_shift_x']
+            + self.settings.apv.groundScanAreaDict['shift_x']
         self.scan_area_anchor_y = -self.scan_length_y/2 + self.center_offset_y \
-            + self.settings.apv.gScanAreaDict['ground_scan_shift_y']
+            + self.settings.apv.groundScanAreaDict['shift_y']
 
     def _set_y_grid_and_sensors(self):
         self.ygrid: list[float] = np.arange(
@@ -177,8 +216,7 @@ class GeomBasics:
              + self.settings.sim.spatial_resolution*0.999),  # stop
             self.settings.sim.spatial_resolution)  # step
 
-        self.n_sensors_x = \
-            self.scan_length_x // self.settings.sim.spatial_resolution + 2
+        self.n_sensors_x = self.scan_length_x // self.settings.sim.spatial_resolution + 2
         # + 2 because + 1 for the one at x = 0 and another + 1 to hit the post
         # again or cover scan_length_x despite of rounding down with //
 
@@ -258,8 +296,8 @@ class GeomBasics:
                 f'| xform -t {g["xstart"]} {g["ystart"]} 0'
             )
         # does not work:
-        #text += "\n!gensurf glass ball 'sin(PI*s)*cos(2*PI*t)' 'cos(PI*s)' 'sin(PI*s)*sin(2*PI*t)' 7 10"
-        #text += "\n!genrev glass torus 'sin(2*PI*t)' '2+cos(2*PI*t)' 32"
+        # text += "\n!gensurf glass ball 'sin(PI*s)*cos(2*PI*t)' 'cos(PI*s)' 'sin(PI*s)*sin(2*PI*t)' 7 10"
+        # text += "\n!genrev glass torus 'sin(2*PI*t)' '2+cos(2*PI*t)' 32"
         return text
 
     def north_arrow(self) -> str:
@@ -319,7 +357,7 @@ class GeomBasics:
                 nRow even: y_center of the the row south to the system center
         """
 
-        post_dist_y = self.mount['inner_table_post_distance_y']
+        post_dist_y = self.mount['inner_table_post_distance_y']/2
 
         # post starts in y:
         middle_post_start_y = self.sw_modCorner_y+self.singleRow_footprint_y/2
@@ -405,7 +443,6 @@ class GeomBasics:
 
         copied from br.main.RadianceObj.makeModule() and modified
         """
-
 
         mod = self.mod
         c = self.settings.apv.cellLevelModuleParams

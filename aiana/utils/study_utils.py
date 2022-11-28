@@ -19,10 +19,49 @@ from typing import Literal
 
 import aiana.utils.files_interface as fi
 from aiana.classes.util_classes.settings_handler import Settings
-from aiana.classes.rad_txt_related.geometries_handler import GeometriesHandler
+from aiana.classes.rad_txt_related.morschenich import Morschenich
+
+# #
 
 
-def adjust_settings(
+def adjust_settings_StudyForMorschenich(settings: Settings) -> Settings:
+    # #
+    # from aiana.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morschenich
+
+    # settings=Settings()
+    # settings.apv = APV_Syst_InclinedTables_S_Morschenich()
+    morschObj = Morschenich(settings)
+    # morschObj.scan_area_anchor_y
+    # -morschObj.allRows_footprint_y/2
+
+    # morschObj.center_offset_y
+    # # #
+
+    # shift = 0 --> start = -morschObj.allRows_footprint_y/2
+
+    # mitte = - l_x/2 + -morschObj.allRows_footprint_y/2
+
+    # start soll = mitte - l_x/2 inner_table_post_distance_y + 1
+
+    # #
+    # match scan area to experimental harvest area:
+    length_x = 8*1.2
+    length_y = 3*7.32-2
+    shift_y = (morschObj.allRows_footprint_y-length_y)/2-(
+        morschObj.allRows_footprint_y-morschObj.l_y)/2-(
+            morschObj.mount['inner_table_post_distance_y']
+    )
+
+    settings.apv.groundScanAreaDict.update({
+        'length_x': length_x,  # [m]
+        'length_y': length_y,  # [m]
+        'shift_x': -length_x/2,
+        'shift_y': shift_y,  # [m] positiv: towards north
+    })
+    return settings
+
+
+def adjust_settings_StudyForPoster(
         subset: Literal['std', 'std_glass', 'std_sw',
                         'checker_board', 'cell_gaps', 'roof_for_EW'],
         settings: Settings) -> Settings:
@@ -40,11 +79,11 @@ def adjust_settings(
     settings.apv.mountingStructureDict.update({
         'n_apv_system_clones_in_x': 3,
         'n_apv_system_clones_in_negative_x': 3})
-    settings.apv.gScanAreaDict.update({
-        'ground_scan_shift_x': 0,  # forgetting this at first messed me up
-        'ground_scan_shift_y': settings.apv.sceneDict['pitch']
+    settings.apv.groundScanAreaDict.update({
+        'shift_x': 0,  # forgetting this at first messed me up
+        'shift_y': settings.apv.sceneDict['pitch']
         + settings.apv.mountingStructureDict['post_thickness_y']/2,
-        'ground_scan_margin_y': -2*settings.apv.sceneDict['pitch']
+        'margin_y': -2*settings.apv.sceneDict['pitch']
         - ghObj.singleRow_footprint_y/2,
     })
     match subset:
@@ -52,16 +91,16 @@ def adjust_settings(
             return settings
         case 'std_sw':
             settings.apv.sceneDict['azimuth'] = 225
-            settings.apv.gScanAreaDict.update({'ground_scan_shift_y': 0})
+            settings.apv.groundScanAreaDict.update({'shift_y': 0})
         case 'roof_for_EW':
             settings.apv.module_form = 'roof_for_EW'
             settings.apv.sceneDict['azimuth'] = 90
             settings.apv.sceneDict['nRows'] = 8
             # TODO x and y scale need to be swapped to be strict?
-            settings.apv.gScanAreaDict.update({
-                'ground_scan_shift_x': ghObj.scan_length_x,
-                'ground_scan_shift_y': 0,
-                'ground_scan_margin_y': -3*settings.apv.sceneDict['pitch']
+            settings.apv.groundScanAreaDict.update({
+                'shift_x': ghObj.scan_length_x,
+                'shift_y': 0,
+                'margin_y': -3*settings.apv.sceneDict['pitch']
                 - ghObj.singleRow_footprint_y/2})
             settings.apv.mountingStructureDict.update({
                 'n_apv_system_clones_in_x': 2,

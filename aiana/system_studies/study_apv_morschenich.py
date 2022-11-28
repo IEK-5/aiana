@@ -14,19 +14,29 @@
 # #
 from aiana.classes.aiana_main import AianaMain
 from aiana.classes.util_classes.settings_handler import Settings
+from aiana.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morschenich
+from aiana.utils.study_utils import adjust_settings_StudyForMorschenich
 
 if __name__ == '__main__':
     settings = Settings()
-    settings.sim.study_sub_folderName = 'test7'
-    settings.sim.spatial_resolution = 0.5
-    settings.sim.hours = list(range(3, 15))  # only morning
-    am = AianaMain(settings)
+    settings.apv = APV_Syst_InclinedTables_S_Morschenich()
 
-    am.create_and_view_octfile_for_SceneInspection()
+    settings.sim.study_name = 'APV_Morschenich_2022_IGB2'
+    settings.sim.sub_study_name = 'test_run'
+    settings.sim.spatial_resolution = 0.5
+    settings.sim.time_step_in_minutes = 15
+    settings.sim.hours = list(range(12, 13))
+    # TODO check anchor y calculation...
+    settings = adjust_settings_StudyForMorschenich(settings)
+
+    settings.apv.module_form = 'none'
+
+    am = AianaMain(settings)
+    am.create_and_view_octfile_for_SceneInspection(view_name='top_down')
 # #
 if __name__ == '__main__':
     for month in [4, 8]:
-        am.update_simTime(month=month)
+        am.update_simTime_and_resultPaths(month=month)
         am.simulate_and_evaluate(  # skip_sim_for_existing_results=True
         )
 # #

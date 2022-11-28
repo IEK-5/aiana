@@ -64,11 +64,13 @@ def run_apv_test(**kwargs):
                                                        'zgap': 1,
                                                        'numpanels': 4})
     # #
-    testerObj.test_dictItems_separately("gScanAreaDict",
-                                        {'ground_scan_margin_x': 9,
-                                            'ground_scan_margin_y': 9,
-                                            'ground_scan_shift_x': 9,
-                                            'ground_scan_shift_y': 9
+    testerObj.test_dictItems_separately("groundScanAreaDict",
+                                        {'length_x': 9,
+                                         'length_y': 9,
+                                         'margin_x': 9,
+                                         'margin_y': 9,
+                                         'shift_x': 9,
+                                         'shift_y': 9
                                          })
     # test with or without glass
     testerObj.test_inverted_bool_settings(['glass_modules'])

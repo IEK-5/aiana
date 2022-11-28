@@ -5,30 +5,39 @@ from aiana.classes.util_classes.settings_handler import Settings
 
 
 class Morschenich(GeomBasics):
+
+    l_x: float  # complete apv distance first to last post in x
+    # (equal edge to edge, not both post's outer edge)
+    l_y: float  # complete apv distance first to last post in y
+
     """uses coordinates such as apv system south west corner and
     methods such as inclined_tables from the GeomBasics class by
     inherence"""
 
     def __init__(self, settings: Settings):
         super().__init__(settings)
-
-    def morschenich_fixed(self) -> str:
-        """
-        change post_start_x and add rails
-        """
-        post_dist_y = self.mount['inner_table_post_distance_y']
         # overwrite / create for Morschenich special case:
         # mounting_lengths_x "l_x":
         self.l_x = 40  # from drawings (20*2m)
-        sp_x = self.mount['post_thickness_x']
-        self.l_y = self.scn["pitch"]*(self.scn["nRows"]-1)+post_dist_y*2
-        self.post_start_x = (-self.l_x+sp_x)/2+self.center_offset_x
+        self.sp_x = self.mount['post_thickness_x']
+        self.l_y = self.scn["pitch"]*(self.scn["nRows"]-1)\
+            + self.mount['inner_table_post_distance_y']
+        self.post_start_x = (-self.l_x+self.sp_x)/2+self.center_offset_x
+
+    def morschenich_fixed(self) -> str:
+        """
+        starts with inclined tables, which creates all posts
+        except the middle posts at the side. Later other structur elements
+        are added with helper methods (starting with an underscore).
+        """
 
         text = self.inclined_tables()
 
         # add rails and outer frame
         hh = 2.5
         middle_post_start_y = self.sw_modCorner_y+self.singleRow_footprint_y/2
+
+        post_dist_y = self.mount['inner_table_post_distance_y']
         text += self._rails_between_modules(middle_post_start_y+post_dist_y, hh)\
             + self._outer_frame(middle_post_start_y-post_dist_y, hh)
 

@@ -78,7 +78,7 @@ class Paths(UserPaths):
 
         # file paths for saving results
         self.results_folder: Path = self.results_parent_folder \
-            / SimSettings.study_sub_folderName
+            / SimSettings.study_name
         self.results_data_folder: Path = self.results_folder \
             / f'{names.studyName_modForm_yearMonthDay}_data'
 

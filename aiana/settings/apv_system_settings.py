@@ -75,7 +75,9 @@ import pandas as pd
                 if 'post_distance_x' is set to "auto")
             'post_distance_x': float, or "auto" for symmetric adaption
             'inner_table_post_distance_y': only used, if mountingStructureType
-                == 'inclined_tables'
+                == 'inclined_tables'.
+                It is the post distance_y, below the modules within one row
+                (including 1x post thickness, as used for array shift).
             'n_apv_system_clones_in_x': number of apv system clones in x-
                 direction (for azimuth = 180: cloned towards east). This allows
                 to have a larger gap between the modules only every x modules
@@ -100,6 +102,8 @@ class APV_SettingsDefault:
 
         self.moduleDict = {'x': 0.998,
                            'y': 1.980,
+                           # this aspect ratio is important to know in which
+                           # direction x and y goes for all other quantities
                            'xgap': 0.05,
                            'ygap': 0.05,
                            'zgap': 0,  # no effect, not yet implemented
@@ -128,7 +132,7 @@ class APV_SettingsDefault:
             'n_post_x': 2,
             'module_to_post_distance_x': 0.5,
             'post_distance_x': "auto",
-            'inner_table_post_distance_y': 1.35,
+            'inner_table_post_distance_y': 2.6,
             'n_apv_system_clones_in_x': 0,
             'n_apv_system_clones_in_negative_x': 0,
         }
@@ -153,19 +157,28 @@ class APV_SettingsDefault:
         self.framed_modules: bool = False
 
         # ### ground scan area settings
-        self.gScanAreaDict: dict = {
-            'ground_scan_margin_x': 0,  # [m]
-            'ground_scan_margin_y': 0,  # [m]
-            'ground_scan_shift_x': 0,  # [m] positiv: towards east
-            'ground_scan_shift_y': 0,  # [m] positiv: towards north
-        }  # NOTE the gScan area is placed below the foot print of the modules,
-        # so that the modules of the main APV_system (not clones)
-        # projected to ground (foot print) are just inside of the scan area.
-        # To be precice, the scan starts at the south-west corner of the foot-
+        self.groundScanAreaDict: dict = {
+            'length_x': "module_footprint",  # [m]
+            'length_y': "module_footprint",  # [m]
+            'margin_x': 0,  # [m]
+            'margin_y': 0,  # [m]
+            'shift_x': 0,  # [m] positiv: towards east
+            'shift_y': 0,  # [m] positiv: towards north
+        }  # NOTE If scan length x/y are set to "module_footprint",
+        # the gScan area is placed below the foot print of the modules,
+        # so that the modules of the main APV_system (not clones) projected
+        # to ground (foot print) are just inside of the scan area. To be
+        # precise, the scan area starts at the south-west corner of the foot-
         # print and is extended byond the north-east corner to get an integer
         # count of sensor points with respect to the spatial_resolution.
-        # One-sided margins [m] can be added to enlarge the field
-        # (or to reduce by negative values).
+        # You man also enter a float number in [m] to specify the lengths x/y.
+
+        # shift x/y = 0 means the center of the scan area will be in the center
+        # of the apv system, regardless of an even or uneven module count.
+        # margins x/y can be added to enlarge (or to reduce by negative
+        # values) the scan area symmetrically from both sides.
+        # Many geometric quantities, such as e.g. allRows_footprint_x are
+        # stored as attributes in the GeometriesHandler(settings) class.
 
         # ### less important or not in use
         self.module_name = 'SUNFARMING'  # we use only this module type atm
@@ -213,8 +226,7 @@ class APV_Syst_InclinedTables_S_Morschenich(APV_SettingsDefault):
             'post_thickness_y': 0.12,
             'n_post_x': 11,
             'post_distance_x': 4,
-            'inner_table_post_distance_y': 1.35,
-            # at outer frame for 3 posts: (2.82-0.12)/2 = 1.35
+            'inner_table_post_distance_y': 2.693,
         })
 
 

@@ -31,6 +31,9 @@ class SimDT:
         year: int = ..., month: int = ..., day: int = ...,
         hour: int = ..., minute: int = ..., as in dt.replace()
         """
+        for key in kwargs:
+            if key in ['day', 'month', 'year']:
+                self.SimSettings.__setattr__(key, kwargs[key])
         self.sim_dt_naiv = self.sim_dt_naiv.replace(**kwargs)
         self._set_dt_attributes()
 
@@ -90,9 +93,9 @@ class SimDT:
 
     def _set_dt_to_utc(self, sim_dt_tz_naiv: datetime) -> datetime:
         pytz_tz = pytz.timezone(self.SimSettings.apv_location.tz)
-        sim_dt_local: datetime = pytz_tz.localize(sim_dt_tz_naiv)
+        self.sim_dt_local: datetime = pytz_tz.localize(sim_dt_tz_naiv)
 
-        sim_dt_utc = sim_dt_local.astimezone(pytz.utc)
+        sim_dt_utc = self.sim_dt_local.astimezone(pytz.utc)
         return sim_dt_utc
 
     def _substract_time_step_in_minutes_divided_by_X(

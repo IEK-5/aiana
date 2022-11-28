@@ -67,8 +67,9 @@ class AianaMain():
             self.settings, self.weatherData, self.ghObj,
             # self.debug_mode=True
         )
-        self.update_simTime()
-        self._init_simulator_evaluator_and_plotter()
+        self.update_simTime_and_resultPaths()
+        self._init_simulator_evaluator()
+        self.plotterObj = Plotter(self.settings, self.ghObj)
 
     def create_and_view_octfile_for_SceneInspection(
             self, add_groundScanArea: bool = True,
@@ -101,12 +102,12 @@ class AianaMain():
             add_groundScanArea=add_groundScanArea,
             add_sensor_vis=add_sensor_vis, add_NorthArrow=add_NorthArrow)
 
-        self.update_simTime(hour=self.settings.sim.hour_for_sceneInspection)
+        self.update_simTime_and_resultPaths(hour=self.settings.sim.hour_for_sceneInspection)
         self._update_sky()
         view_type = 'parallel' if view_name == 'top_down' else 'perspective'
         self.octFileObj.view_octfile(view_name=view_name, view_type=view_type)
 
-    def update_simTime(self, **kwargs):
+    def update_simTime_and_resultPaths(self, **kwargs):
         """
         # updates time settings, pathes, labels, weatherData...
 
@@ -123,7 +124,8 @@ class AianaMain():
         # Creating octfile without scanArea or North_arrow as objects as these
         # would falsify the simulation results, since e.g. the edge of the
         # scanArea object would result in darker lines in the edge of the
-        # irradiation heatmaps. Sky is added later to save cpu time.
+        # irradiation heatmaps. Sky is added later for each hour and minute
+        # to save cpu time.
         self.octFileObj.create_octfile_without_sky()
 
         for loop_to in ["sim", "plot"]:  # for equal colbar all results needed
@@ -138,7 +140,7 @@ class AianaMain():
 
             for hour in self.settings.sim.hours:
                 for minute in range(0, 60, self.settings.sim.time_step_in_minutes):
-                    self.update_simTime(hour=hour, minute=minute)
+                    self.update_simTime_and_resultPaths(hour=hour, minute=minute)
                     # Sun alitude and GHI FILTER ==============================
                     if (self.weatherData.sunalt < 0):
                         print(f'Sun alitude < 0 ({self.weatherData.sunalt}).')
@@ -155,13 +157,16 @@ class AianaMain():
                                 res_path
                             )
                             if 'Wm2' not in df_check.columns:
+                                self.evaluatorObj = Evaluator(
+                                    self.settings, self.weatherData)
                                 self.evaluatorObj.evaluate_csv()
                         else:
                             self._update_sky()
-                            self._init_simulator_evaluator_and_plotter()
+                            self._init_simulator_evaluator()
                             self.simulatorObj.run_raytracing_simulation()
                             self.evaluatorObj.evaluate_csv()
                     elif loop_to == "plot":
+                        self.plotterObj = Plotter(self.settings, self.ghObj)
                         self.plotterObj.ground_heatmap(
                             df_col_limits=df_limits)
         # cumulate
@@ -170,14 +175,13 @@ class AianaMain():
 
     # helpers =============================================================
 
-    def _init_simulator_evaluator_and_plotter(self):
+    def _init_simulator_evaluator(self):
         """put into a method to allow for calling it again
         after updating the time from outside, which affects
         self.settings.names and .paths
         """
         self.simulatorObj = Simulator(self.settings, self.ghObj)
         self.evaluatorObj = Evaluator(self.settings, self.weatherData)
-        self.plotterObj = Plotter(self.settings, self.ghObj)
 
     def _update_sky(self):
         """refresh names, paths, sim settings, sky dome, and other objects
