@@ -12,9 +12,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>."""
 import os
 import pandas as pd
-from aiana.utils import files_interface as fi
-
 from typing import Literal
+import pytictoc
+
+from aiana.utils import files_interface as fi
 from aiana.classes.util_classes.settings_handler import Settings
 from aiana.classes.rad_txt_related.geometries_handler import GeometriesHandler
 from aiana.classes.weather_data import WeatherData
@@ -126,7 +127,10 @@ class AianaMain():
         # scanArea object would result in darker lines in the edge of the
         # irradiation heatmaps. Sky is added later for each hour and minute
         # to save cpu time.
+        tictoc = pytictoc.TicToc()
+        tictoc.tic()
         self.octFileObj.create_octfile_without_sky()
+        tictoc.toc(msg='Creating octfile without sky needed')
 
         for loop_to in ["sim", "plot"]:  # for equal colbar all results needed
             if loop_to == "plot" and \
@@ -161,10 +165,22 @@ class AianaMain():
                                     self.settings, self.weatherData)
                                 self.evaluatorObj.evaluate_csv()
                         else:
+                            print('\n##### Starting',
+                                  self.settings.sim.sub_study_name,
+                                  self.settings._names.dateTimeForFileNames,
+                                  '#####')
+                            tictoc.tic()
                             self._update_sky()
-                            self._init_simulator_evaluator()
+                            tictoc.toc(msg='_update_sky() took')
+
+                            self._init_simulator_evaluator()  # 0.000115 sec
+                            tictoc.tic()
                             self.simulatorObj.run_raytracing_simulation()
-                            self.evaluatorObj.evaluate_csv()
+                            tictoc.toc(msg='run_raytracing_simulation() took')
+                            tictoc.tic()
+                            self.evaluatorObj.evaluate_csv()  # 0.478284 sec
+                            tictoc.toc()
+
                     elif loop_to == "plot":
                         self.plotterObj = Plotter(self.settings, self.ghObj)
                         self.plotterObj.ground_heatmap(
@@ -188,11 +204,11 @@ class AianaMain():
         allowing that APV geometry does not have to be build again,
         if no tracking is involved.
 
-        updating sky only instead of rebuilding geometry as well
+        Updating sky only, instead of rebuilding geometry as well,
         reduced large scene creation from 40 to 20 seconds.
         """
-
-        self.octFileObj = OctFileHandler(
-            self.settings, self.weatherData, self.ghObj
-        )
+        self.octFileObj.settings = self.settings
+        self.octFileObj.weatherData = self.weatherData
+        # self.octFileObj.ghObj = self.ghObj # needed later for tracking
+        # then it should be renamed to _update_sky_and_geometry...
         self.octFileObj.add_sky_to_octfile()

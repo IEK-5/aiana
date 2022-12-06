@@ -63,6 +63,8 @@ class SimDT:
             self._substract_time_step_in_minutes_divided_by_X(
                 pd.to_datetime(self.sim_dt_naiv), X=1).strftime('%H:%M')
 
+        self.week = self.sim_dt_utc.isocalendar().week
+
     def _get_str_format(self, dtObj: datetime) -> str:
         sim_dt_str: str = dtObj.strftime('-%m-%d %H:%M')
         if self.SimSettings.year == 'TMY':

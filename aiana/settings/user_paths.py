@@ -13,10 +13,12 @@
 
 """Paths for working folder, radiance folder
 """
+
+
+
+
 from pathlib import Path
 from aiana.utils import files_interface as fi
-
-
 class UserPaths:
     """more sub pathes can be overwritten later by accessing Simulation.paths
     as defined in classes/util_classes/settings_handler.py
@@ -31,7 +33,8 @@ class UserPaths:
     # for weather data
     weatherData_folder: Path = root / 'satellite_weatherData'
     # for plots and tables.
-    results_parent_folder: Path = root / 'results'
+    #results_parent_folder: Path = root / 'results'
+    results_parent_folder = Path('D:/aiana_simulation_results')
 
     # check folder existence
     fi.make_dirs_if_not_there(

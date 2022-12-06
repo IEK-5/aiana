@@ -16,6 +16,7 @@ from frads import util
 import subprocess as sp
 from typing import Literal
 from pathlib import Path
+from aiana.classes.util_classes.print_hider import PrintHider
 
 import bifacial_radiance as br
 from aiana.utils import radiance_utils
@@ -24,6 +25,9 @@ from aiana.classes.util_classes.settings_handler import Settings
 from aiana.classes.rad_txt_related.geometries_handler import GeometriesHandler
 # for testing
 from aiana.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morschenich
+
+import logging
+logger = logging.getLogger("aiana.OctFileHandler")
 
 
 class OctFileHandler:
@@ -54,10 +58,11 @@ class OctFileHandler:
         self.radianceObj = br.RadianceObj(
             path=str(self.settings._paths.radiance_input_files)
         )
-        self._create_materials()
         self.radianceObj.setGround(self.settings.sim.ground_albedo)
         # ground only needed for sky, but needs to be set only once
-        # for all timesteps, so it is done here
+        # for all timesteps as we dont use dynamic albedo yet,
+        # so it is done here but can become a TODO later
+        self._create_materials()
 
     def create_octfile_without_sky(self, **kwargs):
         """creates pv modules and mounting structure (optional)
@@ -99,26 +104,38 @@ class OctFileHandler:
             + self.radianceObj.materialfiles \
             + self.radianceObj.radfiles
 
-        oconv_result = self._call_cmd_serveral_times_and_return_result(cmd)
+        oconv_result = self._call_cmd_and_return_result(cmd)
         with open(self.settings._paths.oct_fp_noSky, 'wb') as w:
             # mode 'w+b' opens and truncates the file to 0 bytes
             w.write(oconv_result)
             w.close()
 
-    def _call_cmd_serveral_times_and_return_result(
+    def _call_cmd_and_return_result(
             self, cmd, count=3) -> bytes:
-        """because sometimes oconv starts too early,
-        when sub rad files are not yet closed"""
-        result = util.spcheckout(cmd)
-        counter = 0
-        while result is None:
-            time.sleep(0.5)
-            print(f'trying to build oct file again...#{counter}. time\n')
-            result = util.spcheckout(cmd)
-            counter += 1
-            if counter == count:
-                Exception(f'Oconv failed {count} times, check rad file syntax')
-        return result
+        """trying optionally several times as rarely xform fails,
+        maybe because sub rad files are not yet closed although they should be
+        """
+        logger.debug(cmd)
+
+        for i in range(count):
+            proc = sp.run(cmd, input=None, stderr=sp.PIPE, stdout=sp.PIPE)
+            if proc.stderr != b'':  # b for conversion to a sequence of octets
+                # (integers between 0 and 255)
+                if b'xform' in proc.stderr:
+                    logger.warning(proc.stderr)
+                    print(f'trying to build oct file again... {i+2}. time\n')
+                    time.sleep(0.5)
+                elif b'gendaylit' in proc.stderr:
+                    return proc.stdout
+                    # TODO gendaylit warning about actual radiance seems
+                    # not to affect the results, but where does it come from?
+                else:
+                    logger.warning(proc.stderr)
+
+            else:
+                return proc.stdout
+        Exception(
+            'Oconv failed several times, maybe the rad file syntax is wrong?')
 
     def add_sky_to_octfile(self):
         # sky file name and sky creation
@@ -127,7 +144,7 @@ class OctFileHandler:
         # NOTE the '-i' option is needed to add something to an existing oct
         cmd = ['oconv', '-i', self.settings._paths.oct_fp_noSky, sky_fp]
 
-        oconv_result = self._call_cmd_serveral_times_and_return_result(cmd)
+        oconv_result = self._call_cmd_and_return_result(cmd)
         with open(self.settings._paths.oct_fp, 'wb') as w:
             w.write(oconv_result)
             w.close()
@@ -232,6 +249,13 @@ class OctFileHandler:
             rad_mat_file,
             mat_name='black', mat_type='plastic',
             R=0, G=0, B=0.001)  # bifacial_radiance overwrite for a bit pv blue
+
+        radiance_utils.makeCustomMaterial(
+            rad_mat_file,
+            mat_name='as_ground', mat_type='plastic',
+            R=self.radianceObj.ground.Rrefl[0],
+            G=self.radianceObj.ground.Grefl[0],
+            B=self.radianceObj.ground.Brefl[0])
 
         radiance_utils.makeCustomMaterial(
             rad_mat_file,

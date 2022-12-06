@@ -1,7 +1,7 @@
 
 from aiana.classes.util_classes.settings_handler import Settings
-from typing import Literal
 import numpy as np
+import numbers
 
 
 class GeomBasics:
@@ -26,11 +26,9 @@ class GeomBasics:
     singleRow_length_x: float
     singleRow_length_y: float
     # footprint dimensions = dimensions of a vertical projection to ground
-    singleRow_footprint_x: float
-    singleRow_footprint_y: float
-
-    allRows_footprint_x: float
-    allRows_footprint_y: float
+    module_footprint_length_x: float  # same as singleRow_length_x, as no x-tilt yet
+    singleRow_footprint_y: float  # taking into account tilt
+    allRows_footprint_length_y: float  # taking into account pitch
 
     scan_length_x: int  # lengths of the groundscan area in x direction
     scan_length_y: int
@@ -39,10 +37,17 @@ class GeomBasics:
     center_offset_x: float
     center_offset_y: float
 
-    # south west corners of all modules used later
-    # as mounting structure anchor/"array start":
-    scan_area_anchor_x: float
-    scan_area_anchor_y: float
+    # x-y bottom left (south west for azimuth=180°) corners of all module's
+    # foot print, used later as mounting structure anchor/"array start":
+    modFootPrint_start_x: float
+    modFootPrint_start_y: float
+    # x-y bottom left (south west for azimuth=180°) anchors of scan area:
+    scan_area_start_x: float
+    scan_area_start_y: float
+
+    post_start_y: float  # only set for framed_single_axes and related
+    lower_post_start_y: float  # only set inclined_tables and related
+    higher_post_start_y: float  # only set inclined-tables and related
 
     clone_distance_x: float
     post_start_x: float
@@ -73,182 +78,18 @@ class GeomBasics:
         self._add_cell_sizes()
         self._print_packingFactor()
         self._set_singleRow_lengths_and_footprints()
-        self._set_scan_lengths_x_y()  # TODO rename to GroundScanLength_x_y ?
+        self._set_scan_lengths_x_y()
         self._set_APVSystCenter_to_origin_offsets()
-        self._set_x_y_coordinates_of_modCorner_and_scanArea_anchors()
+        self._set_mod_footprint_start_xy()
+        self._set_post_start_y()
+        self._set_scan_area_start_xy()
         self._set_y_grid_and_sensors()
         self._set_groundscan_dicts()
-        self._set_post_x_pos_respecting_cloning()
-
-    def _add_cell_sizes(self):
-        """adds cell sizes to the self.settings.apv.cellLevelModuleParams
-        dictionary"""
-        def calc_cSize(
-                mod_size: float, num_cell: int, cell_gap: float) -> float:
-            # formula derivation:
-            # x = numcellsx * xcell + (numcellsx-1) * xcellgap
-            # xcell = (x - (numcellsx-1)*xcellgap) / numcellsx
-            cell_size = (mod_size - (num_cell-1)*cell_gap) / num_cell
-            return cell_size
-
-        c = self.settings.apv.cellLevelModuleParams
-        c['xcell'] = calc_cSize(self.mod['x'], c['numcellsx'], c['xcellgap'])
-        c['ycell'] = calc_cSize(self.mod['y'], c['numcellsy'], c['ycellgap'])
-
-    def _print_packingFactor(self):
-        c = self.settings.apv.cellLevelModuleParams
-        mod_form = self.settings.apv.module_form
-        if mod_form in ['cell_gaps', 'checker_board']:
-            if mod_form == 'checker_board':
-                factor = 2
-            else:
-                factor = 1
-            packingfactor = np.round(
-                c['xcell']*c['ycell']*c['numcellsx']*c['numcellsy']/(
-                    factor*self.mod['x']*self.mod['y']), 2
-            )
-            print("This is a celllevel-detailed module with a packaging "
-                  + f"factor of {packingfactor}.")
-
-    def _set_singleRow_lengths_and_footprints(self):
-        self.singleRow_length_x = self.mod['x']*self.scn['nMods'] \
-            + self.mod['xgap']*(self.scn['nMods']-1)
-
-        self.singleRow_length_y = self.mod['y']*self.mod['numpanels'] \
-            + self.mod['ygap']*(self.mod['numpanels']-1)
-
-        # footprints
-        self.singleRow_footprint_x = self.singleRow_length_x  # no x-tilt yet
-        self.singleRow_footprint_y = self.singleRow_length_y*np.cos(
-            self.scn['tilt']*np.pi/180)
-
-        # for now no array translation in x #TODO add clones here
-        self.allRows_footprint_x = self.singleRow_footprint_x
-
-        # pitch is from row center to row center. Therefore on each side
-        # only half of the singleRow_footprint needs to be added
-        self.allRows_footprint_y = (
-            self.singleRow_footprint_y+self.scn['pitch']*(self.scn['nRows']-1)
-        )
-
-    def _set_post_x_pos_respecting_cloning(self):
-        modToPostDist_x = self.mount['module_to_post_distance_x']
-        # array cloning distance in x (in y called 'pitch' by BR)
-        self.clone_distance_x = self.singleRow_footprint_x + 2*modToPostDist_x
-        # post start and distance used for building mounting structure
-        self.post_start_x = self.sw_modCorner_x - modToPostDist_x \
+        # post start used for building mounting structure:
+        self.post_start_x = self.modFootPrint_start_x \
+            - self.mount['module_to_post_distance_x'] \
             - self.mount['post_thickness_y']/2
-
-        if self.mount['post_distance_x'] == "auto":
-            self.post_distance_x = self.clone_distance_x/(
-                self.mount['n_post_x']-1)
-        else:
-            self.post_distance_x = self.mount['post_distance_x']
-
-    def _calc_scan_length(
-            self, where: Literal['x', 'y'], value: (str | int | float)
-    ) -> float:
-        if value == "module_footprint":
-            if where == 'x':
-                return self.allRows_footprint_x \
-                    + 2*self.settings.apv.groundScanAreaDict['margin_x'] \
-                    + 2*self.mount['module_to_post_distance_x']
-            elif type(value) in [int, float]:
-                self.scan_length_x = value
-        else:
-            raise Exception(
-                "The type of "
-                "settings.apv.groundScanAreaDict['length_x'] "
-                "has to be 'module_footprint' or an int or float.")
-
-    def _set_scan_lengths_x_y(self):
-        """ground scan dimensions (old name: x_field, y_field)"""
-        sl_x = self.settings.apv.groundScanAreaDict['length_x']
-        sl_y = self.settings.apv.groundScanAreaDict['length_y']
-        exception_msg = (
-            "settings.apv.groundScanAreaDict['length_x'] and"
-            "settings.apv.groundScanAreaDict['length_y'] "
-            "have to be set to 'module_footprint' or to an int or float.")
-
-        if sl_x == "module_footprint":
-            self.scan_length_x = self.allRows_footprint_x
-            + 2*self.settings.apv.groundScanAreaDict['margin_x']
-            + 2*self.mount['module_to_post_distance_x']
-        elif type(sl_x) in [int, float]:
-            self.scan_length_x = sl_x
-        else:
-            raise Exception(exception_msg)
-
-        if sl_y == "module_footprint":
-            self.scan_length_y = self.allRows_footprint_y
-            + 2*self.settings.apv.groundScanAreaDict['margin_y']
-        elif type(sl_y) in [int, float]:
-            self.scan_length_y = sl_y
-        else:
-            raise Exception(exception_msg)
-
-    def _set_APVSystCenter_to_origin_offsets(self):
-        self.center_offset_x = 0
-        self.center_offset_y = 0
-
-        if self.scn['nMods'] % 2 == 0:  # even
-            self.center_offset_x = (self.mod['x']+self.mod['xgap'])/2
-        if self.scn['nRows'] % 2 == 0:  # even
-            self.center_offset_y = self.scn['pitch']/2
-
-    def _set_x_y_coordinates_of_modCorner_and_scanArea_anchors(self):
-        # south west corners before rotation
-        self.sw_modCorner_x = (
-            -self.allRows_footprint_x/2 + self.center_offset_x)
-        self.sw_modCorner_y = (
-            -self.allRows_footprint_y/2 + self.center_offset_y)
-
-        # south west corners of the ground scan area
-        self.scan_area_anchor_x = -self.scan_length_x/2 + self.center_offset_x \
-            + self.settings.apv.groundScanAreaDict['shift_x']
-        self.scan_area_anchor_y = -self.scan_length_y/2 + self.center_offset_y \
-            + self.settings.apv.groundScanAreaDict['shift_y']
-
-    def _set_y_grid_and_sensors(self):
-        self.ygrid: list[float] = np.arange(
-            self.scan_area_anchor_y,  # start
-            (self.scan_area_anchor_y + self.scan_length_y
-             + self.settings.sim.spatial_resolution*0.999),  # stop
-            self.settings.sim.spatial_resolution)  # step
-
-        self.n_sensors_x = self.scan_length_x // self.settings.sim.spatial_resolution + 2
-        # + 2 because + 1 for the one at x = 0 and another + 1 to hit the post
-        # again or cover scan_length_x despite of rounding down with //
-
-    def _set_groundscan_dicts(self):
-        """
-        groundscan (dict): dictionary containing the XYZ-start and
-        -increments values for a bifacial_radiance linescan.
-        It describes where the virtual ray tracing sensors are placed.
-        The origin (x=0, y=0) of the PV facility is in its center.
-        """
-
-        xy_inc = self.settings.sim.spatial_resolution
-        self.ground_lineScan = {
-            'xstart':  self.scan_area_anchor_x,  # bottom left for azimuth 180
-            'ystart': self.scan_area_anchor_y,
-            # ystart will be set by looping ygrid for multiprocessing
-            # 'zstart': 0.001,  # z shifted to sim settings scan_z_params
-            'xinc': xy_inc, 'yinc': 0,  # 'zinc': 0,
-            # 'sx_xinc': 0, 'sx_yinc': 0, 'sx_zinc': 0,
-            'Nx': self.n_sensors_x, 'Ny': 1,  # 'Nz': 1,
-            'orient': '0 0 -1'  # -1 to look downwards to the ground
-            # NOTE radiance will return irradiation (?) on the surface beeing
-            # hit by the vectors (rays) defined in linepts --> surface properties influence?
-        }
-        self.ground_lineScan.update(self.settings.sim.RadSensors_z_params)
-
-        self.ground_areaScan = self.ground_lineScan.copy()
-        self.ground_areaScan['yinc'] = xy_inc
-        self.ground_areaScan['Ny'] = len(self.ygrid)
-
-        print(f'\n=== sensor grid: x: {self.n_sensors_x}, y: {len(self.ygrid)}, '
-              f'total: {self.n_sensors_x * len(self.ygrid)} ===')
+        self._set_post_distance_x_respecting_cloning()
 
     # =========================================================================
     # =============================== RAD TEXTS: ==============================
@@ -256,16 +97,14 @@ class GeomBasics:
 
     def groundscan_area(self) -> str:
         g = self.ground_areaScan
-        m = self.settings.sim.spatial_resolution  # margin, otherwise
-        # the edge will falsify the results
-        l_x = self.scan_length_x+3/2*m
-        l_y = self.scan_length_y+3/2*m
+        l_x = self.scan_length_x
+        l_y = self.scan_length_y
         l_z = 0.0001  # thickness
         z_shift = g["zstart"] -\
             self.settings.sim.RadSensors_to_scan_area_distance_z
         text = (
             f'!genbox grass field {l_x} {l_y} {l_z} '
-            f'| xform -t {g["xstart"]-m/2} {g["ystart"]-m/2} {z_shift}'
+            f'| xform -t {g["xstart"]} {g["ystart"]} {z_shift}'
         )
         return text
 
@@ -307,6 +146,11 @@ class GeomBasics:
         )
         return text
 
+    def custom_txt(self) -> str:
+        """to not have to break the customObjects-dictionary calling structure
+        """
+        return self.settings.apv.custom_object_rad_txt
+
     def framed_single_axes_mount(self) -> str:
         """Creates Aluminum posts and mounting structure
         for azimuth = 0,
@@ -320,30 +164,29 @@ class GeomBasics:
         beamlength_x = self.post_distance_x
 
         if self.settings.apv.enlarge_beams_for_periodic_shadows:
-            beamlength_x = self.allRows_footprint_x * 1.2
+            beamlength_x = self.module_footprint_length_x * 1.2
             # to get periodic shadows in summer sunrise and set
             beamlength_y = self.scn['pitch']*(self.scn['nRows']-0.4)
         else:
             beamlength_y = self.scn['pitch']*(self.scn['nRows']-1)
 
-        y_start = self.sw_modCorner_y + self.singleRow_footprint_y/2
         h_post = self.scn["hub_height"] + 0.2
 
         # create posts
-        text = self._post_array(h_post, y_start)
+        text = self._post_array(h_post, self.post_start_y)
 
         # create horizontal beams in y direction
         if self.scn['nRows'] > 1:
             text += (
                 f'\n!genbox {material} post {s_beam} {beamlength_y} {s_beam} \
-                | xform -t {self.post_start_x} {y_start} {h_post-s_beam-0.4} \
+                | xform -t {self.post_start_x} {self.post_start_y} {h_post-s_beam-0.4} \
                 -a {self.mount["n_post_x"]} -t {self.post_distance_x} \
                 0 0 -a 2 -t 0 0 {-d_beam} '
             )
         # create horizontal beams in x direction
         text += (
             f'\n!genbox {material} post {beamlength_x} {s_beam} {s_beam} \
-            | xform -t {self.post_start_x} {y_start} {h_post - s_beam - 0.25} \
+            | xform -t {self.post_start_x} {self.post_start_y} {h_post - s_beam - 0.25} \
             -a {self.scn["nRows"]} -t 0 {self.scn["pitch"]} 0 \
             -a 2 -t 0 0 {-d_beam} '
         )
@@ -357,24 +200,18 @@ class GeomBasics:
                 nRow even: y_center of the the row south to the system center
         """
 
-        post_dist_y = self.mount['inner_table_post_distance_y']/2
-
-        # post starts in y:
-        middle_post_start_y = self.sw_modCorner_y+self.singleRow_footprint_y/2
-        lower_post_start_y = middle_post_start_y-post_dist_y
-        higher_post_start_y = middle_post_start_y+post_dist_y
-
-        height_shift = post_dist_y*np.tan(self.scn['tilt']*np.pi/180)
+        height_shift = self.mount['inner_table_post_distance_y']/2*np.tan(
+            self.scn['tilt']*np.pi/180)
 
         # create lower posts
         text = self._post_array(
             self.scn["hub_height"] - height_shift,  # lower post height
-            lower_post_start_y)
+            self.lower_post_start_y)
 
         # create add higher posts
         text += '\n'+self._post_array(
             self.scn["hub_height"] + height_shift,  # higher post height
-            higher_post_start_y)
+            self.higher_post_start_y)
 
         """
         if self.settings.apv.add_glass_box:
@@ -484,3 +321,197 @@ class GeomBasics:
         text += '-a {} -t 0 {} 0'.format(mod['numpanels'], y+mod['ygap'])
 
         return text
+
+    # #########################################################################
+
+    def _add_cell_sizes(self):
+        """adds cell sizes to the self.settings.apv.cellLevelModuleParams
+        dictionary"""
+        def calc_cSize(
+                mod_size: float, num_cell: int, cell_gap: float) -> float:
+            # formula derivation:
+            # x = numcellsx * xcell + (numcellsx-1) * xcellgap
+            # xcell = (x - (numcellsx-1)*xcellgap) / numcellsx
+            cell_size = (mod_size - (num_cell-1)*cell_gap) / num_cell
+            return cell_size
+
+        c = self.settings.apv.cellLevelModuleParams
+        c['xcell'] = calc_cSize(self.mod['x'], c['numcellsx'], c['xcellgap'])
+        c['ycell'] = calc_cSize(self.mod['y'], c['numcellsy'], c['ycellgap'])
+
+    def _print_packingFactor(self):
+        c = self.settings.apv.cellLevelModuleParams
+        mod_form = self.settings.apv.module_form
+        if mod_form in ['cell_gaps', 'checker_board']:
+            if mod_form == 'checker_board':
+                factor = 2
+            else:
+                factor = 1
+            packingfactor = np.round(
+                c['xcell']*c['ycell']*c['numcellsx']*c['numcellsy']/(
+                    factor*self.mod['x']*self.mod['y']), 2
+            )
+            print("This is a celllevel-detailed module with a packaging "
+                  + f"factor of {packingfactor}.")
+
+    def _set_singleRow_lengths_and_footprints(self):
+        self.singleRow_length_x = self.mod['x']*self.scn['nMods'] \
+            + self.mod['xgap']*(self.scn['nMods']-1)
+
+        self.singleRow_length_y = self.mod['y']*self.mod['numpanels'] \
+            + self.mod['ygap']*(self.mod['numpanels']-1)
+
+        # footprints
+        self.module_footprint_length_x = self.singleRow_length_x  # no x-tilt yet
+        self.singleRow_footprint_y = self.singleRow_length_y*np.cos(
+            self.scn['tilt']*np.pi/180)
+
+        # pitch is from row center to row center. Therefore on each side
+        # only half of the singleRow_footprint needs to be added
+        self.allRows_footprint_length_y = (
+            self.singleRow_footprint_y+self.scn['pitch']*(self.scn['nRows']-1)
+        )
+
+    def _set_post_distance_x_respecting_cloning(self):
+        modToPostDist_x = self.mount['module_to_post_distance_x']
+        # array cloning distance in x (in y called 'pitch' by BR)
+        self.clone_distance_x = self.module_footprint_length_x + 2*modToPostDist_x
+        # post start and distance used for building mounting structure
+
+        if self.mount['post_distance_x'] == "auto":
+            self.post_distance_x = self.clone_distance_x/(
+                self.mount['n_post_x']-1)
+        else:
+            self.post_distance_x = self.mount['post_distance_x']
+
+    def _set_scan_lengths_x_y(self):
+        """ground scan dimensions (old name: x_field, y_field)"""
+        sl_x = self.settings.apv.groundScanAreaDict['length_x']
+        sl_y = self.settings.apv.groundScanAreaDict['length_y']
+
+        if sl_x == "module_footprint":
+            self.scan_length_x = self.module_footprint_length_x
+            + 2*self.settings.apv.groundScanAreaDict['margin_x']
+            + 2*self.mount['module_to_post_distance_x']
+        elif isinstance(sl_x, numbers.Number):
+            self.scan_length_x = sl_x
+        else:
+            raise Exception(self._exception_msg('length_x', sl_x))
+
+        if sl_y == "module_footprint":
+            self.scan_length_y = self.allRows_footprint_length_y
+            + 2*self.settings.apv.groundScanAreaDict['margin_y']
+        elif isinstance(sl_y, numbers.Number):
+            self.scan_length_y = sl_y
+        else:
+            raise Exception(self._exception_msg('length_y', sl_y))
+
+    def _exception_msg(self, key, value) -> str:
+        return (
+            f"settings.apv.groundScanAreaDict['{key}'] "
+            "has to be set to 'module_footprint' or to an int or float, "
+            f"however it's type is {type(value)}.")
+
+    def _set_mod_footprint_start_xy(self):
+        self.modFootPrint_start_x = (
+            -self.module_footprint_length_x/2 + self.center_offset_x)
+        self.modFootPrint_start_y = (
+            -self.allRows_footprint_length_y/2 + self.center_offset_y)
+
+    def _set_post_start_y(self):
+        if self.settings.apv.mountingStructureType in [
+                'framed_single_axes', 'framed_single_axes_ridgeRoofMods']:
+            self.post_start_y = self.modFootPrint_start_y + self.singleRow_footprint_y/2
+            self.lower_post_start_y = None
+            self.higher_post_start_y = None
+        elif self.settings.apv.mountingStructureType in [
+                'inclined_tables', 'morschenich_fixed']:
+            self.post_start_y = None
+            post_dist_y = self.mount['inner_table_post_distance_y']/2
+            # post starts in y:
+            post_middle_start_y = self.modFootPrint_start_y\
+                + self.singleRow_footprint_y/2
+            self.lower_post_start_y = post_middle_start_y-post_dist_y
+            self.higher_post_start_y = post_middle_start_y+post_dist_y
+        elif self.settings.apv.mountingStructureType == 'None':
+            self.post_start_y = None
+            self.lower_post_start_y = None
+            self.higher_post_start_y = None
+        else:
+            Exception(
+                'settings.apv.mountingStructureType has to be'
+                '"framed_single_axes", "framed_single_axes_ridgeRoofMods",'
+                '"inclined_tables", "morschenich_fixed", or "None".')
+
+    def _set_scan_area_start_xy(self):
+        """ground scan dimensions (old name: x_field, y_field)"""
+        ss_x = self.settings.apv.groundScanAreaDict['start_x']
+        ss_y = self.settings.apv.groundScanAreaDict['start_y']
+
+        if ss_x == "module_footprint":
+            self.scan_area_start_x = -self.scan_length_x/2 \
+                + self.center_offset_x \
+                + self.settings.apv.groundScanAreaDict['shift_x']
+        elif isinstance(ss_x, numbers.Number):
+            self.scan_area_start_x = ss_x
+        else:
+            raise Exception(self._exception_msg('start_x', ss_x))
+
+        if ss_y == "module_footprint":
+            self.scan_area_start_y = -self.scan_length_y/2 \
+                + self.center_offset_y \
+                + self.settings.apv.groundScanAreaDict['shift_y']
+        elif isinstance(ss_y, numbers.Number):
+            self.scan_area_start_y = ss_y
+        else:
+            raise Exception(self._exception_msg('start_y', ss_y))
+
+    def _set_APVSystCenter_to_origin_offsets(self):
+        self.center_offset_x = 0
+        self.center_offset_y = 0
+
+        if self.scn['nMods'] % 2 == 0:  # even
+            self.center_offset_x = (self.mod['x']+self.mod['xgap'])/2
+        if self.scn['nRows'] % 2 == 0:  # even
+            self.center_offset_y = self.scn['pitch']/2
+
+    def _set_y_grid_and_sensors(self):
+        self.ygrid: list[float] = np.arange(
+            self.scan_area_start_y,  # start
+            (self.scan_area_start_y + self.scan_length_y
+             + self.settings.sim.spatial_resolution*0.999),  # stop
+            self.settings.sim.spatial_resolution)  # step
+
+        self.n_sensors_x = self.scan_length_x // self.settings.sim.spatial_resolution + 2
+        # + 2 because + 1 for the one at x = 0 and another + 1 to hit the post
+        # again or cover scan_length_x despite of rounding down with //
+
+    def _set_groundscan_dicts(self):
+        """
+        groundscan (dict): dictionary containing the XYZ-start and
+        -increments values for a bifacial_radiance linescan.
+        It describes where the virtual ray tracing sensors are placed.
+        The origin (x=0, y=0) of the PV facility is in its center.
+        """
+
+        xy_inc = self.settings.sim.spatial_resolution
+        self.ground_lineScan = {
+            'xstart':  self.scan_area_start_x,  # bottom left for azimuth 180
+            'ystart': self.scan_area_start_y,
+            # ystart will be set by looping ygrid for multiprocessing
+            # 'zstart': 0.001,  # z shifted to sim settings scan_z_params
+            'xinc': xy_inc, 'yinc': 0,  # 'zinc': 0,
+            # 'sx_xinc': 0, 'sx_yinc': 0, 'sx_zinc': 0,
+            'Nx': self.n_sensors_x, 'Ny': 1,  # 'Nz': 1,
+            'orient': '0 0 -1'  # -1 to look downwards to the ground
+            # NOTE radiance will return irradiation (?) on the surface beeing
+            # hit by the vectors (rays) defined in linepts --> surface properties influence?
+        }
+        self.ground_lineScan.update(self.settings.sim.RadSensors_z_params)
+
+        self.ground_areaScan = self.ground_lineScan.copy()
+        self.ground_areaScan['yinc'] = xy_inc
+        self.ground_areaScan['Ny'] = len(self.ygrid)
+
+        print(f'\n=== sensor grid: x: {self.n_sensors_x}, y: {len(self.ygrid)}, '
+              f'total: {self.n_sensors_x * len(self.ygrid)} ===')

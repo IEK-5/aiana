@@ -52,7 +52,7 @@ class Evaluator:
 
         df.to_csv(self.settings._paths.inst_csv_file_path)
 
-        print(f'Evaluated {self.settings._paths.inst_csv_file_path}\n')
+        print(f'Evaluated {self.settings._paths.inst_csv_file_path}')
         self.df_ground_results = df
 
     @staticmethod
@@ -120,7 +120,7 @@ class Evaluator:
         # cumulated shadow depth:
         elif self.settings.sim.sky_gen_mode == 'gencumsky' or cumulative:
             df['ShadowDepth_cum'] = 100 * (1 - df['Whm2']/cum_ghi_ref)
-            print(self.settings.sim.TMY_irradiance_aggfunc,
+            print(self.settings.sim.irradiance_aggfunc,
                   'cum clearSky ghi: ', cum_ghi_ref)
 
         return df

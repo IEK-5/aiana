@@ -25,39 +25,34 @@ from aiana.classes.rad_txt_related.morschenich import Morschenich
 
 
 def adjust_settings_StudyForMorschenich(settings: Settings) -> Settings:
-    # #
-    # from aiana.settings.apv_system_settings import APV_Syst_InclinedTables_S_Morschenich
 
-    # settings=Settings()
-    # settings.apv = APV_Syst_InclinedTables_S_Morschenich()
+    # #
     morschObj = Morschenich(settings)
-    # morschObj.scan_area_anchor_y
-    # -morschObj.allRows_footprint_y/2
-
-    # morschObj.center_offset_y
-    # # #
-
-    # shift = 0 --> start = -morschObj.allRows_footprint_y/2
-
-    # mitte = - l_x/2 + -morschObj.allRows_footprint_y/2
-
-    # start soll = mitte - l_x/2 inner_table_post_distance_y + 1
-
-    # #
     # match scan area to experimental harvest area:
     length_x = 8*1.2
-    length_y = 3*7.32-2
-    shift_y = (morschObj.allRows_footprint_y-length_y)/2-(
-        morschObj.allRows_footprint_y-morschObj.l_y)/2-(
-            morschObj.mount['inner_table_post_distance_y']
-    )
+    length_y = 3*7.32
+    start_y = morschObj.higher_post_start_y+0.12/2
+    # (0.12 = post thickness in y)
 
+    settings.sim.RadSensors_z_params.update({'zstart': 0.8})
     settings.apv.groundScanAreaDict.update({
+        'start_y': start_y,  # [m] positiv: towards north
         'length_x': length_x,  # [m]
         'length_y': length_y,  # [m]
         'shift_x': -length_x/2,
-        'shift_y': shift_y,  # [m] positiv: towards north
     })
+
+    plant_height = 0.5
+    res = settings.sim.spatial_resolution
+    l_x = length_x + res*2
+    l_y = length_y + res*2
+    s_x = morschObj.center_offset_x - length_x - res
+    s_y = start_y - res
+    # new mat... as_ground .. 1-albedo 0.76 0.76
+    settings.apv.custom_object_rad_txt = (
+        f'!genbox as_ground beans {l_x} {l_y} {plant_height}'
+        f' | xform -t {s_x} {s_y} 0 ')
+
     return settings
 
 
@@ -65,8 +60,9 @@ def adjust_settings_StudyForPoster(
         subset: Literal['std', 'std_glass', 'std_sw',
                         'checker_board', 'cell_gaps', 'roof_for_EW'],
         settings: Settings) -> Settings:
+    """outdated"""
     # constant settings
-    settings._paths.results_subfolder = 'framed_APV_noBorderEffects'
+    settings.sim.study_name = 'framed_APV_noBorderEffects'
     settings.sim.spatial_resolution = 0.05
     settings.sim.time_step_in_minutes = 3
 
@@ -145,7 +141,7 @@ def adjust_APVclone_count(settings: Settings, hour: int) -> Settings:
 def create_results_subfolderPath(
         month: int, settings: Settings, subset: str) -> Path:
     return Path(
-        settings._paths.results_subfolder,
+        settings.sim.study_name,
         f'res-{settings.sim.spatial_resolution}m'
         + f'_step-{settings.sim.time_step_in_minutes}min',
         subset,

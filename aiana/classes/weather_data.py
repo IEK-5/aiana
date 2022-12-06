@@ -55,13 +55,15 @@ class WeatherData:
             # but with irradiance values averaged
 
             self.df_irr = self.df_irradiance_to_TMY()
+            # this includes the load_and_process_insolation_data() as first
+            # step, if the result file does not exist yet
         else:
             self.df_irr = self.load_and_process_insolation_data()
 
-        # make TMY typcal day per month data (W/m2)
-        # #multi-index (month, hour...)
-        self.df_irradiance_typ_day_per_month = \
-            self.calc_typical_day_of_month(self.df_irr)
+        # make typical day per month data (W/m2)
+        # multi-index (month or week, hour, minute)
+        self.df_irradiance_typical_day = \
+            self.calc_typical_day(self.df_irr)
 
         # set irradiance and sunpos
         self.set_dhi_dni_ghi_and_sunpos_to_simDT()
@@ -89,7 +91,7 @@ class WeatherData:
         # download data for longest full year time span available
         self.download_file_path = self.download_insolation_data(
             self.settings.sim.apv_location,
-            '2005-01-01/2022-01-01',
+            '2005-01-01/2022-11-11',
             1  # always 1 minute, will be resampled coarser later
         )
 
@@ -101,24 +103,31 @@ class WeatherData:
             self.settings._paths.weatherData_folder / Path(self.fn_resampled)
 
     def set_dhi_dni_ghi_and_sunpos_to_simDT(self, settings: Settings = None):
-        """allow simDT input for fast GHI filter from outside"""
+        """allows optional settings input for fast GHI filter from outside"""
         if settings is None:
             settings = self.settings
+
         t_stamp = settings._dt.sim_dt_utc
-        if settings.sim.use_typDay_perMonth_for_irradianceCalculation:
-            s: pd.Series = self.df_irradiance_typ_day_per_month.loc[
-                (t_stamp.month, t_stamp.hour, t_stamp.minute)]
-        else:
-            s: pd.Series = self.df_irr.loc[t_stamp]
+        match settings.sim.aggregate_irradiance_perTimeOfDay:
+            case 'False':
+                s: pd.Series = self.df_irr.loc[t_stamp]
+            case 'over_the_week':
+                s: pd.Series = self.df_irradiance_typical_day.loc[
+                    (settings._dt.week, t_stamp.hour, t_stamp.minute)]
+            case 'over_the_month':
+                s: pd.Series = self.df_irradiance_typical_day.loc[
+                    (t_stamp.month, t_stamp.hour, t_stamp.minute)]
+
         try:
             self.ghi = s['ghi_Wm-2']
             self.dhi = s['dhi_Wm-2']
             self.dni = s['dni_Wm-2']
             self.ghi_clearsky = s['ghi_clearSky_Wm-2']
         except KeyError:
-            raise Exception('\n Please choose a simlation time and timestep, which '
-                            'can meet, starting at 00:00. E.g. not 15:30 and 60 min\n'
-                            )
+            raise Exception(
+                '\n Please choose a simlation time and timestep, which '
+                'can meet, starting at 00:00. E.g. not 15:30 and 60 min\n'
+            )
         # taking sun position in between adjacent right labled irradiation data
 
         solpos: pd.DataFrame = \
@@ -130,18 +139,42 @@ class WeatherData:
         self.sunaz = float(solpos["azimuth"]-180.0)
 
     def calc_cumulative_ghi(self):
-        "for ghi filter and shadow_depth calculation"
-        if self.settings.sim.use_typDay_perMonth_for_irradianceCalculation:
-            # summing all simulated months and hours (and minutes)
-            df_sum = self.df_irradiance_typ_day_per_month.loc[
-                pd.IndexSlice[[self.settings.sim.month],
-                              self.settings.sim.hours], ].sum()
-        else:
-            df_sum = self.df_irr.loc[
-                self.settings._dt.start_dt_utc: self.settings._dt.end_dt_utc,
-                # +1 is not needed for inclusive end with .loc,
-                # only with .iloc
-            ].sum()
+        """the cumulative GHI is needed for cumulative shadow_depth calculation
+            It depends on the simulated duration.
+
+            The GHI is summed per day for all hours given in the
+            list: settings.sim.hours.
+
+            without typical day it is a straight forward slice based on the
+            time_stamp. Otherwise:
+            df_irradiance_typical_day has a multi-index as a result from
+            the pivot_table aggregation.
+            We use pd.IndexSlice object to allow a multi-index slice of the
+            df_irradiance_typical_day, to sum this slice afterwards.
+            The slice needs to select the current month or week, in which the
+            typical day is, and the simulated hours. This way one can also
+            simulate e.g. only morning and get still a cumulative shadow depth
+            for this morning.
+
+        """
+        match self.settings.sim.aggregate_irradiance_perTimeOfDay:
+            case 'False':
+                # time stamp index
+                df_sum = self.df_irr.loc[
+                    self.settings._dt.start_dt_utc: self.settings._dt.end_dt_utc,
+                    # +1 is not needed for inclusive end with .loc,
+                    # only with .iloc
+                ].sum()
+            case 'over_the_week':
+                # multi index (month or week, day, hours, minutes):
+                # summing all simulated months and hours (and minutes)
+                df_sum = self.df_irradiance_typical_day.loc[
+                    pd.IndexSlice[[self.settings._dt.week],
+                                  self.settings.sim.hours], ].sum()
+            case 'over_the_month':
+                df_sum = self.df_irradiance_typical_day.loc[
+                    pd.IndexSlice[[self.settings.sim.month],
+                                  self.settings.sim.hours], ].sum()
 
         # daily Cumulated for all hours given in list: settings.sim.hours
         self.dailyCumulated_ghi = df_sum['ghi_Whm-2']
@@ -253,7 +286,7 @@ class WeatherData:
             self,
             location: pvlib.location.Location,
             date_range: str,
-            time_step_in_minutes: int
+            time_step_minutes: int
     ) -> str:
         '''
         Downloads insolation data from the atmosphere data store (ADS), which
@@ -274,10 +307,10 @@ class WeatherData:
             file_path (str): file path of the result file
 
         '''
-        if time_step_in_minutes == 60:
+        if time_step_minutes == 60:
             time_step_str = '1hour'
         else:
-            time_step_str = f'{time_step_in_minutes}minute'
+            time_step_str = f'{time_step_minutes}minute'
 
         file_name = ('insolation-data_' + date_range.replace('/', '_to_') +
                      f'_lat-{location.latitude}'
@@ -399,9 +432,9 @@ class WeatherData:
         df.Name = self.fn_resampled
         return df
 
-    def df_irradiance_to_TMY(self):
+    def df_irradiance_to_TMY(self) -> pd.DataFrame:
 
-        aggfunc = self.settings.sim.TMY_irradiance_aggfunc
+        aggfunc = self.settings.sim.irradiance_aggfunc
         df_tmy_name: str = f'TMY_{aggfunc}_{self.fn_resampled}'
         tmy_file_path = self.settings._paths.weatherData_folder \
             / Path(df_tmy_name)
@@ -418,6 +451,8 @@ class WeatherData:
             df.loc[:] = df[~mask]
             # .loc[:] prevents creating new df object, which would loose .Name
 
+            # adding month, day... for pivot_table,
+            # time stamp index is added again later
             df.loc[:, 'month'] = df.index.month
             df.loc[:, 'day'] = df.index.day
             df.loc[:, 'hour'] = df.index.hour
@@ -427,7 +462,7 @@ class WeatherData:
                 df,
                 index=['month', 'day', 'hour', 'minute'],
                 values=self.tmy_column_names,
-                aggfunc=self.settings.sim.TMY_irradiance_aggfunc)
+                aggfunc=self.settings.sim.irradiance_aggfunc)
 
             freq = f"{self.settings.sim.time_step_in_minutes}min"
             df_tmy.index = pd.date_range(
@@ -438,36 +473,48 @@ class WeatherData:
         df_tmy.Name = df_tmy_name
         return df_tmy
 
-    def calc_typical_day_of_month(self, df: pd.DataFrame) -> pd.DataFrame:
+    def calc_typical_day(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        df is meant for self.df_irradiance_tmy
+        df is meant for self.df_irr
 
-        Extract from TMY irradiation data 3 typical representative days
-        of each month: day 1 is when daily GHI itegral is minimum, day 2 is
-        when daily GHI integral is maximum, and day 3 is the day that is most
-        close to the daily average GHI of the month.
+        typical day per week or per month (depending on the sim setting
+        aggregate_irradiance_perTimeOfDay).
 
         Returns:
-            [df_all]: [DataFrame with values and indexes of the 3 days of
-                       each month]
+            pd.DataFrame: pivot table with irradiance data grouped by
+            week or month. Multi-index: month/weak, hour, minute
         """
 
-        df.loc[:, 'month'] = df.index.month
+        df.loc[:, 'day'] = df.index.day
         df.loc[:, 'hour'] = df.index.hour
         df.loc[:, 'minute'] = df.index.minute
 
-        df_typ_day_per_month = pd.pivot_table(
+        match self.settings.sim.aggregate_irradiance_perTimeOfDay:
+            case 'over_the_week':
+                df.loc[:, 'week'] = df.index.isocalendar().week
+                agg_over = 'week'
+            case 'over_the_month':
+                df.loc[:, 'month'] = df.index.month
+                agg_over = 'month'
+
+        df_typ_day = pd.pivot_table(
             df,
-            index=['month', 'hour', 'minute'],  # no day ->all days are grouped
+            index=[agg_over, 'hour', 'minute'],  # no day ->all days are grouped
             values=self.tmy_column_names,
             aggfunc='mean')  # mean from the TMY made
         # itself with aggfunc min or mean or max
 
-        return df_typ_day_per_month
+        return df_typ_day
 
         ##############
         # backup code for a min or max day of a certain month:
-
+        """Extract from irradiation data 3 typical representative days
+        of each month: day 1 is when daily GHI itegral is minimum, day 2 is
+        when daily GHI integral is maximum, and day 3 is the day that is most
+        close to the daily average GHI of the month.
+        Returns:
+            [df_all]: [DataFrame with values and indexes of the 3 days of
+                       each month]"""
         # create TMY from ADS yearly data
         df_tmy = pd.pivot_table(df,
                                 index=['month', 'day', 'hour'],

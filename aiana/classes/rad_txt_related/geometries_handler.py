@@ -1,10 +1,9 @@
+import time
+import bifacial_radiance as br
 from aiana.classes.rad_txt_related.morschenich import Morschenich
 from aiana.classes.rad_txt_related.geometry_basics import GeomBasics
 from aiana.classes.util_classes.settings_handler import Settings
-
 from aiana.classes.util_classes.print_hider import PrintHider
-
-import bifacial_radiance as br
 
 
 class GeometriesHandler(GeomBasics):
@@ -54,7 +53,7 @@ class GeometriesHandler(GeomBasics):
             # pass dict value without calling
             single_module_text = custom_single_module_text_dict[module_form]
         else:
-            # pass dict value being a method with calling
+            # pass dict value being a method with calling (for checked module)
             # (usefull if more custom modules will be added again)
             single_module_text = custom_single_module_text_dict[module_form]()
 
@@ -82,6 +81,7 @@ class GeometriesHandler(GeomBasics):
             f.write(self.moduleObj.text.encode('ascii'))
             f.close()  # should not be neccessary due to "with", but without
             # oconv sometimes complains about an empty module_name_0.rad file
+        # time.sleep(1)  # ... as it still complained sometimes...
 
         # modify module text and save to original name without "0"
         if self.settings.apv.module_form == 'none':
@@ -89,9 +89,9 @@ class GeometriesHandler(GeomBasics):
         else:
             # NOTE (BR scene modification (tilt, nRow, ...) not yet applied)
             module_text_modified = \
-                self.get_rad_txt_for_cloning_the_apv_system()\
+                self.get_rad_txt_for_cloning_the_apv_system() \
                 + self.get_rad_txt_for_ridgeRoofMods_xform() \
-                + f' {self.settings.apv.module_name}0.rad'
+                + f'{self.settings.apv.module_name}0.rad'
         module_name_relPath = f'objects/{self.settings.apv.module_name}.rad'
 
         # store APV system-set cloned with optional ridgeRoof_modified
@@ -115,6 +115,10 @@ class GeometriesHandler(GeomBasics):
         # sensors
         if add_sensor_vis:
             customObjects['sensors'] = self.sensor_visualization
+
+        # custom external
+        if self.settings.apv.custom_object_rad_txt != '':
+            customObjects['custom'] = self.custom_txt
 
         # mounting structure
         structure_type = self.settings.apv.mountingStructureType

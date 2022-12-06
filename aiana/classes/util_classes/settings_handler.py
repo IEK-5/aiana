@@ -28,8 +28,10 @@ class Settings:
         self._dt.update_sim_dt(**kwargs)
         self._names = Names(self.sim, self.apv, self._dt)
         self._paths = Paths(self.sim, self._names)
+        assert self._dt.sim_dt_utc.month == self.sim.month
 
     # #
+
     def _verify_unique_setting_names(self):
         all_settings_names = list(self.sim.__dict__)\
             + list(self.apv.__dict__) + list(self.view.__dict__)

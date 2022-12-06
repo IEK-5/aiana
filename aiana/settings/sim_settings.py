@@ -72,16 +72,16 @@ class SimSettingsDefault:
         https://search.r-project.org/CRAN/refmans/eplusr/html/Epw.html
         br.MetObj: def __init__(self, tmydata, metadata, label='right')
         """
+        self.aggregate_irradiance_perTimeOfDay: Literal[
+            'False', 'over_the_week', 'over_the_month'] = 'over_the_month'
+        # if set other than 'False', irradiance data (dni, dhi, ghi) is set to
+        # mean value per day-time-step for the month/week given either in a
+        # certain year or in a TMY. The day input is ignored for irradiance.
+        # This allows to compare different month/weeks better as weather is
+        # averaged and it also saves simulation duration. To check for other
+        # weather in TMY, change the setting irradiance_aggfunc:
 
-        self.use_typDay_perMonth_for_irradianceCalculation: bool = True
-        # if set to True, irradiance data (dni, dhi, ghi) is set to mean
-        # value per day-time-step for the month given either in certain
-        # year or in TMY. The day input is ignored for irradiance. This
-        # allows to compare different month better as weather is
-        # averaged. To check for other weather in TMY, change the
-        # setting TMY_irradiance_aggfunc:
-
-        self.TMY_irradiance_aggfunc: Literal['min', 'mean', 'max'] = 'mean'
+        self.irradiance_aggfunc: Literal['min', 'mean', 'max'] = 'mean'
         # used as aggregation function for watherdata pivoting to TMY
         # min: extreme cloudy day, max: sunny day with distant bright clouds
 
@@ -172,7 +172,7 @@ class SimSettings_ForTesting(SimSettingsDefault):
         self.study_name = 'testing'
         self.spatial_resolution = 0.05
         self.hours = [13, 14, 15]
-        self.use_typDay_perMonth_for_irradianceCalculation = False
+        self.aggregate_irradiance_perTimeOfDay = 'False'
         self.use_CPU_multi_processing = False
         self.use_accelerad_GPU_processing = True
 

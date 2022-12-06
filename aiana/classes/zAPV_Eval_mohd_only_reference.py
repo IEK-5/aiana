@@ -14,12 +14,19 @@
 ''' Uses PVlib to forecast energy yield according to system settings.
 '''
 # #
+# import pvfactors
+
+
+# #
+
+
+
+
 import os
 import sys
 import pandas as pd
 from pathlib import Path
 import pvlib
-# import pvfactors
 import aiana
 from aiana.settings.apv_system_settings import APV_SettingsDefault as APV_System
 from aiana.settings.sim_settings import SimSettingsDefault
@@ -27,9 +34,6 @@ from aiana.classes.weather_data import WeatherData
 from aiana.classes.util_classes.sim_datetime import SimDT
 import aiana.settings.user_paths as UserPaths
 from aiana.utils import files_interface as fi
-
-
-# #
 class Evaluator:
     """
     Attributes:
@@ -404,7 +408,7 @@ class Evaluator:
             if SimSettings.use_typDay_perMonth_for_shadowDepthCalculation:
                 month = int(SimSettings.sim_date_time.split('-')[0])
                 cumulative_GHI = \
-                    self.weatherData.df_irradiance_typ_day_per_month.loc[
+                    self.weatherData.df_irradiance_typical_day.loc[
                         (month), 'ghi_clearSky_Whm-2'].sum()
             else:
                 cumulative_GHI = self.weatherData.df_irr.loc[
@@ -414,7 +418,7 @@ class Evaluator:
                     'ghi_clearSky_Whm-2'].sum()
 
             df['ShadowDepth_cum'] = 100 - ((df['Whm2']/cumulative_GHI)*100)
-            print(SimSettings.TMY_irradiance_aggfunc, 'cum clearSky ghi: ',
+            print(SimSettings.irradiance_aggfunc, 'cum clearSky ghi: ',
                   cumulative_GHI)
         return df
 

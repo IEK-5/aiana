@@ -175,7 +175,7 @@ class Plotter:
 
     def return_weather_description(self) -> (
             Literal['max cloudy', 'mean cloudy', 'clear sky'] | None):
-        aggfunc = self.settings.sim.TMY_irradiance_aggfunc
+        aggfunc = self.settings.sim.irradiance_aggfunc
         if aggfunc == 'min':
             return 'max cloudy'
         if aggfunc == 'mean':
@@ -198,7 +198,7 @@ class Plotter:
             title += f'Weather: {self.return_weather_description()}\n'
         if 'agg_func' in title_comps:  # redundant to weather
             title += (f'TMY aggregation function: '
-                      f'{self.settings.sim.TMY_irradiance_aggfunc}\n')
+                      f'{self.settings.sim.irradiance_aggfunc}\n')
         if 'resolution' in title_comps:
             title += f'Resolution: {self.settings.sim.spatial_resolution} m\n'
         if 'position' in title_comps:

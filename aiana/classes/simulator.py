@@ -12,7 +12,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>."""
 
 import sys
-import pytictoc
 import pandas as pd
 from pathlib import Path
 import concurrent.futures
@@ -53,11 +52,6 @@ class Simulator:
         """provides irradiation readings on ground in form of a Dataframe
         as per predefined resolution.
         """
-        tictoc = pytictoc.TicToc()
-        tictoc.tic()
-        print('\n##### Starting simulation',
-              self.settings.sim.sub_study_name, '#####')
-
         # eventually create results (parent) folder existence
         fi.make_dirs_if_not_there(self.settings._paths.inst_csv_parent_folder)
         # #NOTE done here to avoid creating empty folders,
@@ -91,23 +85,21 @@ class Simulator:
             for i in trange(len(self.ghObj.ygrid)):
                 self._run_line_scan(self.ghObj.ygrid[i])
             self.merge_line_scans()
-        print('\n')
-        tictoc.toc()
 
     def _run_area_scan(self, scanDict: dict):
         """with gpu -> simulate all scan lines at once"""
         linepts = self._write_linepts(scanDict)
         for i in range(4):
             try:
-                # with PrintHider():  # otherwise accelerad prints a lot...
-                # this will run the actual simulation:
-                groundDict = self._irrPlotMod_modified(
-                    self.settings._names.oct_fn, linepts)
-                self.analObj._saveResults(
-                    groundDict,
-                    savefile=self.settings._paths.inst_csv_file_path
-                )
-                break
+                with PrintHider():  # otherwise accelerad prints a lot...
+                    # this will run the actual simulation:
+                    groundDict = self._irrPlotMod_modified(
+                        self.settings._names.oct_fn, linepts)
+                    self.analObj._saveResults(
+                        groundDict,
+                        savefile=self.settings._paths.inst_csv_file_path
+                    )
+                    break
             except TypeError:  # 'NoneType' object is not subscriptable
                 # rarely there is a accelerad polygon problem, e.g.:
                 # accelerad_rtrace: fatal - (!xform...:

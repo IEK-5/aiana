@@ -35,9 +35,10 @@ class Morschenich(GeomBasics):
 
         # add rails and outer frame
         hh = 2.5
-        middle_post_start_y = self.sw_modCorner_y+self.singleRow_footprint_y/2
+        middle_post_start_y = self.modFootPrint_start_y+self.singleRow_footprint_y/2
 
-        post_dist_y = self.mount['inner_table_post_distance_y']
+        post_dist_y = self.mount['inner_table_post_distance_y']/2
+        # (/2 as there are 3 instead of 2 post at the outer frame)
         text += self._rails_between_modules(middle_post_start_y+post_dist_y, hh)\
             + self._outer_frame(middle_post_start_y-post_dist_y, hh)
 
@@ -45,7 +46,7 @@ class Morschenich(GeomBasics):
             text += self._corrugated_glass_between_modules(middle_post_start_y+post_dist_y)
 
         # add straight thicker rail ("Regenrinne"!):
-        sb_x = self.singleRow_footprint_x
+        sb_x = self.module_footprint_length_x
         sb_y = 0.16  # TODO how much?
         sb_z = 0.08
         z_start = self.scn["hub_height"] \
@@ -55,7 +56,7 @@ class Morschenich(GeomBasics):
 
         text += (
             f'\n!genbox {self.mount["material"]} post {sb_x} {sb_y} {sb_z}'
-            f' | xform -t {self.sw_modCorner_x} {y_start2} {z_start} '
+            f' | xform -t {self.modFootPrint_start_x} {y_start2} {z_start} '
             + self._row_array(nRowsReduc=1)
         )
 
@@ -72,7 +73,7 @@ class Morschenich(GeomBasics):
         sp_x = self.mount['post_thickness_x']
         sp_y = self.mount['post_thickness_y']
         # middle post
-        middle_post_start_y = self.sw_modCorner_y+self.singleRow_footprint_y/2
+        middle_post_start_y = self.modFootPrint_start_y+self.singleRow_footprint_y/2
         post_height = self.scn["hub_height"]
 
         text = (
@@ -86,7 +87,7 @@ class Morschenich(GeomBasics):
         height_array = f'-a 3 -t 0 0 -1.12 '
         # short side (parallel to y) below modules
         sb_x = 0.06
-        sb_y = self.mount['inner_table_post_distance_y']*2+sp_y
+        sb_y = self.mount['inner_table_post_distance_y']+sp_y
         sb_z = 0.04
         text += (
             f'\n!genbox {self.mount["material"]} post {sb_x} {sb_y} {sb_z}'

@@ -156,22 +156,28 @@ class APV_SettingsDefault:
 
         self.framed_modules: bool = False
 
+        self.custom_object_rad_txt: str = ''  # to add a custom object, you
+        # have to use radiance syntax (https://floyd.lbl.gov/radiance/man_html)
+
         # ### ground scan area settings
         self.groundScanAreaDict: dict = {
+            'start_x': "module_footprint",  # [m]
+            'start_y': "module_footprint",  # [m]
             'length_x': "module_footprint",  # [m]
             'length_y': "module_footprint",  # [m]
             'margin_x': 0,  # [m]
             'margin_y': 0,  # [m]
             'shift_x': 0,  # [m] positiv: towards east
             'shift_y': 0,  # [m] positiv: towards north
-        }  # NOTE If scan length x/y are set to "module_footprint",
+        }  # NOTE If scan length and start x/y are set to "module_footprint",
         # the gScan area is placed below the foot print of the modules,
         # so that the modules of the main APV_system (not clones) projected
         # to ground (foot print) are just inside of the scan area. To be
         # precise, the scan area starts at the south-west corner of the foot-
         # print and is extended byond the north-east corner to get an integer
         # count of sensor points with respect to the spatial_resolution.
-        # You man also enter a float number in [m] to specify the lengths x/y.
+        # You man also enter a float number in [m], whereby start 0,0 is in the
+        # center of the apv system only for an uneven row number.
 
         # shift x/y = 0 means the center of the scan area will be in the center
         # of the apv system, regardless of an even or uneven module count.
