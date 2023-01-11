@@ -390,17 +390,17 @@ class GeomBasics:
         sl_y = self.settings.apv.groundScanAreaDict['length_y']
 
         if sl_x == "module_footprint":
-            self.scan_length_x = self.module_footprint_length_x
-            + 2*self.settings.apv.groundScanAreaDict['margin_x']
-            + 2*self.mount['module_to_post_distance_x']
+            self.scan_length_x = self.module_footprint_length_x \
+                + 2*self.settings.apv.groundScanAreaDict['margin_x'] \
+                + 2*self.mount['module_to_post_distance_x']
         elif isinstance(sl_x, numbers.Number):
             self.scan_length_x = sl_x
         else:
             raise Exception(self._exception_msg('length_x', sl_x))
 
         if sl_y == "module_footprint":
-            self.scan_length_y = self.allRows_footprint_length_y
-            + 2*self.settings.apv.groundScanAreaDict['margin_y']
+            self.scan_length_y = self.allRows_footprint_length_y \
+                + 2*self.settings.apv.groundScanAreaDict['margin_y']
         elif isinstance(sl_y, numbers.Number):
             self.scan_length_y = sl_y
         else:

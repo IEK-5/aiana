@@ -26,9 +26,6 @@ from aiana.classes.plotter import Plotter
 
 
 class AianaMain():
-    # sim time/timespan in plot title
-    # TODO automatic plotting with equal color bar per day
-
     """This is the core class, which is linking all other classes. It passes
     a settings objevt (for simulation, APV system, names and pathes - all
     grouped by util_classes.setings_grouper) to the other classes/objects
@@ -91,8 +88,8 @@ class AianaMain():
                 to visualize the scanned area. Defaults to True.
             add_sensor_vis (bool, optional): red small cubes to visualize
                 the scan resolution. Defaults to True.
-            add_NorthArrow (bool, optional): Arrow(s TODO) pointing to north.
-                Defaults to True.
+            add_NorthArrow (bool, optional): Arrows (in origin and one shifted)
+                pointing to north. Defaults to True.
             view_name (Literal['total', 'close_up', 'top_down'], optional):
                 As defined in settings/view_settings.py. Defaults to 'total'.
                 If this set to 'top_down', the view mode is changed from
@@ -103,7 +100,8 @@ class AianaMain():
             add_groundScanArea=add_groundScanArea,
             add_sensor_vis=add_sensor_vis, add_NorthArrow=add_NorthArrow)
 
-        self.update_simTime_and_resultPaths(hour=self.settings.sim.hour_for_sceneInspection)
+        self.update_simTime_and_resultPaths(
+            hour=self.settings.sim.hour_for_sceneInspection)
         self._update_sky()
         view_type = 'parallel' if view_name == 'top_down' else 'perspective'
         self.octFileObj.view_octfile(view_name=view_name, view_type=view_type)
@@ -118,8 +116,10 @@ class AianaMain():
         """
         self.settings.update_sim_dt_and_paths(**kwargs)
         self.weatherData.set_dhi_dni_ghi_and_sunpos_to_simDT(self.settings)
+        self.weatherData.calc_cumulative_ghi()
 
     def simulate_and_evaluate(self, skip_sim_for_existing_results=False,
+                              tasks: list = ['sim', 'plot'],
                               # clear_existing_results=False # for testing to avoid cumulating different settings
                               ):
         # Creating octfile without scanArea or North_arrow as objects as these
@@ -132,8 +132,10 @@ class AianaMain():
         self.octFileObj.create_octfile_without_sky()
         tictoc.toc(msg='Creating octfile without sky needed')
 
-        for loop_to in ["sim", "plot"]:  # for equal colbar all results needed
-            if loop_to == "plot" and \
+        for loop_to in (task for task in tasks):
+            # (using generators to use less RAM)
+            # and for equal colbar all results needed first anyways
+            if loop_to == 'plot' and \
                     self.settings.sim.equal_colBars_for_instantaneous_plots:
                 csv_root = self.settings._paths.inst_csv_parent_folder
                 csv_files = [csv_root/file for file in os.listdir(csv_root)]
@@ -142,17 +144,19 @@ class AianaMain():
             else:
                 df_limits = None
 
-            for hour in self.settings.sim.hours:
-                for minute in range(0, 60, self.settings.sim.time_step_in_minutes):
-                    self.update_simTime_and_resultPaths(hour=hour, minute=minute)
+            for hour in (hour for hour in self.settings.sim.hours):
+                for minute in (minute for minute in range(
+                        0, 60, self.settings.sim.time_step_in_minutes)):
+                    self.update_simTime_and_resultPaths(
+                        hour=hour, minute=minute)
                     # Sun alitude and GHI FILTER ==============================
                     if (self.weatherData.sunalt < 0):
                         print(f'Sun alitude < 0 ({self.weatherData.sunalt}).')
                     elif self.weatherData.ghi < min(
-                            self.weatherData.dailyCumulated_ghi * 0.02, 50):
+                            self.weatherData.dailyCumulated_ghi * 0.03, 50):
                         print(f'GHI too low ({self.weatherData.ghi} Wh/m²).')
                     # =========================================================
-                    elif loop_to == "sim":  # enough light and sim loop
+                    elif loop_to == 'sim':  # enough light and sim loop
                         res_path = self.settings._paths.inst_csv_file_path
                         if res_path.exists() and skip_sim_for_existing_results:
                             print(f'result {res_path} exists, skipping sim...')
@@ -181,7 +185,7 @@ class AianaMain():
                             self.evaluatorObj.evaluate_csv()  # 0.478284 sec
                             tictoc.toc()
 
-                    elif loop_to == "plot":
+                    elif loop_to == 'plot':
                         self.plotterObj = Plotter(self.settings, self.ghObj)
                         self.plotterObj.ground_heatmap(
                             df_col_limits=df_limits)

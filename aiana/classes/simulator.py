@@ -12,6 +12,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>."""
 
 import sys
+import time
 import pandas as pd
 from pathlib import Path
 import concurrent.futures
@@ -86,10 +87,10 @@ class Simulator:
                 self._run_line_scan(self.ghObj.ygrid[i])
             self.merge_line_scans()
 
-    def _run_area_scan(self, scanDict: dict):
+    def _run_area_scan(self, scanDict: dict, tries=5):
         """with gpu -> simulate all scan lines at once"""
         linepts = self._write_linepts(scanDict)
-        for i in range(4):
+        for i in range(tries):
             try:
                 with PrintHider():  # otherwise accelerad prints a lot...
                     # this will run the actual simulation:
@@ -105,13 +106,17 @@ class Simulator:
                 # accelerad_rtrace: fatal - (!xform...:
                 # bad arguments for polygon "a4.1.a1.SUNFARMING.6457"
                 # in this case data will be empty (NoneType).
-                if i < 3:
-                    print('TypeError: result data empty, trying again...')
+                if i <= tries:
+                    print('TypeError: result data empty, trying again...',
+                          f'{i}. time')
+                    time.sleep(1)
                 else:
-                    print('Simulator._run_area_scan() returned NoneType 4x,',
-                          'something wrong with the oct-file or linepts?',
-                          'You can also try self._irrPlotMod_modified()',
-                          'without PrintHider.')
+                    raise Exception(
+                        f'Simulator._run_area_scan() returned NoneType',
+                        f'{tries}x, maybe is '
+                        'something wrong with the oct-file or linepts?',
+                        'You can also try self._irrPlotMod_modified()',
+                        'without PrintHider.')
 
         if self.debug_mode:
             print('Area scan done.')

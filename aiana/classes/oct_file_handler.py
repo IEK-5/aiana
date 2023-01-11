@@ -38,6 +38,10 @@ class OctFileHandler:
             position based on the time settings in sim_settings, and
         - a geometries_handler-object, which creates based on the apv_system
             settings rad-files (Radiance text file format for geometries)
+
+    NOTE: if tracking is included in future, the modules needs to be shifted
+    from octfile_without_sky to octfile_with_sky (maybe rename stationary_parts
+    and transient_parts)
     """
 
     radianceObj: br.RadianceObj
@@ -66,7 +70,10 @@ class OctFileHandler:
 
     def create_octfile_without_sky(self, **kwargs):
         """creates pv modules and mounting structure (optional)
-        so sky with ground can be added later
+        so sky with ground is added later
+
+        rad manual for -oconv:
+        https://floyd.lbl.gov/radiance/man_html/oconv.1.html
 
         **kwargs:
         add_groundScanArea=False, add_NorthArrow=False,
@@ -100,7 +107,13 @@ class OctFileHandler:
         size = '400'
         xyz_min = '-200'
 
-        cmd = ['oconv', '-b', xyz_min, xyz_min, xyz_min, size] \
+        cmd = ['oconv', '-b', xyz_min, xyz_min, xyz_min, size,
+               '-f'  # this option freezes the stationary scene parts so when
+               # re-using it for the transient parts (sky,...) it does not need
+               # to be build again, solving the modname0.rad empty file error
+               # and reduces the duration for adding sky later to 0.2 seconds)
+               #'-r', 40000,
+               ] \
             + self.radianceObj.materialfiles \
             + self.radianceObj.radfiles
 
@@ -111,7 +124,7 @@ class OctFileHandler:
             w.close()
 
     def _call_cmd_and_return_result(
-            self, cmd, count=3) -> bytes:
+            self, cmd, count=5) -> bytes:
         """trying optionally several times as rarely xform fails,
         maybe because sub rad files are not yet closed although they should be
         """
@@ -123,8 +136,8 @@ class OctFileHandler:
                 # (integers between 0 and 255)
                 if b'xform' in proc.stderr:
                     logger.warning(proc.stderr)
-                    print(f'trying to build oct file again... {i+2}. time\n')
-                    time.sleep(0.5)
+                    print(f'trying to build oct file again... {i+1}. time\n')
+                    time.sleep(1)
                 elif b'gendaylit' in proc.stderr:
                     return proc.stdout
                     # TODO gendaylit warning about actual radiance seems
@@ -134,7 +147,7 @@ class OctFileHandler:
 
             else:
                 return proc.stdout
-        Exception(
+        raise Exception(
             'Oconv failed several times, maybe the rad file syntax is wrong?')
 
     def add_sky_to_octfile(self):

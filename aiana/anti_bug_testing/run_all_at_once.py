@@ -11,25 +11,36 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>."""
 # #
+import os
 import aiana.anti_bug_testing.testing_of_apv_settings as apv_test
 import aiana.anti_bug_testing.testing_of_sim_and_view_settings as sim_test
 from aiana.utils import files_interface as fi
 from aiana.anti_bug_testing.tester_class import Tester
 
 # #
-apv_test.run_apv_test(#mode='create_reference',
+# optionally delete previous test results from
+csv_path = Tester().RMSE_MBE_csv_path
+os.remove(csv_path)
+
+# #
+# optionally create new apv system settings reference
+# remark: if you do this, you should check all results manualy again, also with
+# open_oct_viewer=True. If you just want to test for bugs due to code changes,
+# skip this.
+apv_test.run_apv_test(mode='create_reference',
                       # open_oct_viewer=True
                       )
 # #
-sim_test.run_sim_settings_test(mode='create_reference')
+# optionally create new sim settings reference, remark as above
+sim_test.run_sim_settings_test(mode='create_reference')  # TODO most missing
 # #
-apv_test.run_apv_test()  # default mode='test' and compare to reference
+apv_test.run_apv_test()  # default mode='test' to compare to reference
 # #
 sim_test.run_sim_settings_test()
 
 # #
 # results overview bar plot
-csv_path = testerObj = Tester().RMSE_MBE_csv_path
+csv_path = Tester().RMSE_MBE_csv_path
 df = fi.df_from_file_or_folder(csv_path, index_col=0)
 df
 # #
@@ -42,5 +53,6 @@ for container in ax.containers:
                  label_type='center')
 ax.get_figure().savefig(csv_path.parents[1]/'dif_overview.jpg',
                         bbox_inches='tight', dpi=300)
-
+# NOTE  higher relRMSE for different rtrace accuracy settings is normal due to
+# interpolation artefacts near the post
 # #

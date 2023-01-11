@@ -20,6 +20,7 @@ from typing import Literal
 import aiana.utils.files_interface as fi
 from aiana.classes.util_classes.settings_handler import Settings
 from aiana.classes.rad_txt_related.morschenich import Morschenich
+from aiana.classes.weather_data import WeatherData
 
 # #
 
@@ -51,7 +52,20 @@ def adjust_settings_StudyForMorschenich(settings: Settings) -> Settings:
     # new mat... as_ground .. 1-albedo 0.76 0.76
     settings.apv.custom_object_rad_txt = (
         f'!genbox as_ground beans {l_x} {l_y} {plant_height}'
-        f' | xform -t {s_x} {s_y} 0 ')
+        f' | xform -t {s_x} {s_y} 0 '
+
+        # # harvest plot visualisation
+        # f'\n!genbox grass beans 1.19 1.2 {plant_height+0.01}'
+        # f' | xform -t {morschObj.center_offset_x-1.2} {start_y+1.06} 0 '
+        # f' -a 2 -t 0 {2.92+1.2} 0 | xform -a 3 -t 0 7.32 0 | xform -a 8 -t -1.2 0 0'
+    )
+
+    # sim settings
+    settings.sim.spatial_resolution = 0.06
+    settings.sim.time_step_in_minutes = 10
+    settings.sim.year = 2022
+    # settings.sim.plot_dpi = 100 optionally to save storage
+    settings.sim.aggregate_irradiance_perTimeOfDay = 'over_the_week'
 
     return settings
 

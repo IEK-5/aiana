@@ -43,13 +43,14 @@ class GeometriesHandler(GeomBasics):
 
         custom_single_module_text_dict = {
             'std': None,  # rad text is created by self.radObj.makeModule()
-            'cell_gaps': None,  # ""
+            'cell_gaps': None,  # rad text is created by
+            # self.moduleObj.addCellModule() after creating a moduleObj
+            # with text=None
             'checker_board': self.make_checked_module_text,
-            'none': "",  # empty
         }  # (only black part, no glass / omega etc.)
 
         module_form = self.settings.apv.module_form
-        if module_form in ['std', 'cell_gaps', 'none']:
+        if module_form in ['std', 'cell_gaps']:
             # pass dict value without calling
             single_module_text = custom_single_module_text_dict[module_form]
         else:
@@ -70,10 +71,11 @@ class GeometriesHandler(GeomBasics):
             self.moduleObj.addCellModule(
                 **self.settings.apv.cellLevelModuleParams)
 
-        if self.settings.apv.framed_modules:
-            self.moduleObj.addFrame(
-                frame_material='Metal_Grey', frame_thickness=0.05,
-                frame_z=0.03, frame_width=0.05, recompile=True)
+        # taken out due to "oconv: warning - zero area for polygon":
+        # if self.settings.apv.framed_modules:
+        #     self.moduleObj.addFrame(
+        #         frame_material='Metal_Grey', frame_thickness=0.05,
+        #         frame_z=0.03, frame_width=0.05, recompile=True)
 
         # backup BRs original single module rad text as file with a "0" suffix:
         module_name0_relPath = f'objects/{self.settings.apv.module_name}0.rad'
@@ -84,14 +86,11 @@ class GeometriesHandler(GeomBasics):
         # time.sleep(1)  # ... as it still complained sometimes...
 
         # modify module text and save to original name without "0"
-        if self.settings.apv.module_form == 'none':
-            module_text_modified = ''
-        else:
-            # NOTE (BR scene modification (tilt, nRow, ...) not yet applied)
-            module_text_modified = \
-                self.get_rad_txt_for_cloning_the_apv_system() \
-                + self.get_rad_txt_for_ridgeRoofMods_xform() \
-                + f'{self.settings.apv.module_name}0.rad'
+        # NOTE (BR scene modification (tilt, nRow, ...) not yet applied)
+        module_text_modified = \
+            self.get_rad_txt_for_cloning_the_apv_system() \
+            + self.get_rad_txt_for_ridgeRoofMods_xform() \
+            + f' {self.settings.apv.module_name}0.rad'
         module_name_relPath = f'objects/{self.settings.apv.module_name}.rad'
 
         # store APV system-set cloned with optional ridgeRoof_modified

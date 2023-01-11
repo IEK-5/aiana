@@ -122,7 +122,9 @@ class APV_SettingsDefault:
             'std',
             'cell_gaps',
             'checker_board',
-            'none'
+            # 'none' was removed as it caused sometimes an empty file bug.
+            # to achieve similar effect (to see ground scan area better)
+            # set e.g. self.moduleDict['y']=0.01
         ] = 'std'
 
         self.mountingStructureDict = {
@@ -154,8 +156,6 @@ class APV_SettingsDefault:
         # to optionally add a glass plate on the black modules:
         self.glass_modules: bool = False
 
-        self.framed_modules: bool = False
-
         self.custom_object_rad_txt: str = ''  # to add a custom object, you
         # have to use radiance syntax (https://floyd.lbl.gov/radiance/man_html)
 
@@ -181,8 +181,12 @@ class APV_SettingsDefault:
 
         # shift x/y = 0 means the center of the scan area will be in the center
         # of the apv system, regardless of an even or uneven module count.
-        # margins x/y can be added to enlarge (or to reduce by negative
-        # values) the scan area symmetrically from both sides.
+        # shifts are applied only if start x/y == "module_footprint".
+
+        # margins x/y are added to enlarge (or to reduce by negative
+        # values) the scan area symmetrically at both sides. Margins are also
+        # applied only if lengths x/y == "module_footprint".
+
         # Many geometric quantities, such as e.g. allRows_footprint_x are
         # stored as attributes in the GeometriesHandler(settings) class.
 
@@ -208,7 +212,6 @@ class APV_Syst_InclinedTables_S_Morschenich(APV_SettingsDefault):
         super().__init__()
         self.mountingStructureType = 'morschenich_fixed'
         self.add_trans_plastic_between_modules: bool = False
-        self.glass_modules: bool = True
 
         self.sceneDict = {'tilt': 20,  # 18.34,
                           'pitch': 7.32,  # 7.46 was a mistake for first 3 sim

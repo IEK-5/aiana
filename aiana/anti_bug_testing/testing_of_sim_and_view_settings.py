@@ -11,11 +11,15 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>."""
 # #
+
 from aiana.anti_bug_testing.tester_class import Tester
 
 
 def run_sim_settings_test(**kwargs):
-    """**kwargs:
+    """
+    TODO (sorry, not yet implemented)
+
+    **kwargs:
         mode (optional): Defaults to 'test'
         (which means 1. simulate 2. check and plot difference to reference)
             alternative: 'create_reference'

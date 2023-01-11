@@ -18,13 +18,15 @@
 (all with suitable standard settings).
 """
 # #
+
+
+
+
 import xarray as xr
 from matplotlib.figure import Figure
 import pandas as pd
 import os as os
 from pathlib import Path
-
-
 def clear_folder_content(folder_path: str, print_msg=True):
     for filename in os.listdir(folder_path):
         file_path = os.path.join(folder_path, filename)
@@ -65,7 +67,7 @@ def df_from_file_or_folder(
 
     header=none if no header labels are there
     '''
-    df = pd.DataFrame()
+    df = pd.DataFrame()  # needed?
 
     def read_file(f_path) -> pd.DataFrame:
         if print_reading_messages:
@@ -128,7 +130,7 @@ def df_export(
         sep='\t',
         index=True,
         header=True,
-        h5_compression=False
+        h5_compression=False  # True not yet tested
 ) -> None:
     '''
     saves into .csv file with customized default settings.

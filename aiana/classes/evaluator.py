@@ -127,7 +127,7 @@ class Evaluator:
 
     @staticmethod
     def _add_DLI(df_merged: pd.DataFrame) -> pd.DataFrame:
-        """Add Daily Light Integral (DLI)
+        """Add Daily Light Integral (DLI [mol/m²])
 
         Args:
             df (pd.DataFrame): daily cumulated irradiation with a Whm2 column

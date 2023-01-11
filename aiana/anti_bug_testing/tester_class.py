@@ -28,11 +28,21 @@ from aiana.utils.RMSE_MBE import calc_RMSE_MBE
 
 
 class Tester():
-    """methods to loop through config settings step by step while
-    resetting the other settings to the default_settings
+    """Class containing methods to loop through config settings step by step
+    while resetting the other settings to the default_settings. 
 
-    open_oct_viewer=True results in that one has to close the viewer after
-    each test step to continue
+    mode (optional): Defaults to 'test'
+        (which means 1. simulate 2. check and plot difference to reference)
+            alternative: 'create_reference'
+
+    open_oct_viewer (bool, optional): to check scene creation for each set.
+        Viewer needs to be closed manualy. Defaults to False.
+
+    default_settings (Settings, optional): Defaults to None (constructing
+        automatically based on setting files)
+
+    run_simulation (bool, optional): Defaults to True, can be set False,
+        if only viewing is of interest.
     """
     settings: Settings  # used by the next test view/simulation
     # (has the currently tested parameter changed)
@@ -136,7 +146,8 @@ class Tester():
         for attr_name in bool_setting_names:
             parentObj = self._find_out_attr_parentObj(attr_name)
             currentValue = getattr(parentObj, attr_name)
-            assert currentValue == bool, f'{attr_name} is not a bool setting.'
+            assert type(currentValue) == bool,\
+                f'{attr_name} is not a bool setting.'
             print(attr_name, 'was set to', currentValue,
                   '-> testing', not currentValue, 'now...')
             setattr(parentObj, attr_name, not currentValue)

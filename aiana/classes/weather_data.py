@@ -496,6 +496,8 @@ class WeatherData:
             case 'over_the_month':
                 df.loc[:, 'month'] = df.index.month
                 agg_over = 'month'
+            case _:
+                return None
 
         df_typ_day = pd.pivot_table(
             df,

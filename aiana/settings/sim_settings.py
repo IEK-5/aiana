@@ -170,7 +170,7 @@ class SimSettings_ForTesting(SimSettingsDefault):
     def __init__(self):
         super().__init__()
         self.study_name = 'testing'
-        self.spatial_resolution = 0.05
+        self.spatial_resolution = 0.1
         self.hours = [13, 14, 15]
         self.aggregate_irradiance_perTimeOfDay = 'False'
         self.use_CPU_multi_processing = False
