@@ -91,7 +91,7 @@ def run_apv_test(**kwargs):
     # #
     ##
     # azimuth
-    testerObj.set_settings_to_default_settings()
+    testerObj.overwrite_settings_by_default_settings()
     print('The local time for the sun position is set to',
           testerObj.settings._dt.sunpos_locTime_str, '\n',
           testerObj.settings._dt.sim_dt_naiv,
@@ -119,14 +119,13 @@ def run_apv_test(**kwargs):
         else:
             s.mountingStructureDict['module_to_post_distance_x'] = 0.5
 
-        testerObj.set_settings_to_default_settings()
+        testerObj.overwrite_settings_by_default_settings()
         testerObj.test_listItems_separately(
             "mountingStructureType", [mountingStructureType])
-        
+
     # (to set back)
     s.mountingStructureDict['module_to_post_distance_x'] = 0.5
-    testerObj.set_settings_to_default_settings()
-
+    testerObj.overwrite_settings_by_default_settings()
 
     # #
     # mountingStructureDict

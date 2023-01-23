@@ -29,7 +29,7 @@ from aiana.utils.RMSE_MBE import calc_RMSE_MBE
 
 class Tester():
     """Class containing methods to loop through config settings step by step
-    while resetting the other settings to the default_settings. 
+    while resetting the other settings to the default_settings.
 
     mode (optional): Defaults to 'test'
         (which means 1. simulate 2. check and plot difference to reference)
@@ -97,7 +97,7 @@ class Tester():
         # update _paths.results_folder:
         self.default_settings.update_sim_dt_and_paths()
         ######################
-        self.set_settings_to_default_settings()
+        self.overwrite_settings_by_default_settings()
 
         self.sim_SettingNames = list(self.settings.sim.__dict__)
         self.apv_settingNames = list(self.settings.apv.__dict__)
@@ -108,31 +108,33 @@ class Tester():
         cpf = self.settings._paths.cum_plot_file_path
         return cpf.parents[1].joinpath('difference', cpf.parts[-1])
 
-    def _test_then_resetSettings(self, sub_study_name: str, **kwargs):
+    def test_with_current_settings_then_reset_to_DefaultSettings(
+            self, sub_study_name: str, **kwargs):
         aiana = AianaMain(self.settings)
         if self.open_oct_viewer:
             aiana.create_and_view_octfile_for_SceneInspection(**kwargs)
+        aiana.settings.sim.sub_study_name = f'testing_{sub_study_name}'
+        aiana.settings.update_sim_dt_and_paths()
         if self.run_simulation:
-            aiana.settings.sim.sub_study_name = f'testing_{sub_study_name}'
-            aiana.settings.update_sim_dt_and_paths()  # TODO would not
-            # neneccessery if using @property decorator concept, any risks?
-            aiana.simulate_and_evaluate()
+            # clear instantaneous_csv_files:
+            folder = aiana.settings._paths.inst_csv_parent_folder
+            if folder.exists():
+                fi.clear_folder_content(folder)
+            aiana.simulate_and_evaluate(tasks=['sim'])  # dont plot all time steps
 
         if self.mode == 'test':
-            self._load_df_test_and_df_ref()
-            aiana.plotterObj.ground_heatmap(
-                self._get_difference_data(),
-                destination_file_path=self.difference_heatmaps_path,
-                cumulative=True)
-            self._fill_RMSE_MBE_csv(sub_study_name)
-
-        self.set_settings_to_default_settings()
-
-    def change_default_Setting(self, attr_name: str, value) -> None:
-        parentObj = self._find_out_attr_parentObj(attr_name)
-        setattr(parentObj, attr_name, value)
-        print(parentObj, attr_name, 'set to', value)
-        self.set_default_to_current_settings()
+            try:
+                self._load_df_test_and_df_ref()
+                aiana.plotterObj.ground_heatmap(
+                    self._get_difference_data(),
+                    destination_file_path=self.difference_heatmaps_path,
+                    cumulative=True)
+                self._fill_RMSE_MBE_csv(sub_study_name)
+            except Exception:
+                raise Exception(
+                    'Could not load reference simulation results, try using \
+                    mode=create_reference, at first.')
+        self.overwrite_settings_by_default_settings()
 
     # =========================================================================
 
@@ -143,6 +145,7 @@ class Tester():
             bool_setting_names list of strings being the names of the bool
             attributes that should be tested with inverted values.
         """
+        self.overwrite_settings_by_default_settings()
         for attr_name in bool_setting_names:
             parentObj = self._find_out_attr_parentObj(attr_name)
             currentValue = getattr(parentObj, attr_name)
@@ -151,7 +154,7 @@ class Tester():
             print(attr_name, 'was set to', currentValue,
                   '-> testing', not currentValue, 'now...')
             setattr(parentObj, attr_name, not currentValue)
-            self._test_then_resetSettings(
+            self.test_with_current_settings_then_reset_to_DefaultSettings(
                 sub_study_name=f'{attr_name}-{not currentValue}', **kwargs)
         return
 
@@ -173,6 +176,7 @@ class Tester():
             add_NorthArrow: bool = True,
             view_name: str = 'total' or 'top_down'
         """
+        self.overwrite_settings_by_default_settings()
         for key in test_dict:
             parentObj = self._find_out_attr_parentObj(settings_dict_name)
             # has to be placed within the loop as _test_then_resetSettings()
@@ -190,33 +194,32 @@ class Tester():
             temp_dict[key] = test_dict[key]
             setattr(self.settings.apv, settings_dict_name, temp_dict)
 
-            self._test_then_resetSettings(
+            self.test_with_current_settings_then_reset_to_DefaultSettings(
                 sub_study_name=f'{key}-{temp_dict[key]}', **kwargs)
 
     def test_listItems_separately(
             self, setting_name: str, test_list: list, **kwargs):
-        """applies the test_list items one by one onto the settings-attribute
-        having settings_name as name and the types str, int or float.
         """
+        applies the test_list items one by one onto the settings-attribute
+        having settings_name as name and the types str, int, float or list.
+        """
+        self.overwrite_settings_by_default_settings()
         for item in test_list:
             parentObj = self._find_out_attr_parentObj(setting_name)
             type_of_setting = type(getattr(parentObj, setting_name))
-            assert type_of_setting in [str, int, float], (
+            assert type_of_setting in [str, int, float, list], (
                 f'The type of the tested setting when using this '
                 'method test_listItems_separately() was expected '
-                f'to be "str, int, or float", but is {type_of_setting}.'
+                f'to be "str, int, float or list", but is {type_of_setting}.'
                 f'(setting name: {setting_name}).')
             setattr(parentObj, setting_name, item)
-            self._test_then_resetSettings(
+            self.test_with_current_settings_then_reset_to_DefaultSettings(
                 sub_study_name=f'{setting_name}-{item}', **kwargs)
 
-    def set_settings_to_default_settings(self):
+    def overwrite_settings_by_default_settings(self):
         self.settings = copy.deepcopy(self.default_settings)
         self.settings.update_sim_dt_and_paths()
 
-    def set_default_to_current_settings(self):
-        self.default_settings = copy.deepcopy(self.settings)
-        self.default_settings.update_sim_dt_and_paths()
     # =========================================================================
 
     def _find_out_attr_parentObj(self, attr_name: str):

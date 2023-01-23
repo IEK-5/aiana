@@ -32,7 +32,7 @@ apv_test.run_apv_test(mode='create_reference',
                       )
 # #
 # optionally create new sim settings reference, remark as above
-sim_test.run_sim_settings_test(mode='create_reference')  # TODO most missing
+sim_test.run_sim_settings_test(mode='create_reference')  
 # #
 apv_test.run_apv_test()  # default mode='test' to compare to reference
 # #

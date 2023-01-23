@@ -35,13 +35,13 @@ class SimSettingsDefault:
         self.sub_study_name: str = 'mySubStudy'  # will be added as prefix
         # to cumulative plots and their corresponding data sub(-sub) folders
 
-        self.spatial_resolution: float = 0.1  # [m]
-        # distance between virtual radiation sensors
         self.ground_albedo: float = 0.24  # grass
 
         # time settings (right labled with interval = time_step_in_minutes s.below)
-        self.year: Literal['TMY'] = 'TMY'  # or e.g. 2020
+        self.year: (Literal['TMY'] | int) = 'TMY'  # or e.g. 2020
         # TMY = typical meterological year; here: mean data from 2005 to 2021
+
+        self.date_range_to_calc_TMY: str = '2005-01-01/2022-12-31'
 
         self.month: int = 6
         self.day: int = 15
@@ -51,11 +51,13 @@ class SimSettingsDefault:
         # GHI will be summed for all hours given in this list
         # (including minutes) to calculate the irradiation,
         # cumulative shadow depth and DLI
-        self.hour_for_sceneInspection: int = 14  # noon, good to check azimuth
 
-        self.time_step_in_minutes: int = 60  # <= 60 and
+        self.time_step_in_minutes: int = 20  # <= 60 and
         # only prime-factos of 60! (1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60)
+        self.spatial_resolution: float = 0.1  # [m]
+        # distance between virtual radiation sensors
 
+        self.hour_for_sceneInspection: int = 14  # noon, good to check azimuth
         # sky generation type:
         self.sky_gen_mode: Literal['gendaylit'
                                    # , 'gencumsky'  # not included at the moment
@@ -74,20 +76,27 @@ class SimSettingsDefault:
         """
         self.aggregate_irradiance_perTimeOfDay: Literal[
             'False', 'over_the_week', 'over_the_month'] = 'over_the_month'
-        # if set other than 'False', irradiance data (dni, dhi, ghi) is set to
-        # mean value per day-time-step for the month/week given either in a
-        # certain year or in a TMY. The day input is ignored for irradiance.
-        # This allows to compare different month/weeks better as weather is
-        # averaged and it also saves simulation duration. To check for other
-        # weather in TMY, change the setting irradiance_aggfunc:
+        # If set to 'False', the irradiance data (dni, dhi, ghi) from the given
+        # date (defined by self.year, self.month, self.day) is taken.
+        # Otherwise, the irradiance data per time-step are set to the mean
+        # value of all days within the corresponding isocalendar-week/month
+        # within a certain year or TMY (defined by self.year).
+
+        # Simulating averaged data allows to compare different month/weeks
+        # better as weather is and it also saves simulation duration.
+        # To check for other "weather" in a TMY, change the setting
+        # irradiance_aggfunc:
 
         self.irradiance_aggfunc: Literal['min', 'mean', 'max'] = 'mean'
+        # Only relevant if self.year = 'TMY'
         # used as aggregation function for watherdata pivoting to TMY
         # min: extreme cloudy day, max: sunny day with distant bright clouds
 
-        self.use_CPU_multi_processing: bool = False
-        # if True, single lines of the scan area will be passed to a job pool
-        # worked off by the cpu cores in parallel
+        # e.g. irradiance_aggfunc = min in conjunction with
+        # aggregate_irradiance_perTimeOfDay = over_the_month means that
+        # firstly a "TMY" is created taking the minimum data for each
+        # month-day-hour-min within settings.sim.date_range_to_calc_TMY.
+        # From this data all days are averaged per month-hour-min.
 
         # ray tracing settings, from:
         # http://designbuilder.co.uk/helpv3.0/Content/Daylighting%20Calculation%20Options.htm#Ambient4
@@ -106,12 +115,20 @@ class SimSettingsDefault:
             'std', 'good_no_interp', 'accurate', 'acc_no_interp', 'hq'] \
             = 'good_no_interp'
 
-        # Accelerad settings ####################
-        # need to be installed first https://nljones.github.io/Accelerad/index.html
-        self.use_accelerad_GPU_processing: bool = True  # GPU paralellization,
-        # all line scans at once. GPU multiprocessing is not compatible with
-        # CPU multiprocessingand will thus ignore use_CPU_multi_processing
-        # setting, if True
+        self.parallelization: Literal[
+            'None',
+            'GPU',
+            # 'multiCore'
+        ] = 'GPU'
+        # With a decent GPU, it is recommended though to use 'GPU' to simulate
+        # the complete scan area at once as this is much faster.
+        # NOTE GPU (via Accelerad) need to be installed first:
+        # https://nljones.github.io/Accelerad/index.html
+        # If set to 'multiCore', single lines of the scan area should be passed
+        # to a job pool, which are worked off by the CPU cores in parallel.
+        # However, currently it does not work. My guess is that method
+        # radiance_utils.makeCustomMaterial() tries for all cores to access
+        # ground.mat, which does not work and leaves an empty file.
 
         # location
         self.apv_location = location.Location(
@@ -173,7 +190,5 @@ class SimSettings_ForTesting(SimSettingsDefault):
         self.spatial_resolution = 0.1
         self.hours = [13, 14, 15]
         self.aggregate_irradiance_perTimeOfDay = 'False'
-        self.use_CPU_multi_processing = False
-        self.use_accelerad_GPU_processing = True
 
 # #

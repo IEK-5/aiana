@@ -91,7 +91,7 @@ class WeatherData:
         # download data for longest full year time span available
         self.download_file_path = self.download_insolation_data(
             self.settings.sim.apv_location,
-            '2005-01-01/2022-11-11',
+            self.settings.sim.date_range_to_calc_TMY,
             1  # always 1 minute, will be resampled coarser later
         )
 
@@ -139,7 +139,8 @@ class WeatherData:
         self.sunaz = float(solpos["azimuth"]-180.0)
 
     def calc_cumulative_ghi(self):
-        """the cumulative GHI is needed for cumulative shadow_depth calculation
+        """ The cumulative GHI is needed for cumulative shadow_depth calculation
+            and as reference (unshaded GGI).
             It depends on the simulated duration.
 
             The GHI is summed per day for all hours given in the
@@ -321,7 +322,8 @@ class WeatherData:
             'raw_downloads', file_name+'.csv')
 
         if file_path.exists() is False:
-            os.makedirs(file_path.parent)
+            if file_path.parent.exists() is False:
+                os.makedirs(file_path.parent)
             print(f'Downloading Insolation data to {file_path}')
 
             c = cdsapi.Client(
@@ -462,7 +464,7 @@ class WeatherData:
                 df,
                 index=['month', 'day', 'hour', 'minute'],
                 values=self.tmy_column_names,
-                aggfunc=self.settings.sim.irradiance_aggfunc)
+                aggfunc=aggfunc)
 
             freq = f"{self.settings.sim.time_step_in_minutes}min"
             df_tmy.index = pd.date_range(

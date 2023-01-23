@@ -32,9 +32,15 @@ def makeCustomMaterial(
     """
 
     # read old file
-    with open(rad_mat_file, 'r') as f:
-        lines: list = f.readlines()
-        f.close()
+    try:
+        with open(rad_mat_file, 'r') as f:
+            lines: list = f.readlines()
+            f.close()
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            'radiance_input_files/materials/ground.rad seems missing, try '
+            'deleting the "materials" FOLDER and '
+            'restart so both will be recreated from bifacial_radiance.')
 
     # write new file
     with open(rad_mat_file, 'w') as f:
@@ -55,8 +61,14 @@ def makeCustomMaterial(
         # check for extra line break at the current file end,
         # after which custom materials will be added
 
-        if lines_new[-1][-1:] == '\n':
-            text = ''
+        try:
+            if lines_new[-1][-1:] == '\n':
+                text = ''
+        except IndexError:
+            raise Exception(
+                'radiance_input_files/materials/ground.rad seems empty, try '
+                'deleting the "materials" FOLDER (not the ground.rad) and '
+                'restart so both will be recreated from bifacial_radiance.')
         else:
             text = '\n'
         # number of modifiers needed by Radiance

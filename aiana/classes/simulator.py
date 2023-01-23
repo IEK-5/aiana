@@ -15,7 +15,7 @@ import sys
 import time
 import pandas as pd
 from pathlib import Path
-import concurrent.futures
+from concurrent.futures import ProcessPoolExecutor
 from typing import Iterator, Literal, Tuple
 from tqdm.auto import trange
 import bifacial_radiance as br
@@ -66,14 +66,12 @@ class Simulator:
         # clear temporary line scan results from bifacial_results_folder
         fi.clear_folder_content(
             self.temp_results_folder, print_msg=False)
-        if self.settings.sim.use_accelerad_GPU_processing:
-            self._run_area_scan(self.ghObj.ground_areaScan)
-            if self.settings.sim.use_CPU_multi_processing:
-                print('GPU and CPU multiprocessing were both set to True.',
-                      'GPU has priority, CPU multiprocessing is not used.')
 
-        elif self.settings.sim.use_CPU_multi_processing:
-            with concurrent.futures.ProcessPoolExecutor() as executor:
+        if self.settings.sim.parallelization == 'GPU':
+            self._run_area_scan(self.ghObj.ground_areaScan)
+
+        elif self.settings.sim.parallelization == 'multiCore':
+            with ProcessPoolExecutor() as executor:
                 results: Iterator = executor.map(
                     self._run_line_scan, self.ghObj.ygrid
                 )
@@ -210,7 +208,7 @@ class Simulator:
         out = {key: [] for key in keys}
         # out = dict.fromkeys(['Wm2','x','y','z','r','g','b','mattype','title'])
 
-        if self.settings.sim.use_accelerad_GPU_processing:
+        if self.settings.sim.parallelization == 'GPU':
             prefix = 'accelerad_'
         else:
             prefix = ''
